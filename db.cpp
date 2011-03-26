@@ -790,7 +790,7 @@ bool CWalletDB::LoadWallet()
                 if (strKey == "fMinimizeOnClose")   ssValue >> fMinimizeOnClose;
                 if (strKey == "fUseProxy")          ssValue >> fUseProxy;
                 if (strKey == "addrProxy")          ssValue >> addrProxy;
-
+                if (fHaveUPnP && strKey == "fUseUPnP")           ssValue >> fUseUPnP;
             }
         }
         pcursor->close();
@@ -806,6 +806,8 @@ bool CWalletDB::LoadWallet()
     printf("fMinimizeOnClose = %d\n", fMinimizeOnClose);
     printf("fUseProxy = %d\n", fUseProxy);
     printf("addrProxy = %s\n", addrProxy.ToString().c_str());
+    if (fHaveUPnP)
+        printf("fUseUPnP = %d\n", fUseUPnP);
 
 
     // Upgrade
