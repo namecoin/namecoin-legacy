@@ -94,6 +94,7 @@
 #include "bignum.h"
 #include "base58.h"
 #include "main.h"
+#include "hook.h"
 #ifdef GUI
 #include "uibase.h"
 #include "ui.h"

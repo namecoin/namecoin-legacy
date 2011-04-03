@@ -22,10 +22,10 @@ extern int nBestHeight;
 extern int nConnectTimeout;
 
 
+extern unsigned short GetDefaultPort();
 
 inline unsigned int ReceiveBufferSize() { return 1000*GetArg("-maxreceivebuffer", 10*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 10*1000); }
-inline unsigned short GetDefaultPort() { return fTestNet ? 18333 : 8333; }
 static const unsigned int PUBLISH_HOPS = 5;
 enum
 {

@@ -92,6 +92,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
             if (!wtx.WriteToDisk())
                 return false;
 
+        hooks->AddToWallet(wtx);
+
         // If default receiving address gets used, replace it with a new one
         CScript scriptDefaultKey;
         scriptDefaultKey.SetBitcoinAddress(vchDefaultKey);
@@ -276,6 +278,8 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
             address = Hash160ToAddress(hash160);
         else if (ExtractPubKey(txout.scriptPubKey, NULL, vchPubKey))
             address = PubKeyToAddress(vchPubKey);
+        else if (hooks->ExtractAddress(txout.scriptPubKey, address))
+            ;
         else
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",

@@ -342,16 +342,15 @@ void ThreadIRCSeed2(void* parg)
                 Send(hSocket, strprintf("NICK %s\r", strMyName.c_str()).c_str());
             }
         }
-        
-        if (fTestNet) {
-            Send(hSocket, "JOIN #bitcoinTEST\r");
-            Send(hSocket, "WHO #bitcoinTEST\r");
-        } else {
-            // randomly join #bitcoin00-#bitcoin99
-            int channel_number = GetRandInt(100);
-            Send(hSocket, strprintf("JOIN #bitcoin%02d\r", channel_number).c_str());
-            Send(hSocket, strprintf("WHO #bitcoin%02d\r", channel_number).c_str());
-        }
+
+        string channel = hooks->IrcPrefix();
+        string channel_number = fTestNet ? "" : strprintf("%02d", GetRandInt(100));
+        if (fTestNet)
+          channel += "TEST";
+        string cmd = "JOIN #" + channel + channel_number + "\r";
+        Send(hSocket, cmd.c_str());
+        cmd = "WHO #" + channel + channel_number + "\r";
+        Send(hSocket, cmd.c_str());
 
         int64 nStart = GetTime();
         string strLine;

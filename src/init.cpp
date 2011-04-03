@@ -363,6 +363,8 @@ bool AppInit2(int argc, char* argv[])
         }
     }
 
+    hooks = InitHook();
+
     //
     // Load data files
     //
