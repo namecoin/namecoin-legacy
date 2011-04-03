@@ -326,6 +326,9 @@ bool AppInit2(int argc, char* argv[])
         }
     }
 
+    extern CHooks* hooks;
+    hooks = InitHook();
+
     //
     // Load data files
     //

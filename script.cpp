@@ -1078,6 +1078,8 @@ bool Solver(const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& s
 
 bool IsStandard(const CScript& scriptPubKey)
 {
+    if (hooks->IsStandard(scriptPubKey))
+        return true;
     vector<pair<opcodetype, valtype> > vSolution;
     return Solver(scriptPubKey, vSolution);
 }

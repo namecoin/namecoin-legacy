@@ -13,6 +13,7 @@ class CBlock;
 class CBlockIndex;
 class CWalletTx;
 class CKeyItem;
+class CHooks;
 
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
@@ -50,7 +51,6 @@ extern int64 nHPSTimerStart;
 // Settings
 extern int fGenerateBitcoins;
 extern int64 nTransactionFee;
-extern CAddress addrIncoming;
 extern int fLimitProcessors;
 extern int nLimitProcessors;
 extern int fMinimizeToTray;
@@ -686,7 +686,7 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
-    bool DisconnectInputs(CTxDB& txdb);
+    bool DisconnectInputs(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
                        CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
@@ -1936,3 +1936,4 @@ extern map<vector<unsigned char>, CPrivKey> mapKeys;
 extern map<uint160, vector<unsigned char> > mapPubKeys;
 extern CCriticalSection cs_mapKeys;
 extern CKey keyUser;
+extern CHooks* hooks;

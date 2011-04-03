@@ -11,8 +11,8 @@ class CBlockIndex;
 extern int nBestHeight;
 
 
+extern unsigned short GetDefaultPort();
 
-inline unsigned short GetDefaultPort() { return fTestNet ? htons(18333) : htons(8333); }
 static const unsigned int PUBLISH_HOPS = 5;
 enum
 {

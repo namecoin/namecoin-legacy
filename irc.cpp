@@ -347,8 +347,13 @@ void ThreadIRCSeed2(void* parg)
             }
         }
 
-        Send(hSocket, fTestNet ? "JOIN #bitcoinTEST\r" : "JOIN #bitcoin\r");
-        Send(hSocket, fTestNet ? "WHO #bitcoinTEST\r"  : "WHO #bitcoin\r");
+        string channel = hooks->IrcPrefix();
+        if (fTestNet)
+          channel += "TEST";
+        string cmd = "JOIN #" + channel + "\r";
+        Send(hSocket, cmd.c_str());
+        cmd = "WHO #" + channel + "\r";
+        Send(hSocket, cmd.c_str());
 
         int64 nStart = GetTime();
         string strLine;
