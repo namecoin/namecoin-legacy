@@ -1,0 +1,8 @@
+* IsMine hook to ensure modified clients don't spend namecoins by mistake as regular coins
+* listtransactions decode
+* name_update to a foreign address
+* drop transactions that cannot be accepted because of a name conflict
+* auto-send firstupdate after 6 blocks with persistent name/rand
+* review threading
+* DNS zone creator
+* cross-mining
