@@ -909,7 +909,8 @@ void ThreadMapPort2(void* parg)
     struct IGDdatas data;
     int r;
 
-    if (UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr)) == 1)
+    r = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
+    if (r == 1)
     {
         char intClient[16];
         char intPort[6];
@@ -940,7 +941,8 @@ void ThreadMapPort2(void* parg)
     } else {
         printf("No valid UPnP IGDs found\n");
         freeUPNPDevlist(devlist); devlist = 0;
-        FreeUPNPUrls(&urls);
+        if (r != 0)
+            FreeUPNPUrls(&urls);
         loop {
             if (fShutdown || !fUseUPnP)
                 return;
