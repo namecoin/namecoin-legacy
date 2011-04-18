@@ -779,10 +779,10 @@ bool CWalletDB::LoadWallet()
                 string strKey;
                 ssKey >> strKey;
 
-                // Menu state
-                if (strKey == "fGenerateBitcoins")  ssValue >> fGenerateBitcoins;
-
                 // Options
+#ifndef GUI
+                if (strKey == "fGenerateBitcoins")  ssValue >> fGenerateBitcoins;
+#endif
                 if (strKey == "nTransactionFee")    ssValue >> nTransactionFee;
                 if (strKey == "fLimitProcessors")   ssValue >> fLimitProcessors;
                 if (strKey == "nLimitProcessors")   ssValue >> nLimitProcessors;
