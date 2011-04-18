@@ -173,3 +173,16 @@ unsigned int pnSeed[] =
     0xb5a4b052, 0x21f062d1, 0x72ab89b2, 0x74a45318, 0x8312e6bc, 0xb916965f, 0x8aa7c858, 0xfe7effad,
     0 // Zero sentinel at end
 };
+
+string GetDefaultDataDirSuffix() {
+#ifdef __WXMSW__
+    // Windows
+    return string("Bitcoin");
+#else
+#ifdef __WXMAC_OSX__
+    return string("Bitcoin");
+#else
+    return string(".bitcoin");
+#endif
+#endif
+}
