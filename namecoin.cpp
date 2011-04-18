@@ -1238,3 +1238,16 @@ unsigned short GetDefaultPort()
 
 unsigned int pnSeed[] = { NULL };
 const char *strDNSSeed[] = { NULL };
+
+string GetDefaultDataDirSuffix() {
+#ifdef __WXMSW__
+    // Windows
+    return string("Namecoin");
+#else
+#ifdef __WXMAC_OSX__
+    return string("Namecoin");
+#else
+    return string(".namecoin");
+#endif
+#endif
+}

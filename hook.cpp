@@ -113,7 +113,7 @@ CHooks* InitHook()
     return new CStandardHooks();
 }
 
-int GetDefaultPort()
+unsigned short GetDefaultPort()
 {
     return fTestNet ? htons(18333) : htons(8333);
 }
