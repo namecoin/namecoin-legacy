@@ -64,7 +64,7 @@ OBJS = \
     $(BASE_OBJS) \
     obj/hook.o
 
-all: bitcoin
+all: namecoind
 
 
 obj/%.o: %.cpp $(HEADERS)
@@ -88,6 +88,11 @@ obj/test/%.o: test/%.cpp $(HEADERS)
 
 test_bitcoin: obj/test/test_bitcoin.o
 	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS) -lboost_unit_test_framework
+
+obj/nogui/namecoin.o: namecoin.h
+
+namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o obj/sha256.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	-rm -f bitcoin bitcoind test_bitcoin
