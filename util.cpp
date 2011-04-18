@@ -648,12 +648,14 @@ string MyGetSpecialFolderPath(int nFolder, bool fCreate)
 
 string GetDefaultDataDir()
 {
+    string strSuffix = GetDefaultDataDirSuffix();
+
     // Windows: C:\Documents and Settings\username\Application Data\Bitcoin
     // Mac: ~/Library/Application Support/Bitcoin
     // Unix: ~/.bitcoin
 #ifdef __WXMSW__
     // Windows
-    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\Bitcoin";
+    return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\" + strSuffix;
 #else
     char* pszHome = getenv("HOME");
     if (pszHome == NULL || strlen(pszHome) == 0)
@@ -665,10 +667,10 @@ string GetDefaultDataDir()
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());
-    return strHome + "Bitcoin";
+    return strHome + strSuffix;
 #else
     // Unix
-    return strHome + ".bitcoin";
+    return strHome + strSuffix;
 #endif
 #endif
 }
