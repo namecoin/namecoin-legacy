@@ -31,3 +31,4 @@ public:
 };
 
 extern CHooks* InitHook();
+extern string GetDefaultDataDirSuffix();
