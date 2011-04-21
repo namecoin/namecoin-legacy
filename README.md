@@ -7,6 +7,8 @@ Ownership of a name is based on ownership of a coin, which is in turn based on p
 
 It is envisioned that the .bit domain be used for gluing namecoin domain names into the DNS.  This can be done close to the user or even by the user.
 
+See FAQ.md for more general information.
+
 Technical
 =====================
 
