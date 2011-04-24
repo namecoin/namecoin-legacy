@@ -1,4 +1,5 @@
 *.exe
+*.pyc
 bitcoin
 bitcoind
 namecoind

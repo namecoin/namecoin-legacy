@@ -1,0 +1,264 @@
+#!/usr/bin/python
+"""ncproxy - A SOCKS5 adapter that provides namecoin name resolution.
+This program listens for SOCKS5 connections, resolves .bit DNS names if any
+and passes the request to a parent SOCKS5 proxy.  It can be used between polipo
+and Tor.
+
+Version 0.01
+
+Copyright (c) 2011 Vincent Durham
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+import sys
+import socket
+import select
+import threading
+import time
+import string
+
+from jsonrpc import ServiceProxy
+from jsonrpc.proxy import JSONRPCException
+from jsonrpc.json import JSONDecodeException
+from jsonrpc import json
+from optparse import OptionParser
+
+from socks5 import Socks5Error, S5Resp, S5Req
+import socks
+
+tlds = { 'bit' : 1, 'b' : 1, 'n' : 1 }
+
+names = {}
+
+class NamecoinThread(threading.Thread):
+  def __init__(self, host, user, password, port):
+    self.namecoin = ServiceProxy('http://%s:%s@%s:%s' %(user, password, host, port))
+    threading.Thread.__init__(self)
+
+  def run(self):
+    global names
+    print "start namecoin thread"
+    while 1:
+      print "scan"
+      scan = self.namecoin.name_scan('\0', 10000)
+      print "got %d names" %(len(scan))
+      names = {}
+      for el in scan:
+        if el['name'][0:2] == 'd/':
+          names[el['name'][2:]] = el['value']
+      time.sleep(60)
+
+
+class ProxyThread(threading.Thread):
+  wait = 8.0
+  buf_size = 1024*4
+  
+  def __init__(self,s,ip,port):
+    self.s = s
+    self.dst_s = None
+    self.ip = ip
+    self.port = port
+    threading.Thread.__init__(self)
+
+  def translate(self, addr):
+    global names
+    els = addr.split('.')
+    if (len(els) < 2):
+      return addr
+    if not tlds.has_key(els[-1]):
+      return addr
+    value = names[els[-2]]
+    #value = '{"map": { "": "localhost" }}'
+    try:
+      zone = json.loads(value)['map']
+    except:
+      return False
+    els = els[0:-2]
+    leftover = ""
+    result = False
+    for ind in range(len(els)+1):
+      partial = string.join(els[ind:], '.')
+      if zone.has_key(partial):
+        leftover = string.join(els[0:ind])
+        result = zone[partial]
+        break
+
+    if not result:
+      return False
+
+    # check if IP
+    try:
+      socket.inet_aton(result)
+    except socket.error:
+      if leftover != "":
+        result = string.join((leftover, result), '.')
+
+    return result
+      
+  def run(self):
+    print "start thread"
+    resp = S5Resp()
+    try:
+      buf = self.s.recv(255)
+      if not buf:
+        raise socket.error
+      
+      self.s.send("\x05\x00")
+      buf = self.s.recv(4)
+      if not buf or len(buf) != 4:
+        raise socket.error
+      
+      req = S5Req(buf)
+      if req.ver != 5:
+        resp.rep = 1
+        raise Socks5Error
+      if req.cmd != 1:
+        resp.rep = 7
+        raise Socks5Error
+      if req.atyp != 1 and req.atyp != 3:
+        resp.rep = 8
+        raise Socks5Error
+      
+      count = 255
+      if req.atyp == 1:
+        count = 6
+        
+      buf = self.s.recv(count)
+      if not buf:
+        raise socket.error
+      
+      if not req.parse_netloc(buf):
+        resp.rep = 1
+        raise Socks5Error
+      
+      addr = self.translate(req.dst_addr)
+      print "translated to %s" % (addr)
+
+      if not addr:
+        resp.rep = 4
+        raise Socks5Error
+
+      self.dst_s = socks.socksocket()
+      self.dst_s.setproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
+      try:
+        self.dst_s.connect((addr, req.dst_port))
+      except socket.error:
+        resp.rep = 4
+        raise Socks5Error
+  
+      addr,port = self.dst_s.getsockname()
+      resp.rep = 0
+      resp.dst_addr = addr
+      resp.dst_port = port
+      self.s.send(resp.pack())
+      
+      self.forward_loop()
+
+    except Socks5Error:
+      self.s.send(resp.pack())
+    
+    except socket.error:
+      pass
+      
+    finally:
+      if self.s:
+        self.s.close()
+      if self.dst_s:
+        self.dst_s.close()
+      
+  def forward_loop(self):
+    while 1:
+      r,w,x = select.select([self.s,self.dst_s],[],[],self.wait)
+      if not r:
+        continue
+      
+      for s in r:
+        if s is self.s:
+          buf = self.s.recv(self.buf_size)
+          if not buf:
+            raise socket.error
+          self.dst_s.send(buf)
+        if s is self.dst_s:
+          buf = self.dst_s.recv(self.buf_size)
+          if not buf:
+            raise socket.error
+          self.s.send(buf)
+      time.sleep(0.01)
+    
+class Proxy(threading.Thread):
+  def __init__(self,ip="127.0.0.1",port=8080):
+    self.ip = ip
+    self.port = port
+    self.s = None
+    threading.Thread.__init__(self)
+    
+  def run(self):
+    try:
+      self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+      self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+      self.s.bind((self.ip,self.port))
+      self.s.listen(5)
+      
+    except socket.error, msg:
+      print msg
+      if self.s:
+        self.s.close()
+        self.s = None
+      return False
+    while 1:
+      try:
+        conn, addr = self.s.accept()
+      except socket.error, msg:
+        print msg
+        self.s.close()
+        self.s = None
+        return False
+
+      thread = ProxyThread(conn,addr[0],addr[1])
+      thread.start()
+      
+    return True
+
+def main():
+  global options
+  n = NamecoinThread(options.host, options.user, options.password, options.port)
+  n.start()
+  (socks_addr, socks_port) = options.socks.split(':')
+  socks_port = int(socks_port)
+  p = Proxy('127.0.0.1', int(options.listen))
+  p.start()
+  print("started")
+
+parser = OptionParser()
+parser.description = '''A SOCKS5 adapter that provides namecoin name resolution.
+This program listens for SOCKS5 connections, resolves .bit DNS names if any
+and passes the request to a parent SOCKS5 proxy.  It can be used between polipo
+and Tor.
+'''
+parser.add_option('-u', '--user', dest='user', default='bitcoin', help='namecoin RPC user name')
+parser.add_option('--pass', dest='password', default='password', help='namecoin RPC password')
+parser.add_option('-o', '--host',         dest='host',     default='127.0.0.1', help='RPC host, defaults to 127.0.0.1')
+parser.add_option('-r', '--port',         dest='port',     default='8332',      help='RPC port')
+parser.add_option('-s', '--socks', dest='socks', default='127.0.0.1:9050', help='parent socks proxy address:port, defaults to 127.0.0.1:9050')
+parser.add_option('-p', '--listen', dest='listen', default='9055', help='port to listen to, defaults to 9055')
+
+(options, args) = parser.parse_args()
+
+if __name__=='__main__':
+    main()
