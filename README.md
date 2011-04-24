@@ -54,10 +54,31 @@ dump the global list:
 
 `namecoind name_scan`
 
+VALUES
+===================
+
+Values for names in the d/ namespace are JSON encoded.  The simplest value is of this form:
+
+  {'map': {'' => 'foo.com'}}
+
+or 
+
+  {'map': {'' => '10.0.0.1'}}
+
+In the first case, the domain is mapped to a traditionl DNS domain.  If the name to be resolved is x.bar.bit, it is mapped to x.foo.com.
+
+In the second case, bar.bit and all subdomains map to an IP address.
+
+DNS conduits
+=============
+
+SOCKS5/Tor name resolver: See `ncproxy` in the client sub-directory.
+
+In the near future gzip encoding of the value will be possible, but ncproxy does not support this yet.
+
 ROADMAP
 ===================
 
 * DNS zone conduit to allow normal DNS server to serve the .bit domain
-* Tor naming resolution conduit
 * Firefox/chrome/... plugins
 * GUI

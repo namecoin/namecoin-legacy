@@ -1,4 +1,5 @@
 src/*.exe
+*.pyc
 src/bitcoin
 src/bitcoind
 .*.swp
