@@ -38,6 +38,7 @@ from jsonrpc.proxy import JSONRPCException
 from jsonrpc.json import JSONDecodeException
 from jsonrpc import json
 from optparse import OptionParser
+from DNS import DnsRequest
 
 from socks5 import Socks5Error, S5Resp, S5Req
 import socks
@@ -45,6 +46,23 @@ import socks
 tlds = { 'bit' : 1, 'b' : 1, 'n' : 1 }
 
 names = {}
+
+class SocksFactory:
+  def __init__(self, socks_addr, socks_port):
+    self.socks_addr = socks_addr
+    self.socks_port = socks_port
+
+  def socket(self, *name, **args):
+    s = socks.socksocket(*name, **args)
+    s.setproxy(socks.PROXY_TYPE_SOCKS5, self.socks_addr, self.socks_port)
+    return s
+
+class SocksDnsRequest(DnsRequest):
+  def __init__(self,*name,**args):
+    DnsRequest.__init__(self, *name, **args)
+    self.socks_factory = args['socks_factory']
+  def socketInit(self,a,b):
+    self.s = self.socks_factory.socket(a,b)
 
 class NamecoinThread(threading.Thread):
   def __init__(self, host, user, password, port):
@@ -56,12 +74,15 @@ class NamecoinThread(threading.Thread):
     print "start namecoin thread"
     while 1:
       print "scan"
-      scan = self.namecoin.name_scan('\0', 10000)
-      print "got %d names" %(len(scan))
-      names = {}
-      for el in scan:
-        if el['name'][0:2] == 'd/':
-          names[el['name'][2:]] = el['value']
+      try:
+        scan = self.namecoin.name_scan('\0', 10000)
+        print "got %d names" %(len(scan))
+        names = {}
+        for el in scan:
+          if el['name'][0:2] == 'd/':
+            names[el['name'][2:]] = el['value']
+      except IOError:
+        print "could not connect to namecoin, will retry"
       time.sleep(60)
 
 
@@ -69,13 +90,25 @@ class ProxyThread(threading.Thread):
   wait = 8.0
   buf_size = 1024*4
   
-  def __init__(self,s,ip,port):
+  def __init__(self,s,ip,port,socks_factory):
     self.s = s
     self.dst_s = None
     self.ip = ip
+    self.socks_factory = socks_factory
     self.port = port
     threading.Thread.__init__(self)
 
+  def lookup(self, addr, servers):
+    req = SocksDnsRequest(server=servers, protocol='tcp', socks_factory=self.socks_factory)
+    res = req.req(addr)
+    data = False
+
+    if res.answers and len(res.answers) > 0:
+      data = res.answers[0]['data']
+
+    print "lookup %s in %s = %s"%(addr, servers, data)
+    return data
+    
   def translate(self, addr):
     global names
     els = addr.split('.')
@@ -83,8 +116,12 @@ class ProxyThread(threading.Thread):
       return addr
     if not tlds.has_key(els[-1]):
       return addr
+
+    if not names.has_key(els[-2]):
+      print "did not find domain %s"%(els[-2])
+      return False
+
     value = names[els[-2]]
-    #value = '{"map": { "": "localhost" }}'
     try:
       zone = json.loads(value)['map']
     except:
@@ -99,17 +136,34 @@ class ProxyThread(threading.Thread):
         result = zone[partial]
         break
 
+    print "found json zone %s" %(result)
     if not result:
       return False
 
     # check if IP
-    try:
-      socket.inet_aton(result)
-    except socket.error:
-      if leftover != "":
-        result = string.join((leftover, result), '.')
+    if type(result) == str:
+      try:
+        socket.inet_aton(result)
+        return result
+      except socket.error:
+        pass
 
-    return result
+    # must be a dict
+    if type(result) != dict:
+      return False
+
+    # check if translation requested before we try to look it up
+    if result.has_key('translate'):
+      if leftover != "":
+        addr = string.join((leftover, result['translate']), '.')
+
+    # check if it is a hash with "ns" as key
+    if result.has_key('ns'):
+      return self.lookup(addr, result['ns'])
+
+    # hopefully the address was translated above to something we can look up
+    # through the SOCKS or default mechanisms
+    return addr
       
   def run(self):
     print "start thread"
@@ -154,9 +208,8 @@ class ProxyThread(threading.Thread):
         resp.rep = 4
         raise Socks5Error
 
-      self.dst_s = socks.socksocket()
-      self.dst_s.setproxy(socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 9050)
       try:
+        self.dst_s = self.socks_factory.socket()
         self.dst_s.connect((addr, req.dst_port))
       except socket.error:
         resp.rep = 4
@@ -202,9 +255,10 @@ class ProxyThread(threading.Thread):
       time.sleep(0.01)
     
 class Proxy(threading.Thread):
-  def __init__(self,ip="127.0.0.1",port=8080):
+  def __init__(self,ip,port,socks_factory):
     self.ip = ip
     self.port = port
+    self.socks_factory = socks_factory
     self.s = None
     threading.Thread.__init__(self)
     
@@ -230,7 +284,7 @@ class Proxy(threading.Thread):
         self.s = None
         return False
 
-      thread = ProxyThread(conn,addr[0],addr[1])
+      thread = ProxyThread(conn,addr[0],addr[1],self.socks_factory)
       thread.start()
       
     return True
@@ -241,7 +295,8 @@ def main():
   n.start()
   (socks_addr, socks_port) = options.socks.split(':')
   socks_port = int(socks_port)
-  p = Proxy('127.0.0.1', int(options.listen))
+  socks_factory = SocksFactory(socks_addr, socks_port)
+  p = Proxy('127.0.0.1', int(options.listen), socks_factory)
   p.start()
   print("started")
 

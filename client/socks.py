@@ -357,8 +357,6 @@ class socksocket(socket.socket):
 		(identical to socket's connect).
 		To select the proxy server use setproxy().
 		"""
-                print "dest:"
-                print destpair
 		# Do a minimal input check first
 		if (type(destpair) in (list,tuple)==False) or (len(destpair)<2) or (type(destpair[0])!=str) or (type(destpair[1])!=int):
 			raise GeneralProxyError((5,_generalerrors[5]))

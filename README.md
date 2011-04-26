@@ -59,15 +59,17 @@ VALUES
 
 Values for names in the d/ namespace are JSON encoded.  The simplest value is of this form:
 
-  {'map': {'' => 'foo.com'}}
+  {'map': {'': '10.0.0.1'}}
 
-or 
+which maps all hosts in the domain example.bit to one IP address.  But you can also delegate to your DNS servers:
 
-  {'map': {'' => '10.0.0.1'}}
+  {'map': {'': {'ns': ['10.0.0.1', '10.0.0.2']}}}
 
-In the first case, the domain is mapped to a traditionl DNS domain.  If the name to be resolved is x.bar.bit, it is mapped to x.foo.com.
+or even do a translation step before delegation:
 
-In the second case, bar.bit and all subdomains map to an IP address.
+  {'map': {'': {'translate': 'bitcoin.org', 'ns': ['10.0.0.1', '10.0.0.2']}}}
+
+in which case, foo.example.bit will be translated to foo.bitcoin.org before it is sent to your DNS servers.
 
 DNS conduits
 =============
