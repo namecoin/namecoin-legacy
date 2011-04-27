@@ -1,7 +1,11 @@
+* drop transactions that cannot be accepted because of a name conflict
+  * simultaneous name_update mines bad block
+  * name_clean additional review
+  * tx can linger in memory on other nodes - move conflict check to CheckTransaction?
+  * other conflicts: update on expired name, firstupdate on expired name_new
 * IsMine hook to ensure modified clients don't spend namecoins by mistake as regular coins
 * listtransactions decode
 * name_update to a foreign address
-* drop transactions that cannot be accepted because of a name conflict
 * auto-send firstupdate after 6 blocks with persistent name/rand
 * review threading
 * DNS zone creator
