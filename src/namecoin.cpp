@@ -35,6 +35,7 @@ static const int EXPIRATION_DEPTH = 12000;
 
 map<vector<unsigned char>, uint256> mapMyNames;
 extern CCriticalSection cs_mapWallet;
+extern bool EraseFromWallet(uint256 hash);
 
 // forward decls
 extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch);
@@ -43,6 +44,7 @@ extern int IndexOfNameOutput(CWalletTx& wtx);
 extern bool Solver(const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet);
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
 extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
+extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -581,6 +583,14 @@ Value name_firstupdate(const Array& params, bool fHelp)
         {
             throw runtime_error("previous tx on this name is not a name tx");
         }
+
+        {
+            CTxDB txdb("r");
+            int nPrevHeight = GetNameHeight(txdb, vchName);
+            if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < EXPIRATION_DEPTH)
+                throw runtime_error("someone else already registered this name");
+        }
+
         vector<unsigned char> vchToHash(vchRand);
         vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
         uint160 hash =  Hash160(vchToHash);
@@ -667,6 +677,85 @@ Value name_new(const Array& params, bool fHelp)
     res.push_back(wtx.GetHash().GetHex());
     res.push_back(HexStr(vchRand));
     return res;
+}
+
+Value name_clean(const Array& params, bool fHelp)
+{
+    CRITICAL_BLOCK(cs_main)
+    CRITICAL_BLOCK(cs_mapWallet)
+    {
+        map<uint256, CWalletTx> mapRemove;
+
+        printf("-----------------------------\n");
+
+        {
+            CTxDB txdb("r");
+            foreach(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+            {
+                CWalletTx& wtx = item.second;
+                vector<unsigned char> vchName;
+                if (wtx.GetDepthInMainChain() < 1 && IsConflictedTx(txdb, wtx, vchName))
+                {
+                    uint256 hash = wtx.GetHash();
+                    mapRemove[hash] = wtx;
+                    mapMyNames.erase(mapMyNames.find(vchName));
+                }
+            }
+        }
+
+        bool fRepeat = true;
+        while (fRepeat)
+        {
+            fRepeat = false;
+            foreach(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+            {
+                CWalletTx& wtx = item.second;
+                foreach(const CTxIn& txin, wtx.vin)
+                {
+                    uint256 hash = wtx.GetHash();
+
+                    // If this tx depends on a tx to be removed, remove it too
+                    if (mapRemove.count(txin.prevout.hash) && !mapRemove.count(hash))
+                    {
+                        mapRemove[hash] = wtx;
+                        fRepeat = true;
+                    }
+                }
+            }
+        }
+
+        foreach(PAIRTYPE(const uint256, CWalletTx)& item, mapRemove)
+        {
+            CWalletTx& wtx = item.second;
+            set<CWalletTx*> setCoins;
+            foreach(const CTxIn& txin, wtx.vin)
+            {
+                if (!txin.IsMine())
+                {
+                    printf("!mine %s", txin.ToString().c_str());
+                    continue;
+                }
+                CWalletTx& prev = mapWallet[txin.prevout.hash];
+
+                setCoins.insert(&prev);
+            }
+            foreach(CWalletTx* pcoin, setCoins)
+            {
+                printf("%s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
+                pcoin->fSpent = false;
+                pcoin->WriteToDisk();
+                vWalletUpdated.push_back(pcoin->GetHash());
+            }
+
+            wtx.RemoveFromMemoryPool();
+            EraseFromWallet(wtx.GetHash());
+            wtx.print();
+        }
+
+        printf("-----------------------------\n");
+    }
+
+    return true;
 }
 
 bool CNameDB::test()
@@ -766,6 +855,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_clean", &name_clean));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
     return new CNamecoinHooks();
@@ -933,8 +1023,33 @@ int CheckTransactionAtRelativeDepth(CBlockIndex* pindexBlock, CTxIndex& txindex,
     return -1;
 }
 
-bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
-        const CTransaction& tx,
+bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
+        return false;
+    vector<vector<unsigned char> > vvchArgs;
+    int op;
+    int nOut;
+
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    if (!good)
+        return error("IsConflictedTx() : could not decode a namecoin tx");
+    int nPrevHeight;
+    int nDepth;
+    int64 nNetFee;
+
+    switch (op)
+    {
+        case OP_NAME_FIRSTUPDATE:
+            nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
+            name = vvchArgs[0];
+            if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < EXPIRATION_DEPTH)
+                return true;
+    }
+    return false;
+}
+
+bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
         vector<CTransaction>& vTxPrev,
         vector<CTxIndex>& vTxindex,
         CBlockIndex* pindexBlock,
