@@ -27,7 +27,7 @@ public:
     virtual int LockinHeight() = 0;
     virtual std::string IrcPrefix() = 0;
     virtual void MessageStart(char* pchMessageStart) = 0;
-
+    virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx) = 0;
 };
 
 extern CHooks* InitHook();
