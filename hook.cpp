@@ -34,6 +34,9 @@ public:
     virtual void MessageStart(char* pchMessageStart)
     {
     }
+    void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
+    {
+    }
 };
 
 int CStandardHooks::LockinHeight()
@@ -54,6 +57,7 @@ bool CStandardHooks::Lockin(int nHeight, uint256 hash)
                 (nHeight ==  74000 && hash != uint256("0x0000000000573993a3c9e41ce34471c079dcf5f52a0e824a81e7f953b8661a20")) ||
                 (nHeight == 105000 && hash != uint256("0x00000000000291ce28027faea320c8d2b054b2e0fe44a773f3eefb151d6bdc97")))
             return false;
+    return true;
 }
 
 bool CStandardHooks::IsStandard(const CScript& scriptPubKey)
@@ -180,4 +184,8 @@ string GetDefaultDataDirSuffix() {
     return string(".bitcoin");
 #endif
 #endif
+}
+
+unsigned char GetAddressVersion() {
+    return ((unsigned char)(fTestNet ? 111 : 0));
 }
