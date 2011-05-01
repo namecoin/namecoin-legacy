@@ -152,12 +152,13 @@ inline bool DecodeBase58Check(const string& str, vector<unsigned char>& vchRet)
 
 
 
-#define ADDRESSVERSION   ((unsigned char)(fTestNet ? 111 : 0))
+/*#define ADDRESSVERSION   ((unsigned char)(fTestNet ? 111 : 0))*/
+extern unsigned char GetAddressVersion();
 
 inline string Hash160ToAddress(uint160 hash160)
 {
     // add 1-byte version number to the front
-    vector<unsigned char> vch(1, ADDRESSVERSION);
+    vector<unsigned char> vch(1, GetAddressVersion());
     vch.insert(vch.end(), UBEGIN(hash160), UEND(hash160));
     return EncodeBase58Check(vch);
 }
@@ -173,7 +174,7 @@ inline bool AddressToHash160(const char* psz, uint160& hash160Ret)
     if (vch.size() != sizeof(hash160Ret) + 1)
         return false;
     memcpy(&hash160Ret, &vch[1], sizeof(hash160Ret));
-    return (nVersion <= ADDRESSVERSION);
+    return (nVersion <= GetAddressVersion());
 }
 
 inline bool AddressToHash160(const string& str, uint160& hash160Ret)
