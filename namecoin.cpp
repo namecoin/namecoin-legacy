@@ -12,7 +12,7 @@
 
 using namespace json_spirit;
 
-static const bool NAME_DEBUG = true;
+static const bool NAME_DEBUG = false;
 typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
 extern int64 AmountFromValue(const Value& value);
@@ -34,6 +34,7 @@ static const int MIN_FIRSTUPDATE_DEPTH = 12;
 static const int EXPIRATION_DEPTH = 12000;
 
 map<vector<unsigned char>, uint256> mapMyNames;
+map<vector<unsigned char>, set<uint256> > mapNamePending;
 extern CCriticalSection cs_mapWallet;
 extern bool EraseFromWallet(uint256 hash);
 
@@ -45,6 +46,7 @@ extern bool Solver(const CScript& scriptPubKey, uint256 hash, int nHashType, CSc
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
 extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
+extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -73,6 +75,7 @@ public:
     virtual bool Lockin(int nHeight, uint256 hash);
     virtual int LockinHeight();
     virtual string IrcPrefix();
+    virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx);
 
     virtual void MessageStart(char* pchMessageStart)
     {
@@ -391,7 +394,7 @@ string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, C
 }
 
 
-bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, int& nHeight)
+bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, uint256& hash, int& nHeight)
 {
     nHeight = GetTxPosHeight(txPos);
     CTransaction tx;
@@ -399,6 +402,8 @@ bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, i
         return error("GetValueOfTxPos() : could not read tx from disk");
     if (!GetValueOfNameTx(tx, vchValue))
         return error("GetValueOfTxPos() : could not decode value from tx");
+    hash = tx.GetHash();
+    return true;
 }
 
 bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsigned char>& vchValue, int& nHeight)
@@ -407,7 +412,29 @@ bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsig
     if (!dbName.ReadName(vchName, vtxPos) || vtxPos.empty())
         return false;
     CDiskTxPos& txPos = vtxPos.back();
-    return GetValueOfTxPos(txPos, vchValue, nHeight);
+
+    uint256 hash;
+
+    return GetValueOfTxPos(txPos, vchValue, hash, nHeight);
+}
+
+bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& tx)
+{
+    vector<CDiskTxPos> vtxPos;
+    if (!dbName.ReadName(vchName, vtxPos) || vtxPos.empty())
+        return false;
+    CDiskTxPos& txPos = vtxPos.back();
+    int nHeight = GetTxPosHeight(txPos);
+    if (nHeight + EXPIRATION_DEPTH < pindexBest->nHeight)
+    {
+        string name = stringFromVch(vchName);
+        printf("GetTxOfName(%s) : expired", name.c_str());
+        return false;
+    }
+
+    if (!tx.ReadFromDisk(txPos))
+        return error("GetTxOfName() : could not read tx from disk");
+    return true;
 }
 
 Value name_list(const Array& params, bool fHelp)
@@ -418,44 +445,108 @@ Value name_list(const Array& params, bool fHelp)
                 "list my own names"
                 );
 
-    map<vector<unsigned char>, uint256>::iterator mi;
-    if (params.size() > 0)
-    {
-        vector<unsigned char> vchName = vchFromValue(params[0]);
-        mi = mapMyNames.find(vchName);
-    }
-    else
-    {
-        mi = mapMyNames.begin();
-    }
+    vector<unsigned char> vchName;
+    vector<unsigned char> vchLastName;
+    int nMax = 500;
 
-    CNameDB dbName("cr");
     Array oRes;
 
-    while (mi != mapMyNames.end()) {
-        Object oName;
-        string name = stringFromVch((*mi).first);
-        oName.push_back(Pair("name", name));
-        vector<unsigned char> vchValue;
-        int nHeight;
-        if (GetValueOfName(dbName, (*mi).first, vchValue, nHeight))
+    CRITICAL_BLOCK(cs_mapWallet)
+    for (;;) {
+        CNameDB dbName("r");
+
+        vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
+        if (!dbName.ScanNames(vchName, nMax, nameScan))
+            throw JSONRPCError(-4, "scan failed");
+
+        pair<vector<unsigned char>, CDiskTxPos> pairScan;
+        foreach (pairScan, nameScan)
         {
-            string value = stringFromVch(vchValue);
-            oName.push_back(Pair("value", value));
-            oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
+            // skip previous last
+            if (pairScan.first == vchLastName)
+                continue;
+
+            vchLastName = pairScan.first;
+            string name = stringFromVch(pairScan.first);
+            CDiskTxPos txPos = pairScan.second;
+            vector<unsigned char> vchValue;
+            int nHeight;
+            uint256 hash;
+            if (!txPos.IsNull() &&
+                    GetValueOfTxPos(txPos, vchValue, hash, nHeight) &&
+                    mapWallet.count(hash)
+                    )
+            {
+                string value = stringFromVch(vchValue);
+                Object oName;
+                oName.push_back(Pair("name", name));
+                oName.push_back(Pair("value", value));
+                oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
+                oRes.push_back(oName);
+            }
         }
-        else
-        {
-            oName.push_back(Pair("expired", 1));
-        }
-        oRes.push_back(oName);
-        mi++;
+
+        // break if nothing more
+        if (vchName == vchLastName)
+            break;
+        vchName = vchLastName;
     }
 
-    if (NAME_DEBUG) {
-        dbName.test();
-    }
     return oRes;
+}
+
+Value name_debug(const Array& params, bool fHelp)
+{
+    printf("Pending:\n----------------------------\n");
+    pair<vector<unsigned char>, set<uint256> > pairPending;
+
+    CRITICAL_BLOCK(cs_main)
+    foreach (pairPending, mapNamePending)
+    {
+        string name = stringFromVch(pairPending.first);
+        printf("%s :\n", name.c_str());
+        uint256 hash;
+        foreach(hash, pairPending.second)
+        {
+            printf("    ");
+            if (!mapWallet.count(hash))
+                printf("foreign ");
+            printf("    %s\n", hash.GetHex().c_str());
+        }
+    }
+    printf("----------------------------\n");
+    return true;
+}
+
+Value name_debug1(const Array& params, bool fHelp)
+{
+    if (params.size() != 1)
+        throw runtime_error("expecting a name");
+    vector<unsigned char> vchName = vchFromValue(params[0]);
+    printf("Dump name:\n");
+    CRITICAL_BLOCK(cs_main)
+    {
+        vector<CDiskTxPos> vtxPos;
+        CNameDB dbName("r");
+        if (!dbName.ReadName(vchName, vtxPos))
+        {
+            error("failed to read from name DB");
+            return false;
+        }
+        CDiskTxPos txPos;
+        foreach(txPos, vtxPos)
+        {
+            CTransaction tx;
+            if (!tx.ReadFromDisk(txPos))
+            {
+                error("could not read txpos %s", txPos.ToString().c_str());
+                continue;
+            }
+            printf("@%d %s\n", GetTxPosHeight(txPos), tx.GetHash().GetHex().c_str());
+        }
+    }
+    printf("-------------------------\n");
+    return true;
 }
 
 Value name_scan(const Array& params, bool fHelp)
@@ -496,10 +587,12 @@ Value name_scan(const Array& params, bool fHelp)
         oName.push_back(Pair("name", name));
         vector<unsigned char> vchValue;
         int nHeight;
-        if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, nHeight))
+        uint256 hash;
+        if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, hash, nHeight))
         {
             string value = stringFromVch(vchValue);
             oName.push_back(Pair("value", value));
+            oName.push_back(Pair("txid", hash.GetHex()));
             oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
         }
         else
@@ -549,6 +642,28 @@ Value name_firstupdate(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {
+        if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
+        {
+            error("name_firstupdate() : there are %d pending operations on that name, including %s",
+                    mapNamePending[vchName].size(),
+                    mapNamePending[vchName].begin()->GetHex().c_str());
+            throw runtime_error("there are pending operations on that name");
+        }
+    }
+
+    {
+        CNameDB dbName("r");
+        CTransaction tx;
+        if (GetTxOfName(dbName, vchName, tx))
+        {
+            error("name_firstupdate() : this name is already active with tx %s",
+                    tx.GetHash().GetHex().c_str());
+            throw runtime_error("this name is already active");
+        }
+    }
+
+    CRITICAL_BLOCK(cs_main)
+    {
         // Make sure there is a previous NAME_NEW tx on this name
         // and that the random value matches
         uint256 wtxInHash;
@@ -556,7 +671,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
         {
             if (!mapMyNames.count(vchName))
             {
-                throw runtime_error("could not find a coin with this name");
+                throw runtime_error("could not find a coin with this name, try specifying the name_new transaction id");
             }
             wtxInHash = mapMyNames[vchName];
         }
@@ -564,6 +679,12 @@ Value name_firstupdate(const Array& params, bool fHelp)
         {
             wtxInHash.SetHex(params[2].get_str());
         }
+
+        if (!mapWallet.count(wtxInHash))
+        {
+            throw runtime_error("previous transaction is not in the wallet");
+        }
+
         CWalletTx& wtxIn = mapWallet[wtxInHash];
         vector<unsigned char> vchHash;
         bool found = false;
@@ -582,13 +703,6 @@ Value name_firstupdate(const Array& params, bool fHelp)
         if (!found)
         {
             throw runtime_error("previous tx on this name is not a name tx");
-        }
-
-        {
-            CTxDB txdb("r");
-            int nPrevHeight = GetNameHeight(txdb, vchName);
-            if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < EXPIRATION_DEPTH)
-                throw runtime_error("someone else already registered this name");
         }
 
         vector<unsigned char> vchToHash(vchRand);
@@ -630,12 +744,32 @@ Value name_update(const Array& params, bool fHelp)
     scriptPubKey += scriptPubKeyOrig;
 
     CRITICAL_BLOCK(cs_main)
+    CRITICAL_BLOCK(cs_mapWallet)
     {
-        if (!mapMyNames.count(vchName))
+        if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
+        {
+            error("name_firstupdate() : there are %d pending operations on that name, including %s",
+                    mapNamePending[vchName].size(),
+                    mapNamePending[vchName].begin()->GetHex().c_str());
+            throw runtime_error("there are pending operations on that name");
+        }
+
+        CNameDB dbName("r");
+        CTransaction tx;
+        if (!GetTxOfName(dbName, vchName, tx))
         {
             throw runtime_error("could not find a coin with this name");
         }
-        uint256 wtxInHash = mapMyNames[vchName];
+
+        uint256 wtxInHash = tx.GetHash();
+
+        if (!mapWallet.count(wtxInHash))
+        {
+            error("name_update() : this coin is not in your wallet %s",
+                    wtxInHash.GetHex().c_str());
+            throw runtime_error("this coin is not in your wallet");
+        }
+
         CWalletTx& wtxIn = mapWallet[wtxInHash];
         string strError = SendMoneyWithInputTx(scriptPubKey, MIN_AMOUNT, 0, wtxIn, wtx, false);
         if (strError != "")
@@ -698,7 +832,6 @@ Value name_clean(const Array& params, bool fHelp)
                 {
                     uint256 hash = wtx.GetHash();
                     mapRemove[hash] = wtx;
-                    mapMyNames.erase(mapMyNames.find(vchName));
                 }
             }
         }
@@ -732,7 +865,7 @@ Value name_clean(const Array& params, bool fHelp)
             {
                 if (!txin.IsMine())
                 {
-                    printf("!mine %s", txin.ToString().c_str());
+                    printf("name_clean(): !mine %s", txin.ToString().c_str());
                     continue;
                 }
                 CWalletTx& prev = mapWallet[txin.prevout.hash];
@@ -741,7 +874,7 @@ Value name_clean(const Array& params, bool fHelp)
             }
             foreach(CWalletTx* pcoin, setCoins)
             {
-                printf("%s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
+                printf("name_clean(): %s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
                 pcoin->fSpent = false;
                 pcoin->WriteToDisk();
                 vWalletUpdated.push_back(pcoin->GetHash());
@@ -749,6 +882,15 @@ Value name_clean(const Array& params, bool fHelp)
 
             wtx.RemoveFromMemoryPool();
             EraseFromWallet(wtx.GetHash());
+            vector<unsigned char> vchName;
+            if (GetNameOfTx(wtx, vchName) && mapNamePending.count(vchName))
+            {
+                string name = stringFromVch(vchName);
+                printf("name_clean() : erase %s from pending of name %s", 
+                        wtx.GetHash().GetHex().c_str(), name.c_str());
+                if (!mapNamePending[vchName].erase(wtx.GetHash()))
+                    error("name_clean() : erase but it was not pending");
+            }
             wtx.print();
         }
 
@@ -855,6 +997,8 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_debug", &name_debug));
+    mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
@@ -986,12 +1130,16 @@ int IndexOfNameOutput(CWalletTx& wtx)
 
 void CNamecoinHooks::AddToWallet(CWalletTx& wtx)
 {
-    if (wtx.nVersion != NAMECOIN_TX_VERSION)
+}
+
+void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
         return;
 
-    if (wtx.vout.size() < 1)
+    if (tx.vout.size() < 1)
     {
-        error("AddToWalletHook() : no output in name tx %s", wtx.ToString().c_str());
+        error("AcceptToMemoryPool() : no output in name tx %s", tx.ToString().c_str());
         return;
     }
 
@@ -1000,18 +1148,20 @@ void CNamecoinHooks::AddToWallet(CWalletTx& wtx)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(wtx, op, nOut, vvch);
+    bool good = DecodeNameTx(tx, op, nOut, vvch);
 
     if (!good)
     {
-        error("AddToWalletHook() : no output out script in name tx %s", wtx.ToString().c_str());
+        error("AcceptToMemoryPool() : no output out script in name tx %s", tx.ToString().c_str());
         return;
     }
 
-    CRITICAL_BLOCK(cs_mapWallet)
+    CRITICAL_BLOCK(cs_main)
     {
-        if (!wtx.fSpent && op != OP_NAME_NEW)
-            mapMyNames[vvch[0]] = wtx.GetHash();
+        if (op != OP_NAME_NEW)
+        {
+            mapNamePending[vvch[0]].insert(tx.GetHash());
+        }
     }
 }
 
@@ -1021,6 +1171,28 @@ int CheckTransactionAtRelativeDepth(CBlockIndex* pindexBlock, CTxIndex& txindex,
         if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
             return pindexBlock->nHeight - pindex->nHeight;
     return -1;
+}
+
+bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
+        return false;
+    vector<vector<unsigned char> > vvchArgs;
+    int op;
+    int nOut;
+
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    if (!good)
+        return error("GetNameOfTx() : could not decode a namecoin tx");
+
+    switch (op)
+    {
+        case OP_NAME_FIRSTUPDATE:
+        case OP_NAME_UPDATE:
+            name = vvchArgs[0];
+            return true;
+    }
+    return false;
 }
 
 bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name)
@@ -1099,17 +1271,17 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
     {
         case OP_NAME_NEW:
             if (found)
-                return error("name_new tx pointing to previous namecoin tx");
+                return error("ConnectInputsHook() : name_new tx pointing to previous namecoin tx");
             break;
         case OP_NAME_FIRSTUPDATE:
             nNetFee = GetNameNetFee(tx);
             if (nNetFee < GetNetworkFee(pindexBlock->nHeight))
-                return error("got tx %s with fee too low %d", tx.GetHash().GetHex().c_str(), nNetFee);
+                return error("ConnectInputsHook() : got tx %s with fee too low %d", tx.GetHash().GetHex().c_str(), nNetFee);
             if (!found || prevOp != OP_NAME_NEW)
-                return error("name_firstupdate tx without previous name_new tx");
+                return error("ConnectInputsHook() : name_firstupdate tx without previous name_new tx");
             nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
             if (nPrevHeight >= 0 && pindexBlock->nHeight - nPrevHeight < EXPIRATION_DEPTH)
-                return error("name_firstupdate on an unexpired name");
+                return error("ConnectInputsHook() : name_firstupdate on an unexpired name");
             nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], MIN_FIRSTUPDATE_DEPTH);
             // Do not accept if in chain and not mature
             if ((fBlock || fMiner) && nDepth >= 0 && nDepth < MIN_FIRSTUPDATE_DEPTH)
@@ -1122,7 +1294,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
                 // TODO CPU intensive
                 nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], EXPIRATION_DEPTH);
                 if (nDepth == -1)
-                    return error("name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
+                    return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
             }
             break;
         case OP_NAME_UPDATE:
@@ -1131,10 +1303,10 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
             // TODO this might be too CPU intensive, up to 12000 blocks to look through
             nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], EXPIRATION_DEPTH);
             if ((fBlock || fMiner) && nDepth < 0)
-                return error("name_update on an expired name, or there is a pending transaction on the name");
+                return error("ConnectInputsHook() : name_update on an expired name, or there is a pending transaction on the name");
             break;
         default:
-            return error("name transaction has unknown op");
+            return error("ConnectInputsHook() : name transaction has unknown op");
     }
 
     if (fBlock)
@@ -1149,14 +1321,26 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
             if (dbName.ExistsName(vvchArgs[0]))
             {
                 if (!dbName.ReadName(vvchArgs[0], vtxPos))
-                    return error("ConnectBlockHook() : failed to read from name DB");
+                    return error("ConnectInputsHook() : failed to read from name DB");
             }
             vtxPos.push_back(txPos);
             if (!dbName.WriteName(vvchArgs[0], vtxPos))
-                return error("ConnectBlockHook() : failed to write to name DB");
+                return error("ConnectInputsHook() : failed to write to name DB");
         }
 
         dbName.TxnCommit();
+    }
+
+    CRITICAL_BLOCK(cs_main)
+    {
+        if (fBlock && op != OP_NAME_NEW)
+        {
+            if (mapNamePending[vvchArgs[0]].count(tx.GetHash()))
+                mapNamePending[vvchArgs[0]].erase(tx.GetHash());
+            else
+                printf("ConnectInputsHook() : connecting inputs on %s which was not in pending - must be someone elses",
+                        tx.GetHash().GetHex().c_str());
+        }
     }
 
     return true;
@@ -1175,7 +1359,7 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
 
     bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
     if (!good)
-        return error("ConnectBlockHook() : could not decode namecoin tx");
+        return error("DisconnectInputsHook() : could not decode namecoin tx");
     if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
     {
         CNameDB dbName("cr+", txdb);
@@ -1184,7 +1368,7 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
 
         vector<CDiskTxPos> vtxPos;
         if (!dbName.ReadName(vvchArgs[0], vtxPos))
-            return error("ConnectBlockHook() : failed to read from name DB");
+            return error("DisconnectInputsHook() : failed to read from name DB");
         // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
         // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
         if (vtxPos.size())
@@ -1193,7 +1377,7 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
             // TODO validate that the first pos is the current tx pos
         }
         if (!dbName.WriteName(vvchArgs[0], vtxPos))
-            return error("ConnectBlockHook() : failed to write to name DB");
+            return error("DisconnectInputsHook() : failed to write to name DB");
 
         dbName.TxnCommit();
     }
