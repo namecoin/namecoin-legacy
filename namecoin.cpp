@@ -1550,3 +1550,5 @@ string GetDefaultDataDirSuffix() {
 #endif
 #endif
 }
+
+unsigned char GetAddressVersion() { return ((unsigned char)(fTestNet ? 111 : 52)); }
