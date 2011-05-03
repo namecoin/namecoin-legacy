@@ -618,7 +618,6 @@ Value name_firstupdate(const Array& params, bool fHelp)
                 );
     vector<unsigned char> vchName = vchFromValue(params[0]);
     vector<unsigned char> vchRand = ParseHex(params[1].get_str());
-    vector<unsigned char> vchTx;
     vector<unsigned char> vchValue;
 
     if (params.size() == 3)
@@ -813,6 +812,64 @@ Value name_new(const Array& params, bool fHelp)
     return res;
 }
 
+void UnspendInputs(CWalletTx& wtx)
+{
+    set<CWalletTx*> setCoins;
+    foreach(const CTxIn& txin, wtx.vin)
+    {
+        if (!txin.IsMine())
+        {
+            printf("UnspendInputs(): !mine %s", txin.ToString().c_str());
+            continue;
+        }
+        CWalletTx& prev = mapWallet[txin.prevout.hash];
+
+        setCoins.insert(&prev);
+    }
+    foreach(CWalletTx* pcoin, setCoins)
+    {
+        printf("UnspendInputs(): %s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
+        pcoin->fSpent = false;
+        pcoin->WriteToDisk();
+        vWalletUpdated.push_back(pcoin->GetHash());
+    }
+}
+
+Value deletetransaction(const Array& params, bool fHelp)
+{
+    if (fHelp)
+        throw runtime_error(
+                "deletetransaction <txid>\nNormally used when a transaction cannot be confirmed due to a double spend.\nRestart the program after executing this call.\n"
+                );
+
+    if (params.size() != 1)
+      throw runtime_error("missing txid");
+    CRITICAL_BLOCK(cs_main)
+    CRITICAL_BLOCK(cs_mapWallet)
+    {
+      uint256 hash;
+      hash.SetHex(params[0].get_str());
+      if (!mapWallet.count(hash))
+        throw runtime_error("transaction not in wallet");
+
+      if (!mapTransactions.count(hash))
+        throw runtime_error("transaction not in memory - is already in blockchain?");
+      CWalletTx wtx = mapWallet[hash];
+      UnspendInputs(wtx);
+
+      // We are not removing from mapTransactions because this can cause memory corruption
+      // during mining.  The user should restart to clear the tx from memory.
+      wtx.RemoveFromMemoryPool();
+      EraseFromWallet(wtx.GetHash());
+      vector<unsigned char> vchName;
+      if (GetNameOfTx(wtx, vchName) && mapNamePending.count(vchName)) {
+        printf("deletetransaction() : remove from pending");
+        mapNamePending[vchName].erase(wtx.GetHash());
+      }
+      return "success, please restart program to clear memory";
+    }
+}
+
 Value name_clean(const Array& params, bool fHelp)
 {
     CRITICAL_BLOCK(cs_main)
@@ -860,26 +917,8 @@ Value name_clean(const Array& params, bool fHelp)
         foreach(PAIRTYPE(const uint256, CWalletTx)& item, mapRemove)
         {
             CWalletTx& wtx = item.second;
-            set<CWalletTx*> setCoins;
-            foreach(const CTxIn& txin, wtx.vin)
-            {
-                if (!txin.IsMine())
-                {
-                    printf("name_clean(): !mine %s", txin.ToString().c_str());
-                    continue;
-                }
-                CWalletTx& prev = mapWallet[txin.prevout.hash];
 
-                setCoins.insert(&prev);
-            }
-            foreach(CWalletTx* pcoin, setCoins)
-            {
-                printf("name_clean(): %s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
-                pcoin->fSpent = false;
-                pcoin->WriteToDisk();
-                vWalletUpdated.push_back(pcoin->GetHash());
-            }
-
+            UnspendInputs(wtx);
             wtx.RemoveFromMemoryPool();
             EraseFromWallet(wtx.GetHash());
             vector<unsigned char> vchName;
@@ -1000,6 +1039,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
+    mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
     return new CNamecoinHooks();
