@@ -612,7 +612,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
 {
     if (fHelp)
         throw runtime_error(
-                "name_firstupdate <name> <rand> [<tx>] <value> <network-fee-amount>\n"
+                "name_firstupdate <name> <rand> [<tx>] <value>\n"
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
                 );
@@ -728,7 +728,7 @@ Value name_update(const Array& params, bool fHelp)
 {
     if (fHelp)
         throw runtime_error(
-                "name_update <name> <value> <network-fee-amount>\n"
+                "name_update <name> <value>\n"
                 );
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
@@ -1535,7 +1535,7 @@ unsigned short GetDefaultPort()
     return fTestNet ? htons(18334) : htons(8334);
 }
 
-unsigned int pnSeed[] = { NULL };
+unsigned int pnSeed[] = { 0x58cea445, NULL };
 const char *strDNSSeed[] = { NULL };
 
 string GetDefaultDataDirSuffix() {
