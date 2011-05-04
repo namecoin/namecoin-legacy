@@ -5,14 +5,12 @@
   * tx can linger in memory on other nodes - move conflict check to CheckTransaction?
   * other conflicts: update on expired name, firstupdate on expired name_new
 * d7cc9e949d invalid number of args
-* address version
 * blockexplorer
 * transfers
 * IsMine hook to ensure modified clients don't spend namecoins by mistake as regular coins
 * listtransactions decode
 * auto-send firstupdate after 6 blocks with persistent name/rand
 * review threading
-* DNS zone creator
 * sideloading resolver library
 * reference DNS server
 * cross-mining
