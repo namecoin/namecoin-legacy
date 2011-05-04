@@ -46,6 +46,10 @@ after the first update, you can do more updates with:
 
 `namecoind name_update d/<name> <value>`
 
+and transfer to another person:
+
+`namecoind name_update d/<name> <value> <address>`
+
 dump your list of names:
 
 `namecoind name_list`

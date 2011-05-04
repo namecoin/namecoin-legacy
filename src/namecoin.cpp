@@ -82,6 +82,8 @@ public:
         // Make the message start different
         pchMessageStart[3] = 0xfe;
     }
+    virtual bool IsMine(const CTransaction& tx);
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout);
 };
 
 int64 getAmount(Value value)
@@ -194,6 +196,14 @@ bool SignNameSignature(const CTransaction& txFrom, CTransaction& txTo, unsigned 
     return true;
 }
 
+bool IsMyName(const CTransaction& tx, const CTxOut& txout)
+{
+    const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+    CScript scriptSig;
+    if (!Solver(scriptPubKey, 0, 0, scriptSig))
+        return false;
+    return true;
+}
 
 bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
@@ -266,7 +276,6 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
                 // Fill a vout back to self with any change
                 int64 nChange = nValueIn - nTotalValue;
-                printf("change = %d\n", nChange);
                 if (nChange >= CENT)
                 {
                     // Note: We use a new key here to keep it from being obvious which side is the change.
@@ -439,7 +448,7 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
 
 Value name_list(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() > 1)
         throw runtime_error(
                 "name_list [<name>]\n"
                 "list my own names"
@@ -481,6 +490,8 @@ Value name_list(const Array& params, bool fHelp)
                 Object oName;
                 oName.push_back(Pair("name", name));
                 oName.push_back(Pair("value", value));
+                if (!hooks->IsMine(mapWallet[hash]))
+                    oName.push_back(Pair("transferred", 1));
                 oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
                 oRes.push_back(oName);
             }
@@ -551,7 +562,7 @@ Value name_debug1(const Array& params, bool fHelp)
 
 Value name_scan(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() > 2)
         throw runtime_error(
                 "name_scan [<start-name>] [<max-returned>]\n"
                 "scan all names, starting at start-name and returning a maximum number of entries (default 500)\n"
@@ -610,7 +621,7 @@ Value name_scan(const Array& params, bool fHelp)
 
 Value name_firstupdate(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() < 3 || params.size() > 4)
         throw runtime_error(
                 "name_firstupdate <name> <rand> [<tx>] <value>\n"
                 "Perform a first update after a name_new reservation.\n"
@@ -725,9 +736,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
 
 Value name_update(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
-                "name_update <name> <value>\n"
+                "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name\n"
                 );
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
@@ -737,7 +748,17 @@ Value name_update(const Array& params, bool fHelp)
     wtx.nVersion = NAMECOIN_TX_VERSION;
     vector<unsigned char> strPubKey = GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+
+    if (params.size() == 3)
+    {
+        string strAddress = params[2].get_str();
+        scriptPubKeyOrig.SetBitcoinAddress(strAddress);
+    }
+    else
+    {
+        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    }
+
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_UPDATE << vchName << vchValue << OP_2DROP << OP_DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -837,7 +858,7 @@ void UnspendInputs(CWalletTx& wtx)
 
 Value deletetransaction(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() != 1)
         throw runtime_error(
                 "deletetransaction <txid>\nNormally used when a transaction cannot be confirmed due to a double spend.\nRestart the program after executing this call.\n"
                 );
@@ -1172,6 +1193,54 @@ void CNamecoinHooks::AddToWallet(CWalletTx& wtx)
 {
 }
 
+bool CNamecoinHooks::IsMine(const CTransaction& tx)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
+        return false;
+
+    vector<vector<unsigned char> > vvch;
+
+    int op;
+    int nOut;
+
+    bool good = DecodeNameTx(tx, op, nOut, vvch);
+
+    if (!good)
+    {
+        error("IsMine() hook : no output out script in name tx %s\n", tx.ToString().c_str());
+        return false;
+    }
+
+    const CTxOut& txout = tx.vout[nOut];
+    if (IsMyName(tx, txout))
+    {
+        printf("IsMine() hook : found my transaction %s nout %d\n", tx.GetHash().GetHex().c_str(), nOut);
+        return true;
+    }
+    return false;
+}
+
+bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
+        return false;
+
+    vector<vector<unsigned char> > vvch;
+
+    int op;
+    int nOut;
+ 
+    if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
+        return false;
+
+    if (IsMyName(tx, txout))
+    {
+        printf("IsMine() hook : found my transaction %s value %ld\n", tx.GetHash().GetHex().c_str(), txout.nValue);
+        return true;
+    }
+    return false;
+}
+
 void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
@@ -1179,7 +1248,7 @@ void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
 
     if (tx.vout.size() < 1)
     {
-        error("AcceptToMemoryPool() : no output in name tx %s", tx.ToString().c_str());
+        error("AcceptToMemoryPool() : no output in name tx %s\n", tx.ToString().c_str());
         return;
     }
 
