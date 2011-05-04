@@ -57,7 +57,7 @@ extern int fMinimizeToTray;
 extern int fMinimizeOnClose;
 
 
-
+extern CHooks* hooks;
 
 
 
@@ -512,13 +512,7 @@ public:
         return true;
     }
 
-    bool IsMine() const
-    {
-        foreach(const CTxOut& txout, vout)
-            if (txout.IsMine())
-                return true;
-        return false;
-    }
+    bool IsMine() const;
 
     bool IsFromMe() const
     {
@@ -1936,4 +1930,3 @@ extern map<vector<unsigned char>, CPrivKey> mapKeys;
 extern map<uint160, vector<unsigned char> > mapPubKeys;
 extern CCriticalSection cs_mapKeys;
 extern CKey keyUser;
-extern CHooks* hooks;
