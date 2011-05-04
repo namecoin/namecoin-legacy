@@ -102,6 +102,8 @@ public:
         BOOST_FOREACH(const CTxOut& txout, tx.vout)
             if (IsMine(txout))
                 return true;
+        if (hooks->IsMine(tx))
+            return true;
         return false;
     }
     bool IsFromMe(const CTransaction& tx) const

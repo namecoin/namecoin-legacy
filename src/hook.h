@@ -28,7 +28,12 @@ public:
     virtual std::string IrcPrefix() = 0;
     virtual void MessageStart(char* pchMessageStart) = 0;
     virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx) = 0;
+
+    /* These are for display and wallet management purposes.  Not for use to decide
+     * whether to spend a coin. */
+    virtual bool IsMine(const CTransaction& tx) = 0;
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout) = 0;
 };
 
 extern CHooks* InitHook();
-extern string GetDefaultDataDirSuffix();
+extern std::string GetDefaultDataDirSuffix();

@@ -294,7 +294,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         if (nDebit > 0)
             listSent.push_back(make_pair(address, txout.nValue));
 
-        if (pwallet->IsMine(txout))
+        if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
 
