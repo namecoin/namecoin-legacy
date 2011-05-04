@@ -458,7 +458,7 @@ void CWalletTx::GetAmounts(int64& nGenerated, list<pair<string, int64> >& listRe
         if (nDebit > 0)
             listSent.push_back(make_pair(address, txout.nValue));
 
-        if (txout.IsMine())
+        if (txout.IsMine() || hooks->IsMine(*this, txout))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
 
@@ -4108,4 +4108,14 @@ string SendMoneyToBitcoinAddress(string strAddress, int64 nValue, CWalletTx& wtx
         return _("Invalid bitcoin address");
 
     return SendMoney(scriptPubKey, nValue, wtxNew, fAskFee);
+}
+
+bool CTransaction::IsMine() const
+{
+  foreach(const CTxOut& txout, vout)
+    if (txout.IsMine())
+      return true;
+  if (hooks->IsMine(*this))
+    return true;
+  return false;
 }
