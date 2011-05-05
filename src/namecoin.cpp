@@ -58,6 +58,7 @@ public:
     virtual void AddToWallet(CWalletTx& tx);
     virtual bool CheckTransaction(const CTransaction& tx);
     virtual bool ConnectInputs(CTxDB& txdb,
+            map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             vector<CTransaction>& vTxPrev,
             vector<CTxIndex>& vTxindex,
@@ -1330,7 +1331,9 @@ bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& 
     return false;
 }
 
-bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
+bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
+        map<uint256, CTxIndex>& mapTestPool,
+        const CTransaction& tx,
         vector<CTransaction>& vTxPrev,
         vector<CTxIndex>& vTxindex,
         CBlockIndex* pindexBlock,
@@ -1404,6 +1407,18 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb, const CTransaction& tx,
                 nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], EXPIRATION_DEPTH);
                 if (nDepth == -1)
                     return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
+                // Check that no other pending txs on this name are already in the block to be mined
+                set<uint256>& setPending = mapNamePending[vvchArgs[0]];
+                foreach (const PAIRTYPE(uint256, const CTxIndex&)& s, mapTestPool)
+                {
+                    if (setPending.count(s.first))
+                    {
+                        printf("ConnectInputsHook() : will not mine %s because it clashes with %s",
+                                tx.GetHash().GetHex().c_str(),
+                                s.first.GetHex().c_str());
+                        return false;
+                    }
+                }
             }
             break;
         case OP_NAME_UPDATE:
@@ -1644,7 +1659,7 @@ unsigned short GetDefaultPort()
     return fTestNet ? htons(18334) : htons(8334);
 }
 
-unsigned int pnSeed[] = { 0x58cea445, NULL };
+unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, NULL };
 const char *strDNSSeed[] = { NULL };
 
 string GetDefaultDataDirSuffix() {
