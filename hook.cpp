@@ -37,6 +37,14 @@ public:
     void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
     {
     }
+    virtual bool IsMine(const CTransaction& tx)
+    {
+        return false;
+    }
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout)
+    {
+        return false;
+    }
 };
 
 int CStandardHooks::LockinHeight()
