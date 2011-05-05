@@ -13,6 +13,7 @@ public:
     virtual void AddToWallet(CWalletTx& tx);
     virtual bool CheckTransaction(const CTransaction& tx);
     virtual bool ConnectInputs(CTxDB& txdb,
+            map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             vector<CTransaction>& vTxPrev,
             vector<CTxIndex>& vTxindex,
@@ -87,6 +88,7 @@ bool CStandardHooks::CheckTransaction(const CTransaction& tx)
 }
 
 bool CStandardHooks::ConnectInputs(CTxDB& txdb,
+        map<uint256, CTxIndex>& mapTestPool,
         const CTransaction& tx,
         vector<CTransaction>& vTxPrev,
         vector<CTxIndex>& vTxindex,
