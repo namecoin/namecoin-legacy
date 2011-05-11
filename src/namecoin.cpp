@@ -19,7 +19,7 @@ extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
 template<typename T> void ConvertTo(Value& value);
 
-extern bool SelectCoins(int64 nTargetValue, set<CWalletTx*>& setCoinsRet);
+extern bool SelectCoins(int64 nTargetValue, set<pair<CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet);
 
 static const int NAMECOIN_TX_VERSION = 0x7100;
 static const int64 MIN_AMOUNT = CENT;
@@ -238,39 +238,25 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 foreach (const PAIRTYPE(CScript, int64)& s, vecSend)
                     wtxNew.vout.push_back(CTxOut(s.second, s.first));
 
-                int64 nWtxinCredit;
-
-                if (wtxIn.fSpent)
-                {
-                    // non-name outputs have been spent, only grab name output value
-                    nWtxinCredit = wtxIn.vout[nTxOut].nValue;
-                    printf("input credit / spent = %d\n", nWtxinCredit);
-                }
-                else
-                {
-                    // no part of wtxIn was spent, grab the entire coin
-                    nWtxinCredit = wtxIn.GetCredit();
-                    printf("input credit / non-spent = %d\n", nWtxinCredit);
-                }
+                int64 nWtxinCredit = wtxIn.vout[nTxOut].nValue;
 
                 // Choose coins to use
-                set<CWalletTx*> setCoins;
-                if (!SelectCoins(nTotalValue - nWtxinCredit, setCoins))
-                    return false;
+                set<pair<CWalletTx*, unsigned int> > setCoins;
                 int64 nValueIn = 0;
+                if (!SelectCoins(nTotalValue - nWtxinCredit, setCoins, nValueIn))
+                    return false;
 
-                vector<CWalletTx*> vecCoins(setCoins.begin(), setCoins.end());
+                vector<pair<CWalletTx*, unsigned int> >
+                    vecCoins(setCoins.begin(), setCoins.end());
 
-                foreach(CWalletTx* pcoin, vecCoins)
+                foreach(PAIRTYPE(CWalletTx*, unsigned int)& coin, vecCoins)
                 {
-                    // wtxIn non-name outputs might have been spent
-                    int64 nCredit = pcoin->GetCredit();
-                    nValueIn += nCredit;
-                    dPriority += (double)nCredit * pcoin->GetDepthInMainChain();
+                    int64 nCredit = coin.first->vout[coin.second].nValue;
+                    dPriority += (double)nCredit * coin.first->GetDepthInMainChain();
                 }
 
                 // Input tx always at first position
-                vecCoins.insert(vecCoins.begin(), &wtxIn);
+                vecCoins.insert(vecCoins.begin(), make_pair(&wtxIn, nTxOut));
 
                 nValueIn += nWtxinCredit;
                 dPriority += (double)nWtxinCredit * wtxIn.GetDepthInMainChain();
@@ -305,37 +291,24 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                     reservekey.ReturnKey();
 
                 // Fill vin
-                foreach(CWalletTx* pcoin, vecCoins)
-                    for (int nOut = 0; nOut < pcoin->vout.size(); nOut++)
-                    {
-                        // three cases:
-                        // * this is wtxIn name output, which can only be spent by this function - grab it
-                        // * this is a wtxIn non-name output and the non-name part of the coin was already spent - skip
-                        // * this is not wtxIn - we already checked it wasn't spent, grab it
-                        if (pcoin == &wtxIn && nOut == nTxOut)
-                        {
-                            if (pcoin->vout[nOut].IsMine())
-                                throw runtime_error("CreateTransactionWithInputTx() : wtxIn[nTxOut] already mine");
-                            wtxNew.vin.push_back(CTxIn(pcoin->GetHash(), nOut));
-                        }
-                        else if (!pcoin->fSpent && pcoin->vout[nOut].IsMine())
-                            wtxNew.vin.push_back(CTxIn(pcoin->GetHash(), nOut));
-                    }
+                foreach(PAIRTYPE(CWalletTx*, unsigned int)& coin, vecCoins)
+                    wtxNew.vin.push_back(CTxIn(coin.first->GetHash(), coin.second));
 
                 // Sign
                 int nIn = 0;
-                foreach(CWalletTx* pcoin, vecCoins)
-                    for (int nOut = 0; nOut < pcoin->vout.size(); nOut++)
+                foreach(PAIRTYPE(CWalletTx*, unsigned int)& coin, vecCoins)
+                {
+                    if (coin.first == &wtxIn && coin.second == nTxOut)
                     {
-                        if (pcoin == &wtxIn && nOut == nTxOut)
-                        {
-                            if (!SignNameSignature(*pcoin, wtxNew, nIn++))
-                                throw runtime_error("could not sign name coin output");
-                        }
-                        else if (!pcoin->fSpent && pcoin->vout[nOut].IsMine())
-                            if (!SignSignature(*pcoin, wtxNew, nIn++))
-                                return false;
+                        if (!SignNameSignature(*coin.first, wtxNew, nIn++))
+                            throw runtime_error("could not sign name coin output");
                     }
+                    else
+                    {
+                        if (!SignSignature(*coin.first, wtxNew, nIn++))
+                            return false;
+                    }
+                }
 
                 // Limit size
                 unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK);
@@ -801,7 +774,7 @@ Value name_update(const Array& params, bool fHelp)
 
 Value name_new(const Array& params, bool fHelp)
 {
-    if (fHelp)
+    if (fHelp || params.size() != 1)
         throw runtime_error(
                 "name_new <name>\n"
                 );
@@ -845,15 +818,20 @@ void UnspendInputs(CWalletTx& wtx)
             continue;
         }
         CWalletTx& prev = mapWallet[txin.prevout.hash];
+        int nOut = txin.prevout.n;
 
-        setCoins.insert(&prev);
-    }
-    foreach(CWalletTx* pcoin, setCoins)
-    {
-        printf("UnspendInputs(): %s spent %d\n", pcoin->GetHash().ToString().c_str(), pcoin->fSpent);
-        pcoin->fSpent = false;
-        pcoin->WriteToDisk();
-        vWalletUpdated.push_back(pcoin->GetHash());
+        printf("UnspendInputs(): %s:%d spent %d\n", prev.GetHash().ToString().c_str(), nOut, prev.IsSpent(nOut));
+
+        if (nOut >= prev.vout.size())
+            throw runtime_error("CWalletTx::MarkSpent() : nOut out of range");
+        prev.vfSpent.resize(prev.vout.size());
+        if (prev.vfSpent[nOut])
+        {
+            prev.vfSpent[nOut] = false;
+            prev.fAvailableCreditCached = false;
+            prev.WriteToDisk();
+        }
+        vWalletUpdated.push_back(prev.GetHash());
     }
 }
 
@@ -894,6 +872,9 @@ Value deletetransaction(const Array& params, bool fHelp)
 
 Value name_clean(const Array& params, bool fHelp)
 {
+    if (fHelp || params.size())
+        throw runtime_error("name_clean\nClean unsatisfiable transactions from the wallet - including name_update on an already taken name\n");
+
     CRITICAL_BLOCK(cs_main)
     CRITICAL_BLOCK(cs_mapWallet)
     {

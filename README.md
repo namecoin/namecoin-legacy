@@ -27,7 +27,7 @@ Please read DESIGN-namecoind.md before proceeding.
 BUILDING
 ======================
 
-Follow the bitcoin build instructions.  Use "makefile" - it will generate namecoind.  Usage is similar to bitcoind.  There are only RPC calls for the new operations.  A GUI is on the roadmap.
+Building is only supported on Linux for now.  Follow the bitcoin build instructions.  Use "makefile.unix" - it will generate namecoind.  Usage is similar to bitcoind, plus new RPC calls for the new operations.  A GUI is on the roadmap.
 
 RUNNING
 ======================
@@ -63,17 +63,9 @@ VALUES
 
 Values for names in the d/ namespace are JSON encoded.  The simplest value is of this form:
 
-  {'map': {'': '10.0.0.1'}}
+  {"map": {"": "10.0.0.1"}}
 
-which maps all hosts in the domain example.bit to one IP address.  But you can also delegate to your DNS servers:
-
-  {'map': {'': {'ns': ['10.0.0.1', '10.0.0.2']}}}
-
-or even do a translation step before delegation:
-
-  {'map': {'': {'translate': 'bitcoin.org', 'ns': ['10.0.0.1', '10.0.0.2']}}}
-
-in which case, foo.example.bit will be translated to foo.bitcoin.org before it is sent to your DNS servers.
+A [full specification](http://dot-bit.org/Domain_names) is in progress.
 
 DNS conduits
 =============

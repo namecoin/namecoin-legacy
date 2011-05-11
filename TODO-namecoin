@@ -5,11 +5,15 @@
   * other conflicts: update on expired name, firstupdate on expired name_new
 * d7cc9e949d invalid number of args
 * blockexplorer
-* resolver
-* IsMine hook to ensure modified clients don't spend namecoins by mistake as regular coins
-* listtransactions decode
+* IsMine hook to ensure modified clients don't spend namecoins by mistake as regular coins in case of future changes to IsMine
+* listtransactions improved decode
 * auto-send firstupdate after 6 blocks with persistent name/rand
 * review threading
 * sideloading resolver library
 * reference DNS server
 * cross-mining
+
+Bugs
+
+* CWalletTx::GetAmounts nFee is off by 0.01 for name txs because IsMine is false on the name output
+* Reports of crashes, bdb was mentioned
