@@ -23,6 +23,11 @@ static const int64 CENT = 1000000;
 static const int64 MAX_MONEY = 21000000 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 100;
+#ifdef USE_UPNP
+static const int fHaveUPnP = true;
+#else
+static const int fHaveUPnP = false;
+#endif
 
 
 
@@ -55,6 +60,7 @@ extern int fLimitProcessors;
 extern int nLimitProcessors;
 extern int fMinimizeToTray;
 extern int fMinimizeOnClose;
+extern int fUseUPnP;
 
 
 extern CHooks* hooks;
@@ -732,6 +738,7 @@ public:
         fMerkleVerified = false;
     }
 
+
     IMPLEMENT_SERIALIZE
     (
         nSerSize += SerReadWrite(s, *(CTransaction*)this, nType, nVersion, ser_action);
@@ -768,15 +775,17 @@ public:
     unsigned int fTimeReceivedIsTxTime;
     unsigned int nTimeReceived;  // time received by this node
     char fFromMe;
-    char fSpent;
     string strFromAccount;
+    vector<char> vfSpent;
 
     // memory only
     mutable char fDebitCached;
     mutable char fCreditCached;
+    mutable char fAvailableCreditCached;
     mutable char fChangeCached;
     mutable int64 nDebitCached;
     mutable int64 nCreditCached;
+    mutable int64 nAvailableCreditCached;
     mutable int64 nChangeCached;
 
     // memory only UI hints
@@ -808,13 +817,15 @@ public:
         fTimeReceivedIsTxTime = false;
         nTimeReceived = 0;
         fFromMe = false;
-        fSpent = false;
         strFromAccount.clear();
+        vfSpent.clear();
         fDebitCached = false;
         fCreditCached = false;
+        fAvailableCreditCached = false;
         fChangeCached = false;
         nDebitCached = 0;
         nCreditCached = 0;
+        nAvailableCreditCached = 0;
         nChangeCached = 0;
         nTimeDisplayed = 0;
         nLinesDisplayed = 0;
@@ -826,21 +837,95 @@ public:
         CWalletTx* pthis = const_cast<CWalletTx*>(this);
         if (fRead)
             pthis->Init();
-        nSerSize += SerReadWrite(s, *(CMerkleTx*)this, nType, nVersion, ser_action);
+        char fSpent = false;
+
+        if (!fRead)
+        {
+            pthis->mapValue["fromaccount"] = pthis->strFromAccount;
+
+            string str;
+            foreach(char f, vfSpent)
+            {
+                str += (f ? '1' : '0');
+                if (f)
+                    fSpent = true;
+            }
+            pthis->mapValue["spent"] = str;
+        }
+
+        nSerSize += SerReadWrite(s, *(CMerkleTx*)this, nType, nVersion,ser_action);
         READWRITE(vtxPrev);
-
-        pthis->mapValue["fromaccount"] = pthis->strFromAccount;
         READWRITE(mapValue);
-        pthis->strFromAccount = pthis->mapValue["fromaccount"];
-        pthis->mapValue.erase("fromaccount");
-        pthis->mapValue.erase("version");
-
         READWRITE(vOrderForm);
         READWRITE(fTimeReceivedIsTxTime);
         READWRITE(nTimeReceived);
         READWRITE(fFromMe);
         READWRITE(fSpent);
+
+        if (fRead)
+        {
+            pthis->strFromAccount = pthis->mapValue["fromaccount"];
+
+            if (mapValue.count("spent"))
+                foreach(char c, pthis->mapValue["spent"])
+                    pthis->vfSpent.push_back(c != '0');
+            else
+                pthis->vfSpent.assign(vout.size(), fSpent);
+        }
+
+        pthis->mapValue.erase("fromaccount");
+        pthis->mapValue.erase("version");
+        pthis->mapValue.erase("spent");
     )
+
+    // marks certain txout's as spent
+    // returns true if any update took place
+    bool UpdateSpent(const vector<char>& vfNewSpent)
+    {
+        bool fReturn = false;
+        for (int i=0; i < vfNewSpent.size(); i++)
+        {
+            if (i == vfSpent.size())
+                break;
+
+            if (vfNewSpent[i] && !vfSpent[i])
+            {
+                vfSpent[i] = true;
+                fReturn = true;
+                fAvailableCreditCached = false;
+            }
+        }
+        return fReturn;
+    }
+
+    void MarkDirty()
+    {
+        fCreditCached = false;
+        fAvailableCreditCached = false;
+        fDebitCached = false;
+        fChangeCached = false;
+    }
+
+    void MarkSpent(unsigned int nOut)
+    {
+        if (nOut >= vout.size())
+            throw runtime_error("CWalletTx::MarkSpent() : nOut out of range");
+        vfSpent.resize(vout.size());
+        if (!vfSpent[nOut])
+        {
+            vfSpent[nOut] = true;
+            fAvailableCreditCached = false;
+        }
+    }
+
+    bool IsSpent(unsigned int nOut) const
+    {
+        if (nOut >= vout.size())
+            throw runtime_error("CWalletTx::IsSpent() : nOut out of range");
+        if (nOut >= vfSpent.size())
+            return false;
+        return (!!vfSpent[nOut]);
+    }
 
     int64 GetDebit() const
     {
@@ -867,6 +952,33 @@ public:
         return nCreditCached;
     }
 
+    int64 GetAvailableCredit(bool fUseCache=true) const
+    {
+        // Must wait until coinbase is safely deep enough in the chain before valuing it
+        if (IsCoinBase() && GetBlocksToMaturity() > 0)
+            return 0;
+
+        if (fUseCache && fAvailableCreditCached)
+            return nAvailableCreditCached;
+
+        int64 nCredit = 0;
+        for (int i = 0; i < vout.size(); i++)
+        {
+            if (!IsSpent(i))
+            {
+                const CTxOut &txout = vout[i];
+                nCredit += txout.GetCredit();
+                if (!MoneyRange(nCredit))
+                    throw runtime_error("CWalletTx::GetAvailableCredit() : value out of range");
+            }
+        }
+
+        nAvailableCreditCached = nCredit;
+        fAvailableCreditCached = true;
+        return nCredit;
+    }
+
+
     int64 GetChange() const
     {
         if (fChangeCached)
@@ -876,7 +988,7 @@ public:
         return nChangeCached;
     }
 
-    void GetAmounts(int64& nGenerated, list<pair<string /* address */, int64> >& listReceived,
+    void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<string /* address */, int64> >& listReceived,
                     list<pair<string /* address */, int64> >& listSent, int64& nFee, string& strSentAccount) const;
 
     void GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, 
@@ -910,7 +1022,7 @@ public:
             if (!ptx->IsFinal())
                 return false;
             if (ptx->GetDepthInMainChain() >= 1)
-                return true;
+                continue;
             if (!ptx->IsFromMe())
                 return false;
 

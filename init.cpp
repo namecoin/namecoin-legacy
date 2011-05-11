@@ -41,6 +41,7 @@ void Shutdown(void* parg)
         DBFlush(false);
         StopNode();
         DBFlush(true);
+        boost::filesystem::remove(GetPidFile());
         CreateThread(ExitTimeout, NULL);
         Sleep(50);
         printf("Bitcoin exiting\n\n");
@@ -78,7 +79,9 @@ int main(int argc, char* argv[])
     fRet = AppInit(argc, argv);
 
     if (fRet && fDaemon)
-        pthread_exit((void*)0);
+        return 0;
+
+    return 1;
 }
 #endif
 
@@ -141,7 +144,7 @@ bool AppInit2(int argc, char* argv[])
     {
         string beta = VERSION_IS_BETA ? _(" beta") : "";
         string strUsage = string() +
-          _("Bitcoin version") + " " + FormatVersion(VERSION) + pszSubVer + beta + "\n\n" +
+          _("Bitcoin version") + " " + FormatFullVersion() + "\n\n" +
           _("Usage:") + "\t\t\t\t\t\t\t\t\t\t\n" +
             "  bitcoin [options]                   \t  " + "\n" +
             "  bitcoin [options] <command> [params]\t  " + _("Send command to -server or bitcoind\n") +
@@ -149,6 +152,7 @@ bool AppInit2(int argc, char* argv[])
             "  bitcoin [options] help <command>    \t\t  " + _("Get help for a command\n") +
           _("Options:\n") +
             "  -conf=<file>     \t\t  " + _("Specify configuration file (default: bitcoin.conf)\n") +
+            "  -pid=<file>      \t\t  " + _("Specify pid file (default: bitcoind.pid)\n") +
             "  -gen             \t\t  " + _("Generate coins\n") +
             "  -gen=0           \t\t  " + _("Don't generate coins\n") +
             "  -min             \t\t  " + _("Start minimized\n") +
@@ -157,9 +161,18 @@ bool AppInit2(int argc, char* argv[])
             "  -addnode=<ip>    \t  "   + _("Add a node to connect to\n") +
             "  -connect=<ip>    \t\t  " + _("Connect only to the specified node\n") +
             "  -nolisten        \t  "   + _("Don't accept connections from outside\n") +
+#ifdef USE_UPNP
+#if USE_UPNP
+            "  -noupnp          \t  "   + _("Don't attempt to use UPnP to map the listening port\n") +
+#else
+            "  -upnp            \t  "   + _("Attempt to use UPnP to map the listening port\n") +
+#endif
+#endif
             "  -paytxfee=<amt>  \t  "   + _("Fee per KB to add to transactions you send\n") +
 #ifdef GUI
             "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
+#endif
+#ifndef __WXMSW__
             "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
 #endif
             "  -testnet         \t\t  " + _("Use the test network\n") +
@@ -196,17 +209,20 @@ bool AppInit2(int argc, char* argv[])
 
     fDebug = GetBoolArg("-debug");
 
+#ifndef __WXMSW__
     fDaemon = GetBoolArg("-daemon");
+#else
+    fDaemon = false;
+#endif
 
     if (fDaemon)
         fServer = true;
     else
         fServer = GetBoolArg("-server");
 
-    /* force fServer and fDaemon when running without GUI */
+    /* force fServer when running without GUI */
 #ifndef GUI
     fServer = true;
-    fDaemon = true;
 #endif
 
     fPrintToConsole = GetBoolArg("-printtoconsole");
@@ -226,7 +242,7 @@ bool AppInit2(int argc, char* argv[])
         exit(ret);
     }
 
-#ifndef GUI
+#ifndef __WXMSW__
     if (fDaemon)
     {
         // Daemonize
@@ -237,7 +253,10 @@ bool AppInit2(int argc, char* argv[])
             return false;
         }
         if (pid > 0)
+        {
+            CreatePidFile(GetPidFile(), pid);
             return true;
+        }
 
         pid_t sid = setsid();
         if (sid < 0)
@@ -248,7 +267,7 @@ bool AppInit2(int argc, char* argv[])
     if (!fDebug && !pszSetDataDir[0])
         ShrinkDebugFile();
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    printf("Bitcoin version %s%s%s\n", FormatVersion(VERSION).c_str(), pszSubVer, VERSION_IS_BETA ? _(" beta") : "");
+    printf("Bitcoin version %s\n", FormatFullVersion().c_str());
 #ifdef GUI
     printf("OS version %s\n", ((string)wxGetOsDescription()).c_str());
     printf("System default language is %d %s\n", g_locale.GetSystemLanguage(), ((string)g_locale.GetSysName()).c_str());
@@ -307,7 +326,7 @@ bool AppInit2(int argc, char* argv[])
     // Make sure only a single bitcoin process is using the data directory.
     string strLockFile = GetDataDir() + "/.lock";
     FILE* file = fopen(strLockFile.c_str(), "a"); // empty lock file; created if it doesn't exist.
-    fclose(file);
+    if (file) fclose(file);
     static boost::interprocess::file_lock lock(strLockFile.c_str());
     if (!lock.try_lock())
     {
@@ -356,10 +375,21 @@ bool AppInit2(int argc, char* argv[])
         strErrors += _("Error loading wallet.dat      \n");
     printf(" wallet      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
+    CBlockIndex *pindexRescan = pindexBest;
     if (GetBoolArg("-rescan"))
+        pindexRescan = pindexGenesisBlock;
+    else
     {
+        CWalletDB walletdb;
+        CBlockLocator locator;
+        if (walletdb.ReadBestBlock(locator))
+            pindexRescan = locator.GetBlockIndex();
+    }
+    if (pindexBest != pindexRescan)
+    {
+        printf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
-        ScanForWalletTransactions(pindexGenesisBlock);
+        ScanForWalletTransactions(pindexRescan);
         printf(" rescan      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
     }
 
@@ -452,6 +482,17 @@ bool AppInit2(int argc, char* argv[])
             wxMessageBox(_("Warning: -paytxfee is set very high.  This is the transaction fee you will pay if you send a transaction."), "Bitcoin", wxOK | wxICON_EXCLAMATION);
     }
 
+    if (fHaveUPnP)
+    {
+#if USE_UPNP
+    if (GetBoolArg("-noupnp"))
+        fUseUPnP = false;
+#else
+    if (GetBoolArg("-upnp"))
+        fUseUPnP = true;
+#endif
+    }
+
     //
     // Create the main window and start the node
     //
@@ -475,10 +516,11 @@ bool AppInit2(int argc, char* argv[])
     if (fFirstRun)
         SetStartOnSystemStartup(true);
 #endif
-    
-    if (fDaemon)
-        while (!fShutdown)
-            Sleep(5000);
+
+#ifndef GUI
+    while (1)
+        Sleep(5000);
+#endif
 
     return true;
 }

@@ -8,6 +8,10 @@ WXINCLUDEPATHS=$(shell wx-config --cxxflags)
 
 WXLIBS=$(shell wx-config --libs)
 
+USE_UPNP:=0
+
+DEFS=-DNOPCH -DFOURWAYSSE2 -DUSE_SSL
+
 # for boost 1.37, add -mt to the boost libraries
 LIBS= \
  -Wl,-Bstatic \
@@ -17,13 +21,21 @@ LIBS= \
    -l boost_thread \
    -l db_cxx \
    -l ssl \
-   -l crypto \
+   -l crypto
+
+ifdef USE_UPNP
+	LIBS += -l miniupnpc
+	DEFS += -DUSE_UPNP=$(USE_UPNP)
+endif
+
+LIBS+= \
  -Wl,-Bdynamic \
    -l gthread-2.0 \
    -l z \
-   -l dl
+   -l dl \
+   -l pthread
 
-DEFS=-DNOPCH -DFOURWAYSSE2 -DUSE_SSL
+
 DEBUGFLAGS=-g -D__WXDEBUG__
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEBUGFLAGS) $(DEFS)
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
@@ -54,17 +66,14 @@ obj/%.o: %.cpp $(HEADERS)
 cryptopp/obj/%.o: cryptopp/%.cpp
 	$(CXX) -c $(CXXFLAGS) -O3 -o $@ $<
 
-obj/sha256.o: sha256.cpp
-	$(CXX) -c $(CXXFLAGS) -msse2 -O3 -march=amdfam10 -o $@ $<
-
-bitcoin: $(OBJS) obj/ui.o obj/uibase.o obj/sha256.o
+bitcoin: $(OBJS) obj/ui.o obj/uibase.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(WXLIBS) $(LIBS)
 
 
 obj/nogui/%.o: %.cpp $(HEADERS)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-bitcoind: $(OBJS:obj/%=obj/nogui/%) obj/sha256.o
+bitcoind: $(OBJS:obj/%=obj/nogui/%)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 

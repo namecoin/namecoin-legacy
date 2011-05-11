@@ -52,7 +52,6 @@ protected:
     void OnPaint(wxPaintEvent& event);
     void OnPaintListCtrl(wxPaintEvent& event);
     void OnMenuFileExit(wxCommandEvent& event);
-    void OnMenuOptionsGenerate(wxCommandEvent& event);
     void OnUpdateUIOptionsGenerate(wxUpdateUIEvent& event);
     void OnMenuOptionsChangeYourAddress(wxCommandEvent& event);
     void OnMenuOptionsOptions(wxCommandEvent& event);
@@ -127,7 +126,6 @@ protected:
     // Event handlers
     void OnListBox(wxCommandEvent& event);
     void OnKillFocusTransactionFee(wxFocusEvent& event);
-    void OnCheckBoxLimitProcessors(wxCommandEvent& event);
     void OnCheckBoxUseProxy(wxCommandEvent& event);
     void OnKillFocusProxy(wxFocusEvent& event);
 
@@ -323,6 +321,7 @@ protected:
     // Event handlers
     void OnLeftButtonDClick(wxTaskBarIconEvent& event);
     void OnMenuRestore(wxCommandEvent& event);
+    void OnMenuSend(wxCommandEvent& event);
     void OnMenuOptions(wxCommandEvent& event);
     void OnUpdateUIGenerate(wxUpdateUIEvent& event);
     void OnMenuGenerate(wxCommandEvent& event);

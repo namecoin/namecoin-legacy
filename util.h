@@ -172,6 +172,8 @@ bool WildcardMatch(const string& str, const string& mask);
 int GetFilesize(FILE* file);
 void GetDataDir(char* pszDirRet);
 string GetConfigFile();
+string GetPidFile();
+void CreatePidFile(string pidFile, pid_t pid);
 void ReadConfigFile(map<string, string>& mapSettingsRet, map<string, vector<string> >& mapMultiSettingsRet);
 #ifdef __WXMSW__
 string MyGetSpecialFolderPath(int nFolder, bool fCreate);
@@ -184,6 +186,7 @@ uint64 GetRand(uint64 nMax);
 int64 GetTime();
 int64 GetAdjustedTime();
 void AddTimeData(unsigned int ip, int64 nTime);
+string FormatFullVersion();
 
 
 
@@ -429,14 +432,6 @@ inline bool GetBoolArg(const string& strArg)
         return (atoi(mapArgs[strArg]) != 0);
     }
     return false;
-}
-
-inline string FormatVersion(int nVersion)
-{
-    if (nVersion%100 == 0)
-        return strprintf("%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100);
-    else
-        return strprintf("%d.%d.%d.%d", nVersion/1000000, (nVersion/10000)%100, (nVersion/100)%100, nVersion%100);
 }
 
 

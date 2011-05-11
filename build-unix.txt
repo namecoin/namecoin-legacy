@@ -3,7 +3,8 @@ Distributed under the MIT/X11 software license, see the accompanying
 file license.txt or http://www.opensource.org/licenses/mit-license.php.
 This product includes software developed by the OpenSSL Project for use in
 the OpenSSL Toolkit (http://www.openssl.org/).  This product includes
-cryptographic software written by Eric Young (eay@cryptsoft.com).
+cryptographic software written by Eric Young (eay@cryptsoft.com) and UPnP
+software written by Thomas Bernard.
 
 
 UNIX BUILD NOTES
@@ -36,10 +37,18 @@ You need to download wxWidgets from http://www.wxwidgets.org/downloads/
 and build it yourself.  See the build instructions and configure parameters
 below.
 
+Requires miniupnpc for UPnP port mapping.  It can be downloaded from
+http://miniupnp.tuxfamily.org/files/.  UPnP support is compiled in and
+turned off by default.  Set USE_UPNP to a different value to control this:
+USE_UPNP=   no UPnP support, miniupnp not required;
+USE_UPNP=0  (the default) UPnP support turned off by default at runtime;
+USE_UPNP=1  UPnP support turned on by default at runtime.
+
 Licenses of statically linked libraries:
 wxWidgets      LGPL 2.1 with very liberal exceptions
 Berkeley DB    New BSD license with additional requirement that linked software must be free open source
 Boost          MIT-like license
+miniupnpc      New (3-clause) BSD license
 
 Versions used in this release:
 GCC          4.3.3
@@ -47,6 +56,7 @@ OpenSSL      0.9.8g
 wxWidgets    2.9.0
 Berkeley DB  4.7.25.NC
 Boost        1.37
+miniupnpc    1.5
 
 
 Notes
@@ -66,11 +76,20 @@ tar -xzvf wxWidgets-2.9.0.tar.gz
 cd wxWidgets-2.9.0
 mkdir buildgtk
 cd buildgtk
-../configure --with-gtk --enable-debug --disable-shared --enable-monolithic
+../configure --with-gtk --enable-debug --disable-shared --enable-monolithic --without-libpng --disable-svg
 make
 sudo su
 make install
 ldconfig
+
+
+miniupnpc
+---------
+tar -xzvf miniupnpc-1.5.tar.gz
+cd miniupnpc-1.5
+make
+sudo su
+make install
 
 
 Berkeley DB

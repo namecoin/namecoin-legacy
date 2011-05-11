@@ -1094,12 +1094,6 @@ void CMainFrame::OnMenuFileExit(wxCommandEvent& event)
     Close(true);
 }
 
-void CMainFrame::OnMenuOptionsGenerate(wxCommandEvent& event)
-{
-    // Options->Generate Coins
-    GenerateBitcoins(event.IsChecked());
-}
-
 void CMainFrame::OnUpdateUIOptionsGenerate(wxUpdateUIEvent& event)
 {
     event.Check(fGenerateBitcoins);
@@ -1655,16 +1649,13 @@ COptionsDialog::COptionsDialog(wxWindow* parent) : COptionsDialogBase(parent)
 
     // Init values
     m_textCtrlTransactionFee->SetValue(FormatMoney(nTransactionFee));
-    m_checkBoxLimitProcessors->SetValue(fLimitProcessors);
-    m_spinCtrlLimitProcessors->Enable(fLimitProcessors);
-    m_spinCtrlLimitProcessors->SetValue(nLimitProcessors);
-    int nProcessors = wxThread::GetCPUCount();
-    if (nProcessors < 1)
-        nProcessors = 999;
-    m_spinCtrlLimitProcessors->SetRange(1, nProcessors);
     m_checkBoxStartOnSystemStartup->SetValue(fTmpStartOnSystemStartup = GetStartOnSystemStartup());
     m_checkBoxMinimizeToTray->SetValue(fMinimizeToTray);
     m_checkBoxMinimizeOnClose->SetValue(fMinimizeOnClose);
+    if (fHaveUPnP)
+        m_checkBoxUseUPnP->SetValue(fUseUPnP);
+    else
+        m_checkBoxUseUPnP->Enable(false);
     m_checkBoxUseProxy->SetValue(fUseProxy);
     m_textCtrlProxyIP->Enable(fUseProxy);
     m_textCtrlProxyPort->Enable(fUseProxy);
@@ -1696,11 +1687,6 @@ void COptionsDialog::OnKillFocusTransactionFee(wxFocusEvent& event)
     int64 nTmp = nTransactionFee;
     ParseMoney(m_textCtrlTransactionFee->GetValue(), nTmp);
     m_textCtrlTransactionFee->SetValue(FormatMoney(nTmp));
-}
-
-void COptionsDialog::OnCheckBoxLimitProcessors(wxCommandEvent& event)
-{
-    m_spinCtrlLimitProcessors->Enable(event.IsChecked());
 }
 
 void COptionsDialog::OnCheckBoxUseProxy(wxCommandEvent& event)
@@ -1751,20 +1737,6 @@ void COptionsDialog::OnButtonApply(wxCommandEvent& event)
     if (ParseMoney(m_textCtrlTransactionFee->GetValue(), nTransactionFee) && nTransactionFee != nPrevTransactionFee)
         walletdb.WriteSetting("nTransactionFee", nTransactionFee);
 
-    int nPrevMaxProc = (fLimitProcessors ? nLimitProcessors : INT_MAX);
-    if (fLimitProcessors != m_checkBoxLimitProcessors->GetValue())
-    {
-        fLimitProcessors = m_checkBoxLimitProcessors->GetValue();
-        walletdb.WriteSetting("fLimitProcessors", fLimitProcessors);
-    }
-    if (nLimitProcessors != m_spinCtrlLimitProcessors->GetValue())
-    {
-        nLimitProcessors = m_spinCtrlLimitProcessors->GetValue();
-        walletdb.WriteSetting("nLimitProcessors", nLimitProcessors);
-    }
-    if (fGenerateBitcoins && (fLimitProcessors ? nLimitProcessors : INT_MAX) > nPrevMaxProc)
-        GenerateBitcoins(fGenerateBitcoins);
-
     if (fTmpStartOnSystemStartup != m_checkBoxStartOnSystemStartup->GetValue())
     {
         fTmpStartOnSystemStartup = m_checkBoxStartOnSystemStartup->GetValue();
@@ -1782,6 +1754,13 @@ void COptionsDialog::OnButtonApply(wxCommandEvent& event)
     {
         fMinimizeOnClose = m_checkBoxMinimizeOnClose->GetValue();
         walletdb.WriteSetting("fMinimizeOnClose", fMinimizeOnClose);
+    }
+
+    if (fHaveUPnP && fUseUPnP != m_checkBoxUseUPnP->GetValue())
+    {
+        fUseUPnP = m_checkBoxUseUPnP->GetValue();
+        walletdb.WriteSetting("fUseUPnP", fUseUPnP);
+        MapPort(fUseUPnP);
     }
 
     fUseProxy = m_checkBoxUseProxy->GetValue();
@@ -1803,7 +1782,7 @@ void COptionsDialog::OnButtonApply(wxCommandEvent& event)
 
 CAboutDialog::CAboutDialog(wxWindow* parent) : CAboutDialogBase(parent)
 {
-    m_staticTextVersion->SetLabel(strprintf(_("version %s%s BETA"), FormatVersion(VERSION).c_str(), pszSubVer));
+    m_staticTextVersion->SetLabel(strprintf(_("version %s"), FormatFullVersion().c_str()));
 
     // Change (c) into UTF-8 or ANSI copyright symbol
     wxString str = m_staticTextMain->GetLabel();
@@ -1848,6 +1827,7 @@ CSendDialog::CSendDialog(wxWindow* parent, const wxString& strAddress) : CSendDi
     m_bitmapCheckMark->Show(false);
     fEnabledPrev = true;
     m_textCtrlAddress->SetFocus();
+    
     //// todo: should add a display of your balance for convenience
 #ifndef __WXMSW__
     wxFont fontTmp = m_staticTextInstructions->GetFont();
@@ -1856,7 +1836,7 @@ CSendDialog::CSendDialog(wxWindow* parent, const wxString& strAddress) : CSendDi
     m_staticTextInstructions->SetFont(fontTmp);
     SetSize(725, 180);
 #endif
-
+    
     // Set Icon
     wxIcon iconSend;
     iconSend.CopyFromBitmap(wxBitmap(send16noshadow_xpm));
@@ -1934,20 +1914,24 @@ void CSendDialog::OnButtonSend(wxCommandEvent& event)
 
         if (fBitcoinAddress)
         {
-            // Send to bitcoin address
-            CScript scriptPubKey;
-            scriptPubKey << OP_DUP << OP_HASH160 << hash160 << OP_EQUALVERIFY << OP_CHECKSIG;
+	    CRITICAL_BLOCK(cs_main)
+	    {
+                // Send to bitcoin address
+                CScript scriptPubKey;
+                scriptPubKey << OP_DUP << OP_HASH160 << hash160 << OP_EQUALVERIFY << OP_CHECKSIG;
 
-            string strError = SendMoney(scriptPubKey, nValue, wtx, true);
-            if (strError == "")
-                wxMessageBox(_("Payment sent  "), _("Sending..."));
-            else if (strError == "ABORTED")
-                return; // leave send dialog open
-            else
-            {
-                wxMessageBox(strError + "  ", _("Sending..."));
-                EndModal(false);
-            }
+                string strError = SendMoney(scriptPubKey, nValue, wtx, true);
+                if (strError == "")
+                    wxMessageBox(_("Payment sent  "), _("Sending..."));
+                else if (strError == "ABORTED")
+                    return; // leave send dialog open
+                else
+                {
+                    wxMessageBox(strError + "  ", _("Sending..."));
+                    EndModal(false);
+                    return;
+                }
+	    }
         }
         else
         {
@@ -2233,7 +2217,7 @@ void CSendingDialog::OnReply2(CDataStream& vRecv)
         if (!CreateTransaction(scriptPubKey, nPrice, wtx, reservekey, nFeeRequired))
         {
             if (nPrice + nFeeRequired > GetBalance())
-                Error(strprintf(_("This is an oversized transaction that requires a transaction fee of %s"), FormatMoney(nFeeRequired).c_str()));
+                Error(strprintf(_("This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds"), FormatMoney(nFeeRequired).c_str()));
             else
                 Error(_("Transaction creation failed"));
             return;
@@ -2591,6 +2575,7 @@ void CAddressBookDialog::OnClose(wxCloseEvent& event)
 enum
 {
     ID_TASKBAR_RESTORE = 10001,
+    ID_TASKBAR_SEND,
     ID_TASKBAR_OPTIONS,
     ID_TASKBAR_GENERATE,
     ID_TASKBAR_EXIT,
@@ -2599,8 +2584,8 @@ enum
 BEGIN_EVENT_TABLE(CMyTaskBarIcon, wxTaskBarIcon)
     EVT_TASKBAR_LEFT_DCLICK(CMyTaskBarIcon::OnLeftButtonDClick)
     EVT_MENU(ID_TASKBAR_RESTORE, CMyTaskBarIcon::OnMenuRestore)
+    EVT_MENU(ID_TASKBAR_SEND, CMyTaskBarIcon::OnMenuSend)
     EVT_MENU(ID_TASKBAR_OPTIONS, CMyTaskBarIcon::OnMenuOptions)
-    EVT_MENU(ID_TASKBAR_GENERATE, CMyTaskBarIcon::OnMenuGenerate)
     EVT_UPDATE_UI(ID_TASKBAR_GENERATE, CMyTaskBarIcon::OnUpdateUIGenerate)
     EVT_MENU(ID_TASKBAR_EXIT, CMyTaskBarIcon::OnMenuExit)
 END_EVENT_TABLE()
@@ -2651,6 +2636,13 @@ void CMyTaskBarIcon::OnMenuRestore(wxCommandEvent& event)
     Restore();
 }
 
+void CMyTaskBarIcon::OnMenuSend(wxCommandEvent& event)
+{
+    // Taskbar: Send
+    CSendDialog dialog(pframeMain);
+    dialog.ShowModal();
+}
+
 void CMyTaskBarIcon::OnMenuOptions(wxCommandEvent& event)
 {
     // Since it's modal, get the main window to do it
@@ -2665,11 +2657,6 @@ void CMyTaskBarIcon::Restore()
     pframeMain->GetEventHandler()->AddPendingEvent(event);
     pframeMain->Iconize(false);
     pframeMain->Raise();
-}
-
-void CMyTaskBarIcon::OnMenuGenerate(wxCommandEvent& event)
-{
-    GenerateBitcoins(event.IsChecked());
 }
 
 void CMyTaskBarIcon::OnUpdateUIGenerate(wxUpdateUIEvent& event)
@@ -2692,8 +2679,8 @@ wxMenu* CMyTaskBarIcon::CreatePopupMenu()
 {
     wxMenu* pmenu = new wxMenu;
     pmenu->Append(ID_TASKBAR_RESTORE, _("&Open Bitcoin"));
+    pmenu->Append(ID_TASKBAR_SEND, _("&Send Bitcoins"));
     pmenu->Append(ID_TASKBAR_OPTIONS, _("O&ptions..."));
-    pmenu->AppendCheckItem(ID_TASKBAR_GENERATE, _("&Generate Coins"))->Check(fGenerateBitcoins);
 #ifndef __WXMAC_OSX__ // Mac has built-in quit menu
     pmenu->AppendSeparator();
     pmenu->Append(ID_TASKBAR_EXIT, _("E&xit"));
@@ -2805,6 +2792,10 @@ bool CMyApp::Initialize(int& argc, wxChar** argv)
             }
             if (pid > 0)
                 pthread_exit((void*)0);
+
+            pid_t sid = setsid();
+            if (sid < 0)
+                fprintf(stderr, "Error: setsid() returned %d errno %d\n", sid, errno);
         }
 
         return true;
@@ -2820,9 +2811,6 @@ bool CMyApp::OnInit()
     // Disable malfunctioning wxWidgets debug assertion
     extern int g_isPainting;
     g_isPainting = 10000;
-#endif
-#ifdef GUI
-    wxImage::AddHandler(new wxPNGHandler);
 #endif
 #if defined(__WXMSW__ ) || defined(__WXMAC_OSX__)
     SetAppName("Bitcoin");
