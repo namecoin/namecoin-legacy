@@ -1617,7 +1617,7 @@ bool CNamecoinHooks::GenesisBlock(CBlock& block)
     if (fTestNet)
         return false;
 
-    ::GenesisBlock(block, NAME_COIN_GENESIS_EXTRA);
+    return ::GenesisBlock(block, NAME_COIN_GENESIS_EXTRA);
 }
 
 int CNamecoinHooks::LockinHeight()
