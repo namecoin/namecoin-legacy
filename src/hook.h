@@ -9,7 +9,7 @@ public:
     virtual void AddToWallet(CWalletTx& tx) = 0;
     virtual bool CheckTransaction(const CTransaction& tx) = 0;
     virtual bool ConnectInputs(CTxDB& txdb,
-            map<uint256, CTxIndex>& mapTestPool,
+            std::map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             std::vector<CTransaction>& vTxPrev,
             std::vector<CTxIndex>& vTxindex,
