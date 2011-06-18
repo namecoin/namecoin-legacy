@@ -44,7 +44,7 @@ void Shutdown(void* parg)
         boost::filesystem::remove(GetPidFile());
         CreateThread(ExitTimeout, NULL);
         Sleep(50);
-        printf("Bitcoin exiting\n\n");
+        printf("namecoin exiting\n\n");
         fExit = true;
         exit(0);
     }
@@ -144,12 +144,12 @@ bool AppInit2(int argc, char* argv[])
     {
         string beta = VERSION_IS_BETA ? _(" beta") : "";
         string strUsage = string() +
-          _("Bitcoin version") + " " + FormatFullVersion() + "\n\n" +
+          _("namecoin version") + " " + FormatFullVersion() + "\n\n" +
           _("Usage:") + "\t\t\t\t\t\t\t\t\t\t\n" +
-            "  bitcoin [options]                   \t  " + "\n" +
-            "  bitcoin [options] <command> [params]\t  " + _("Send command to -server or bitcoind\n") +
-            "  bitcoin [options] help              \t\t  " + _("List commands\n") +
-            "  bitcoin [options] help <command>    \t\t  " + _("Get help for a command\n") +
+            "  namecoin [options]                   \t  " + "\n" +
+            "  namecoin [options] <command> [params]\t  " + _("Send command to -server or namecoind\n") +
+            "  namecoin [options] help              \t\t  " + _("List commands\n") +
+            "  namecoin [options] help <command>    \t\t  " + _("Get help for a command\n") +
           _("Options:\n") +
             "  -conf=<file>     \t\t  " + _("Specify configuration file (default: bitcoin.conf)\n") +
             "  -pid=<file>      \t\t  " + _("Specify pid file (default: bitcoind.pid)\n") +
@@ -186,7 +186,7 @@ bool AppInit2(int argc, char* argv[])
 
 #ifdef USE_SSL
         strUsage += string() +
-            _("\nSSL options: (see the Bitcoin Wiki for SSL setup instructions)\n") +
+            _("\nSSL options: (see the namecoin Wiki for SSL setup instructions)\n") +
             "  -rpcssl                                \t  " + _("Use OpenSSL (https) for JSON-RPC connections\n") +
             "  -rpcsslcertificatechainfile=<file.cert>\t  " + _("Server certificate file (default: server.cert)\n") +
             "  -rpcsslprivatekeyfile=<file.pem>       \t  " + _("Server private key (default: server.pem)\n") +
@@ -267,7 +267,7 @@ bool AppInit2(int argc, char* argv[])
     if (!fDebug && !pszSetDataDir[0])
         ShrinkDebugFile();
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-    printf("Bitcoin version %s\n", FormatFullVersion().c_str());
+    printf("namecoin version %s\n", FormatFullVersion().c_str());
 #ifdef GUI
     printf("OS version %s\n", ((string)wxGetOsDescription()).c_str());
     printf("System default language is %d %s\n", g_locale.GetSystemLanguage(), ((string)g_locale.GetSysName()).c_str());
@@ -330,7 +330,7 @@ bool AppInit2(int argc, char* argv[])
     static boost::interprocess::file_lock lock(strLockFile.c_str());
     if (!lock.try_lock())
     {
-        wxMessageBox(strprintf(_("Cannot obtain a lock on data directory %s.  Bitcoin is probably already running."), GetDataDir().c_str()), "Bitcoin");
+        wxMessageBox(strprintf(_("Cannot obtain a lock on data directory %s.  namecoin is probably already running."), GetDataDir().c_str()), "Bitcoin");
         return false;
     }
 
@@ -352,7 +352,7 @@ bool AppInit2(int argc, char* argv[])
     // Load data files
     //
     if (fDaemon)
-        fprintf(stdout, "bitcoin server starting\n");
+        fprintf(stdout, "namecoin server starting\n");
     strErrors = "";
     int64 nStart;
 
