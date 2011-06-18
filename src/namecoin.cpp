@@ -31,7 +31,6 @@ static const int OP_NAME_FIRSTUPDATE = 0x02;
 static const int OP_NAME_UPDATE = 0x03;
 static const int OP_NAME_NOP = 0x04;
 static const int MIN_FIRSTUPDATE_DEPTH = 12;
-static const int EXPIRATION_DEPTH = 12000;
 
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
@@ -118,14 +117,34 @@ string stringFromVch(vector<unsigned char> vch) {
     return res;
 }
 
+// Increase expiration to 36000 gradually starting at block 24000.
+// Use for validation purposes and pass the chain height.
+int GetExpirationDepth(int nHeight) {
+    if (nHeight < 24000)
+        return 12000;
+    if (nHeight < 48000)
+        return nHeight - 12000;
+    return 36000;
+}
+
+// For display purposes, pass the name height.
+int GetDisplayExpirationDepth(int nHeight) {
+    if (nHeight < 24000)
+        return 12000;
+    return 36000;
+}
+
 int64 GetNetworkFee(int nHeight)
 {
-  int64 nStart = 50 * COIN;
-  if (fTestNet)
-      nStart = 10 * CENT;
-  int64 nRes = nStart >> (nHeight >> 13);
-  nRes -= (nRes >> 14) * (nHeight % 8192);
-  return nRes;
+    // Speed up network fee decrease 4x starting at 24000
+    if (nHeight >= 24000)
+        nHeight += (nHeight - 24000) * 3;
+    int64 nStart = 50 * COIN;
+    if (fTestNet)
+        nStart = 10 * CENT;
+    int64 nRes = nStart >> (nHeight >> 13);
+    nRes -= (nRes >> 14) * (nHeight % 8192);
+    return nRes;
 }
 
 int GetTxPosHeight(const CDiskTxPos& txPos)
@@ -408,7 +427,7 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
         return false;
     CDiskTxPos& txPos = vtxPos.back();
     int nHeight = GetTxPosHeight(txPos);
-    if (nHeight + EXPIRATION_DEPTH < pindexBest->nHeight)
+    if (nHeight + GetExpirationDepth(pindexBest->nHeight) < pindexBest->nHeight)
     {
         string name = stringFromVch(vchName);
         printf("GetTxOfName(%s) : expired", name.c_str());
@@ -435,7 +454,8 @@ Value name_list(const Array& params, bool fHelp)
     Array oRes;
 
     CRITICAL_BLOCK(cs_mapWallet)
-    for (;;) {
+    for (;;)
+    {
         CNameDB dbName("r");
 
         vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
@@ -466,7 +486,7 @@ Value name_list(const Array& params, bool fHelp)
                 oName.push_back(Pair("value", value));
                 if (!hooks->IsMine(mapWallet[hash]))
                     oName.push_back(Pair("transferred", 1));
-                oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
+                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 oRes.push_back(oName);
             }
         }
@@ -578,7 +598,7 @@ Value name_scan(const Array& params, bool fHelp)
             string value = stringFromVch(vchValue);
             oName.push_back(Pair("value", value));
             oName.push_back(Pair("txid", hash.GetHex()));
-            oName.push_back(Pair("expires_in", nHeight + EXPIRATION_DEPTH - pindexBest->nHeight));
+            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
         }
         else
         {
@@ -1306,7 +1326,7 @@ bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& 
         case OP_NAME_FIRSTUPDATE:
             nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
             name = vvchArgs[0];
-            if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < EXPIRATION_DEPTH)
+            if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < GetExpirationDepth(pindexBest->nHeight))
                 return true;
     }
     return false;
@@ -1373,7 +1393,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
             if (!found || prevOp != OP_NAME_NEW)
                 return error("ConnectInputsHook() : name_firstupdate tx without previous name_new tx");
             nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
-            if (nPrevHeight >= 0 && pindexBlock->nHeight - nPrevHeight < EXPIRATION_DEPTH)
+            if (nPrevHeight >= 0 && pindexBlock->nHeight - nPrevHeight < GetExpirationDepth(pindexBlock->nHeight))
                 return error("ConnectInputsHook() : name_firstupdate on an unexpired name");
             nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], MIN_FIRSTUPDATE_DEPTH);
             // Do not accept if in chain and not mature
@@ -1385,7 +1405,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
             if (fMiner)
             {
                 // TODO CPU intensive
-                nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], EXPIRATION_DEPTH);
+                nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], GetExpirationDepth(pindexBlock->nHeight));
                 if (nDepth == -1)
                     return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
                 // Check that no other pending txs on this name are already in the block to be mined
@@ -1405,8 +1425,8 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
         case OP_NAME_UPDATE:
             if (!found || (prevOp != OP_NAME_FIRSTUPDATE && prevOp != OP_NAME_UPDATE))
                 return error("name_update tx without previous update tx");
-            // TODO this might be too CPU intensive, up to 12000 blocks to look through
-            nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], EXPIRATION_DEPTH);
+            // TODO CPU intensive
+            nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], GetExpirationDepth(pindexBlock->nHeight));
             if ((fBlock || fMiner) && nDepth < 0)
                 return error("ConnectInputsHook() : name_update on an expired name, or there is a pending transaction on the name");
             break;
@@ -1640,7 +1660,7 @@ unsigned short GetDefaultPort()
     return fTestNet ? htons(18334) : htons(8334);
 }
 
-unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, NULL };
+unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, 0 };
 const char *strDNSSeed[] = { NULL };
 
 string GetDefaultDataDirSuffix() {

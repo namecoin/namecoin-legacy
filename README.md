@@ -9,6 +9,16 @@ It is envisioned that the .bit domain be used for gluing namecoin domain names i
 
 See FAQ.md for more general information.
 
+News
+=====================
+
+IMPORTANT VALIDATION CHANGES at block 24000!
+
+* Effective at block 24000, names registered at block 12000 onward will expire after 36000 blocks instead of the current valud of 12000
+* Also effective at block 24000, the decline in network fees will speed up by a factor of 4
+
+You must upgrade to version 0.3.21.90 before block 24000, or your client will start rejecting blocks and will be unable to participate in the network.
+
 Technical
 =====================
 
