@@ -139,6 +139,8 @@ int64 GetNetworkFee(int nHeight)
     // Speed up network fee decrease 4x starting at 24000
     if (nHeight >= 24000)
         nHeight += (nHeight - 24000) * 3;
+    if ((nHeight >> 13) >= 60)
+        return 0;
     int64 nStart = 50 * COIN;
     if (fTestNet)
         nStart = 10 * CENT;
