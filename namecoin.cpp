@@ -534,7 +534,7 @@ Value name_debug1(const Array& params, bool fHelp)
         throw runtime_error(
             "name_debug1 <name>\n"
             "Dump name blocks number and transactions id in the debug file.\n");
-	
+    
     vector<unsigned char> vchName = vchFromValue(params[0]);
     printf("Dump name:\n");
     CRITICAL_BLOCK(cs_main)
@@ -691,12 +691,12 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-	    vector<unsigned char> strPubKey = GetKeyFromKeyPool();
-	    CScript scriptPubKeyOrig;
-    	scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
-	    CScript scriptPubKey;
-    	scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
-	    scriptPubKey += scriptPubKeyOrig;
+        vector<unsigned char> strPubKey = GetKeyFromKeyPool();
+        CScript scriptPubKeyOrig;
+        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        CScript scriptPubKey;
+        scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
+        scriptPubKey += scriptPubKeyOrig;
 
         CWalletTx& wtxIn = mapWallet[wtxInHash];
         vector<unsigned char> vchHash;
