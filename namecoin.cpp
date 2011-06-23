@@ -747,6 +747,10 @@ Value name_update(const Array& params, bool fHelp)
     if (params.size() == 3)
     {
         string strAddress = params[2].get_str();
+        uint160 hash160;
+        bool isValid = AddressToHash160(strAddress, hash160);
+        if (!isValid)
+            throw JSONRPCError(-5, "Invalid namecoin address");
         scriptPubKeyOrig.SetBitcoinAddress(strAddress);
     }
     else
