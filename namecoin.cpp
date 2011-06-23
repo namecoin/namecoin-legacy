@@ -502,6 +502,11 @@ Value name_list(const Array& params, bool fHelp)
 
 Value name_debug(const Array& params, bool fHelp)
 {
+    if (fHelp || params.size() < 0)
+        throw runtime_error(
+            "name_debug\n"
+            "Dump pending transactions id in the debug file.\n");
+
     printf("Pending:\n----------------------------\n");
     pair<vector<unsigned char>, set<uint256> > pairPending;
 
@@ -525,8 +530,11 @@ Value name_debug(const Array& params, bool fHelp)
 
 Value name_debug1(const Array& params, bool fHelp)
 {
-    if (params.size() != 1)
-        throw runtime_error("expecting a name");
+    if (fHelp || params.size() < 1)
+        throw runtime_error(
+            "name_debug1 <name>\n"
+            "Dump name blocks number and transactions id in the debug file.\n");
+	
     vector<unsigned char> vchName = vchFromValue(params[0]);
     printf("Dump name:\n");
     CRITICAL_BLOCK(cs_main)
