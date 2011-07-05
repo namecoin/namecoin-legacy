@@ -1,0 +1,272 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2011 Vince Durham
+# Distributed under the MIT/X11 software license, see the accompanying
+# file COPYING.
+#
+
+import argparse
+import os
+import sys
+import traceback
+import json
+import base64
+from datetime import datetime
+
+from twisted.internet import defer, reactor
+from twisted.web import server, resource, client
+from twisted.internet.error import ConnectionRefusedError
+from urlparse import urlsplit
+
+__version__ = '0.1'
+
+'''
+merge-mine-proxy
+
+Run behind a pool or a miner to mine a parent chain and a set of auxiliary chains.
+
+Output is in the form:
+
+2011-07-07T00:00:00,solve,1,1
+
+Where the fields are:
+
+    * UTC date and time in ISO format
+    * The word "solve"
+    * 1 if the proof of work was accepted by the parent chain
+    * 1 if the proof of work was accepted by each aux chain
+
+Currently only one aux chain is supported.
+'''
+
+class Error(Exception):
+    def __init__(self, code, message, data=None):
+        if not isinstance(code, int):
+            raise TypeError('code must be an int')
+        if not isinstance(message, unicode):
+            raise TypeError('message must be a unicode')
+        self._code, self._message, self._data = code, message, data
+    def __str__(self):
+        return '%i %s %r' % (self._code, self._message, self._data)
+    def _to_obj(self):
+        return {
+            'code': self._code,
+            'message': self._message,
+            'data': self._data,
+        }
+
+class Proxy(object):
+    def __init__(self, url):
+        (schema, netloc, path, query, fragment) = urlsplit(url)
+        auth = None
+        if netloc.find('@') >= 0:
+            (auth, netloc) = netloc.split("@")
+        self._url = "%s://%s/%s" % (schema, netloc, path)
+        self._auth = auth
+    
+    @defer.inlineCallbacks
+    def callRemote(self, method, *params):
+        try:
+            id_ = 0
+            
+            headers = {
+                'Content-Type': 'text/json',
+            }
+            if self._auth is not None:
+                headers['Authorization'] = 'Basic ' + base64.b64encode(self._auth)
+            resp = json.loads((yield client.getPage(
+                url=self._url,
+                method='POST',
+                headers=headers,
+                postdata=json.dumps({
+                    'jsonrpc': '2.0',
+                    'method': method,
+                    'params': params,
+                    'id': id_,
+                }),
+            )))
+            
+            if resp['id'] != id_:
+                raise ValueError('invalid id')
+            if 'error' in resp and resp['error'] is not None:
+                raise Error(resp['error'])
+            defer.returnValue(resp['result'])
+        except ConnectionRefusedError:
+            print>>sys.stderr, "Could not connect to %s" %(self._url)
+            raise
+    
+    def __getattr__(self, attr):
+        if attr.startswith('rpc_'):
+            return lambda *params: self.callRemote(attr[len('rpc_'):], *params)
+        raise AttributeError('%r object has no attribute %r' % (self.__class__.__name__, attr))
+
+class Server(resource.Resource):
+    extra_headers = None
+    
+    def render(self, request):
+        def finish(x):
+            if request._disconnected:
+                return
+            if x is not None:
+                request.write(x)
+            request.finish()
+        
+        def finish_error(fail):
+            if request._disconnected:
+                return
+            request.setResponseCode(500) # won't do anything if already written to
+            request.write('---ERROR---')
+            request.finish()
+            fail.printTraceback()
+        
+        defer.maybeDeferred(resource.Resource.render, self, request).addCallbacks(finish, finish_error)
+        return server.NOT_DONE_YET
+
+    @defer.inlineCallbacks
+    def render_POST(self, request):
+        # missing batching, 1.0 notifications
+        data = request.content.read()
+        
+        if self.extra_headers is not None:
+            for name, value in self.extra_headers.iteritems():
+                request.setHeader(name, value)
+        
+        try:
+            try:
+                req = json.loads(data)
+            except Exception:
+                raise RemoteError(-32700, u'Parse error')
+        except Error, e:
+            # id unknown
+            request.write(json.dumps({
+                'jsonrpc': '2.0',
+                'id': None,
+                'result': None,
+                'error': e._to_obj(),
+            }))
+        
+        id_ = req.get('id', None)
+        
+        try:
+            try:
+                method = req['method']
+                if not isinstance(method, unicode):
+                    raise ValueError()
+                params = req.get('params', [])
+                if not isinstance(params, list):
+                    raise ValueError()
+            except Exception:
+                raise Error(-32600, u'Invalid Request')
+            
+            method_name = 'rpc_' + method
+            if not hasattr(self, method_name):
+                raise Error(-32601, u'Method not found')
+            method_meth = getattr(self, method_name)
+            
+            df = defer.maybeDeferred(method_meth, *params)
+            
+            if id_ is None:
+                return
+            
+            try:
+                result = yield df
+            #except Error, e:
+            #w    raise e
+            except Exception, e:
+                raise Error(-32099, u'Unknown error: ' + str(e))
+            
+            res = json.dumps({
+                'jsonrpc': '2.0',
+                'id': id_,
+                'result': result,
+                'error': None,
+            })
+            request.setHeader('content-length', str(len(res)))
+            request.write(res)
+        except Error, e:
+            res = json.dumps({
+                'jsonrpc': '2.0',
+                'id': id_,
+                'result': None,
+                'error': e._to_obj(),
+            })
+            request.setHeader('content-length', str(len(res)))
+            request.write(res)
+
+class Listener(Server):
+    def __init__(self, parent, auxs):
+        Server.__init__(self)
+        self.parent = parent
+        if len(auxs) != 1:
+            raise "exactly one aux supported at this time"
+        self.auxs = auxs
+        self.putChild('', self)
+    
+    @defer.inlineCallbacks
+    def rpc_getwork(self, data=None):
+        try:
+            if data:
+                # Submit work upstream
+                proof = (
+                    yield self.parent.rpc_getworkaux("", data, 0))
+                if proof is False:
+                    print>>sys.stderr, "work submitted, but parent rejected"
+                    defer.returnValue(False)
+                else:
+                    aux_solved = (
+                        yield self.auxs[0].rpc_getauxblock(proof['aux'], proof['auxpow']))
+                    parent_solved = (
+                        yield self.parent.rpc_getworkaux("", data))
+                    print "%s,solve,%s,%s" %(datetime.utcnow().isoformat(),
+                                             1 if parent_solved else 0,
+                                             1 if aux_solved else 0)
+                    defer.returnValue(parent_solved or aux_solved)
+            else:
+                # Get work
+                aux_block = (yield self.auxs[0].rpc_getauxblock())
+                aux_block_hash = aux_block['hash']
+                # trivial merkle tree for now
+                aux_merkle_root = aux_block_hash
+                work = (yield self.parent.rpc_getworkaux(aux_merkle_root))
+                # Find highest target
+                targets = [work['target'][::-1]] # reverse hex string due to endianess
+                targets.append(aux_block['target'][::-1])
+                targets.sort()
+                work['target'] = targets[-1][::-1]
+                defer.returnValue(work)
+        except Exception:
+            traceback.print_exc()
+            raise
+
+def main(args):
+    parent = Proxy(args.parent_url)
+    aux_urls = args.aux_urls or ['http://pw:un@127.0.0.1:8342/']
+    auxs = [Proxy(url) for url in aux_urls]
+    reactor.listenTCP(args.worker_port, server.Site(Listener(parent, auxs)))
+
+def run():
+    parser = argparse.ArgumentParser(description='merge-mine-proxy (version %s)' % (__version__,))
+    parser.add_argument('--version', action='version', version=__version__)
+    worker_group = parser.add_argument_group('worker interface')
+    worker_group.add_argument('-w', '--worker-port', metavar='PORT',
+        help='listen on PORT for RPC connections from miners asking for work and providing responses (default: 9992)',
+        type=int, action='store', default=9992, dest='worker_port')
+    parent_group = parser.add_argument_group('parent chain (bitcoin) interface')
+    parent_group.add_argument('-p', '--parent-url', metavar='PARENT_URL',
+                                help='connect to the parent RPC at this address (default: http://pw:un@127.0.0.1:8332/)',
+                                type=str, action='store',
+                                default='http://pw:un@127.0.0.1:8332/',
+                                dest='parent_url')
+
+    aux_group = parser.add_argument_group('aux chain (e.g. namecoin) interface(s)')
+    aux_group.add_argument('-x', '--aux-url', metavar='AUX_URL',
+                                help='connect to the aux RPC at this address (default: http://pw:un@127.0.0.1:8342/)',
+                                type=str, action='store', nargs='+',
+                                dest='aux_urls')
+    
+    args = parser.parse_args()
+    reactor.callWhenRunning(main, args)
+    reactor.run()
+
+if __name__ == "__main__":
+    run()
