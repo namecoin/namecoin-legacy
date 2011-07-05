@@ -18,30 +18,30 @@ public:
             vTxn.erase(vTxn.begin());
     }
 
-    bool WriteName(vector<unsigned char>& name, vector<CDiskTxPos> vtxPos)
+    bool WriteName(std::vector<unsigned char>& name, std::vector<CDiskTxPos> vtxPos)
     {
-        return Write(make_pair(string("namei"), name), vtxPos);
+        return Write(make_pair(std::string("namei"), name), vtxPos);
     }
 
-    bool ReadName(vector<unsigned char>& name, vector<CDiskTxPos>& vtxPos)
+    bool ReadName(std::vector<unsigned char>& name, std::vector<CDiskTxPos>& vtxPos)
     {
-        return Read(make_pair(string("namei"), name), vtxPos);
+        return Read(make_pair(std::string("namei"), name), vtxPos);
     }
 
-    bool ExistsName(vector<unsigned char>& name)
+    bool ExistsName(std::vector<unsigned char>& name)
     {
-        return Exists(make_pair(string("namei"), name));
+        return Exists(make_pair(std::string("namei"), name));
     }
 
-    bool EraseName(vector<unsigned char>& name)
+    bool EraseName(std::vector<unsigned char>& name)
     {
-        return Erase(make_pair(string("namei"), name));
+        return Erase(make_pair(std::string("namei"), name));
     }
 
     bool ScanNames(
-            const vector<unsigned char>& vchName,
+            const std::vector<unsigned char>& vchName,
             int nMax,
-            vector<pair<vector<unsigned char>, CDiskTxPos> >& nameScan);
+            std::vector<std::pair<std::vector<unsigned char>, CDiskTxPos> >& nameScan);
 
     bool test();
 }

@@ -91,7 +91,7 @@ test_bitcoin: obj/test/test_bitcoin.o
 
 obj/nogui/namecoin.o: namecoin.h
 
-namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o obj/sha256.o
+namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:
