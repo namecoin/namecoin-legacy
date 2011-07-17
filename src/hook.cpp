@@ -48,6 +48,19 @@ public:
     {
         return false;
     }
+
+    virtual int GetOurChainID()
+    {
+        return 0x0000;
+    }
+
+    virtual int GetAuxPowStartBlock()
+    {
+        if (fTestNet)
+            return 0; // Always on testnet
+        else
+            return INT_MAX; // Never on prodnet
+    }
 };
 
 int CStandardHooks::LockinHeight()

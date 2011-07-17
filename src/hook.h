@@ -34,6 +34,9 @@ public:
      * whether to spend a coin. */
     virtual bool IsMine(const CTransaction& tx) = 0;
     virtual bool IsMine(const CTransaction& tx, const CTxOut& txout) = 0;
+    virtual int GetOurChainID() = 0;
+
+    virtual int GetAuxPowStartBlock() = 0;
 };
 
 extern CHooks* InitHook();
