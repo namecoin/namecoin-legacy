@@ -774,7 +774,11 @@ enum
     BLOCK_VERSION_DEFAULT        = (1 << 0),
 
     // modifiers
-    BLOCK_VERSION_AUXPOW         = (1 << 16),
+    BLOCK_VERSION_AUXPOW         = (1 << 8),
+
+    // bits allocated for chain ID
+    BLOCK_VERSION_CHAIN_START    = (1 << 16),
+    BLOCK_VERSION_CHAIN_END      = (1 << 30),
 };
 
 
@@ -834,20 +838,14 @@ public:
             const_cast<CBlock*>(this)->vtx.clear();
     )
 
+    int GetChainID() const
+    {
+        return nVersion / BLOCK_VERSION_CHAIN_START;
+    }
+
     void SetAuxPow(CAuxPow* pow);
 
-    void SetNull()
-    {
-        nVersion = BLOCK_VERSION_DEFAULT;
-        hashPrevBlock = 0;
-        hashMerkleRoot = 0;
-        nTime = 0;
-        nBits = 0;
-        nNonce = 0;
-        vtx.clear();
-        vMerkleTree.clear();
-        auxpow.reset();
-    }
+    void SetNull();
 
     bool IsNull() const
     {
