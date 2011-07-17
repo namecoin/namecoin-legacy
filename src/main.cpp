@@ -1239,26 +1239,47 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 
 int GetAuxPowStartBlock()
 {
-    if (fTestNet)
-        return 0; // Always on testnet
-    else
-        return INT_MAX; // Never on prodnet
+    return hooks->GetAuxPowStartBlock();
 }
 
+int GetOurChainID()
+{
+    return hooks->GetOurChainID();
+}
 
 bool CBlock::CheckProofOfWork(int nHeight) const
 {
-
-    if (auxpow.get() != NULL && nHeight >= GetAuxPowStartBlock())
+    if (nHeight >= GetAuxPowStartBlock())
     {
-        if (!auxpow->Check(GetHash()))
-            return error("CheckProofOfWork() : AUX POW is not valid");
-        // Check proof of work matches claimed amount
-        if (!::CheckProofOfWork(auxpow->GetParentBlockHash(), nBits))
-            return error("CheckProofOfWork() : AUX proof of work failed");
+        // Prevent same work from being submitted twice:
+        // - this block must have our chain ID
+        // - parent block must not have the same chain ID (see CAuxPow::Check)
+        // - index of this chain in chain merkle tree must be pre-determined (see CAuxPow::Check)
+        if (!fTestNet && GetChainID() != GetOurChainID())
+            return error("CheckProofOfWork() : block does not have our chain ID");
+
+        if (auxpow.get() != NULL)
+        {
+            if (!auxpow->Check(GetHash(), GetChainID()))
+                return error("CheckProofOfWork() : AUX POW is not valid");
+            // Check proof of work matches claimed amount
+            if (!::CheckProofOfWork(auxpow->GetParentBlockHash(), nBits))
+                return error("CheckProofOfWork() : AUX proof of work failed");
+        }
+        else
+        {
+            // Check proof of work matches claimed amount
+            if (!::CheckProofOfWork(GetHash(), nBits))
+                return error("CheckProofOfWork() : proof of work failed");
+        }
     }
     else
     {
+        if (auxpow.get() != NULL)
+        {
+            return error("CheckProofOfWork() : AUX POW is not allowed at this block");
+        }
+
         // Check proof of work matches claimed amount
         if (!::CheckProofOfWork(GetHash(), nBits))
             return error("CheckProofOfWork() : proof of work failed");
@@ -2723,6 +2744,18 @@ public:
     }
 };
 
+void CBlock::SetNull()
+{
+    nVersion = BLOCK_VERSION_DEFAULT | (GetOurChainID() * BLOCK_VERSION_CHAIN_START);
+    hashPrevBlock = 0;
+    hashMerkleRoot = 0;
+    nTime = 0;
+    nBits = 0;
+    nNonce = 0;
+    vtx.clear();
+    vMerkleTree.clear();
+    auxpow.reset();
+}
 
 CBlock* CreateNewBlock(CReserveKey& reservekey)
 {
@@ -2957,7 +2990,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 
     if (auxpow != NULL)
     {
-        if (!auxpow->Check(hash))
+        if (!auxpow->Check(hash, pblock->GetChainID()))
             return error("AUX POW is not valid");
 
         if (auxpow->GetParentBlockHash() > hashTarget)

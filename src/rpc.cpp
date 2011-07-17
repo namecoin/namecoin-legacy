@@ -1567,7 +1567,7 @@ Value getworkaux(const Array& params, bool fHelp)
             "getworkaux <aux>\n"
             "getworkaux "" <data> [<chain-index> <branch>*]\n"
             " get work with auxiliary data in coinbase, for multichain mining\n"
-            "<aux> is the merkle root of the auxiliary chain block hashes\n"
+            "<aux> is the merkle root of the auxiliary chain block hashes concatenated with the aux chain merkle tree size and a nonce\n"
             "<chain-index> is the aux chain index in the aux chain merkle tree\n"
             "<branch> is the optional merkle branch of the aux chain\n"
             "If <data> is not specified, returns formatted hash data to work on:\n"
@@ -1689,7 +1689,6 @@ Value getworkaux(const Array& params, bool fHelp)
 
         if (params.size() > 2)
         {
-            printf("pow parent block with hash %s\n", pblock->GetHash().GetHex().c_str());
             // Requested aux proof of work
             int nChainIndex = params[2].get_int();
             // TODO handle branch

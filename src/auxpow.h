@@ -36,15 +36,13 @@ public:
         nSerSize += SerReadWrite(s, parentBlock, nType | SER_BLOCKHEADERONLY, nVersion, ser_action);
     )
 
-    bool Check(uint256 hashAuxBlock);
+    bool Check(uint256 hashAuxBlock, int nChainID);
 
     uint256 GetParentBlockHash()
     {
         return parentBlock.GetHash();
     }
 };
-
-bool CheckWorkWithAuxPow(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey, CAuxPow& auxpow);
 
 template <typename Stream>
 int ReadWriteAuxPow(Stream& s, const boost::shared_ptr<CAuxPow>& auxpow, int nType, int nVersion, CSerActionGetSerializeSize ser_action)

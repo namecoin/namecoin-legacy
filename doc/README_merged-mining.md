@@ -21,6 +21,7 @@ The validation proceeds as follows:
 * verify that the merkle root is in the parent coinbase
 * verify that the parent coinbase tx is properly attached to the merkle tree of the parent block
 * verify that the parent block hash is under the aux target
+* verify that the aux block is at a fixed slot in the chain merkle tree
 
 Mining
 ======
@@ -38,7 +39,16 @@ Currently acceptance of aux proof of work is disabled on the production bitcoin 
 
 To enable a synchronized upgrade to a chain, a starting block number can be configured in GetAuxPowStartBlock().
 
-Issues
-======
+How To Example for Bitcoin / Namecoin
+=====================================
 
-* The code as it stands allows multiple aux blocks for the same aux chain to be generated at once if the blocks are put at different positions in the merkle tree.  Unless another solution is found, each aux chain must only accept blocks at a fixed position in the chain list.
+This example assumes bitcoin RPC port is 8332 and namecoin is at port 8331.
+
+Compile namecoind and bitcoind with the merged mining patch.  Then run:
+
+  `contrib/merged-mine-proxy -w 8330 -p http://pw:un@127.0.0.1:8332/ -x http://pw:un@127.0.0.1:8331/`
+
+This will have the proxy listen at port 8330.  
+
+Point your miner at 127.0.0.1 port 8330 and start mining.
+

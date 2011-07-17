@@ -7,6 +7,7 @@
 #include "keystore.h"
 #include "wallet.h"
 #include "init.h"
+#include "auxpow.h"
 #include "namecoin.h"
 
 #include "json/json_spirit_reader_template.h"
@@ -85,6 +86,15 @@ public:
     }
     virtual bool IsMine(const CTransaction& tx);
     virtual bool IsMine(const CTransaction& tx, const CTxOut& txout);
+    virtual int GetOurChainID()
+    {
+        return 0x0001;
+    }
+
+    virtual int GetAuxPowStartBlock()
+    {
+        return 24000;
+    }
 };
 
 int64 getAmount(Value value)
