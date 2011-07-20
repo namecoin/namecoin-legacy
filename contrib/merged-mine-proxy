@@ -40,6 +40,9 @@ Where the fields are:
 Currently only one aux chain is supported.
 '''
 
+AUX_UPDATE_INTERVAL = 10
+MERKLE_TREES_TO_KEEP = 12
+
 class Error(Exception):
     def __init__(self, code, message, data=''):
         if not isinstance(code, int):
@@ -101,7 +104,7 @@ class Proxy(object):
             defer.returnValue(resp['result'])
         except ConnectionRefusedError:
             print>>sys.stderr, "Could not connect to %s" %(self._url)
-            raise Error(-32099, u'Could not connect to backend', self._netloc)
+            raise Error(-32099, u'Could not connect to backend', self._url)
     
     def __getattr__(self, attr):
         if attr.startswith('rpc_'):
@@ -202,48 +205,130 @@ class Server(resource.Resource):
             request.write(res)
 
 class Listener(Server):
-    def __init__(self, parent, auxs):
+    def __init__(self, parent, auxs, merkle_size):
         Server.__init__(self)
         self.parent = parent
-        if len(auxs) != 1:
-            raise "exactly one aux supported at this time"
         self.auxs = auxs
+        self.chain_ids = [None for i in auxs]
+        self.aux_targets = [None for i in auxs]
+        self.merkle_size = merkle_size
+        self.merkle_tree_queue = []
+        self.merkle_trees = {}
+        if merkle_size > 255:
+            raise ValueError('merkle size up to 255')
         self.putChild('', self)
     
+    def merkle_branch(self, chain_index, merkle_tree):
+        step = self.merkle_size
+        i1 = chain_index
+        j = 0
+        branch = []
+        while step > 1:
+            i = min(i1^1, step-1)
+            branch.append(merkle_tree[i + j])
+            i1 = i1 >> 1
+            j += step
+            step = (step + 1) / 2
+        return branch
+
+    def calc_merkle_index(self, chain):
+        chain_id = self.chain_ids[chain]
+        rand = 0 # nonce
+        rand = (rand * 1103515245 + 12345) & 0xffffffff;
+        rand += chain_id;
+        rand = (rand * 1103515245 + 12345) & 0xffffffff;
+        return rand % self.merkle_size
+
+    @defer.inlineCallbacks
+    def update_auxs(self):
+        # create merkle leaves with arbitrary initial value
+        merkle_leaves = [ ('0' * 63) + ("%02x" % x) for x in range(self.merkle_size) ]
+
+        # ask each aux chain for a block
+        for chain in range(len(self.auxs)):
+            aux_block = (yield self.auxs[chain].rpc_getauxblock())
+            aux_block_hash = aux_block['hash']
+            self.chain_ids[chain] = aux_block['chainid']
+            chain_merkle_index = self.calc_merkle_index(chain)
+            merkle_leaves[chain_merkle_index] = aux_block_hash
+            self.aux_targets[chain] = aux_block['target'][::-1] # reverse hex string due to endianess
+
+        # create merkle tree
+        merkle_tree = (yield self.parent.rpc_buildmerkletree(*merkle_leaves))
+        merkle_root = merkle_tree[-1]
+
+        if not self.merkle_trees.has_key(merkle_root):
+            # remember new tree
+            self.merkle_trees[merkle_root] = merkle_tree
+            self.merkle_tree_queue.append(merkle_root)
+            if len(self.merkle_tree_queue) > MERKLE_TREES_TO_KEEP:
+                # forget one tree
+                old_root = self.merkle_tree_queue.pop(0)
+                del self.merkle_trees[old_root]
+
+    def update_aux_process(self):
+        reactor.callLater(AUX_UPDATE_INTERVAL, self.update_aux_process)
+        self.update_auxs()
+
     @defer.inlineCallbacks
     def rpc_getwork(self, data=None):
         try:
             if data:
                 # Submit work upstream
-                proof = (
-                    yield self.parent.rpc_getworkaux("", data, 0))
-                if proof is False:
-                    print>>sys.stderr, "work submitted, but parent rejected"
+                any_solved = False
+                aux_solved = []
+
+                # get merkle root
+                solution = (yield self.parent.rpc_getworkaux("", data))
+
+                if solution is False:
+                    print>>sys.stderr, "stale work"
                     defer.returnValue(False)
-                else:
-                    aux = proof['aux']
-                    # strip off merkle tree size and nonce
-                    aux_hash = proof['aux'][0:-16]
-                    aux_solved = (
-                        yield self.auxs[0].rpc_getauxblock(aux_hash, proof['auxpow']))
-                    parent_solved = (
-                        yield self.parent.rpc_getworkaux("", data))
-                    print "%s,solve,%s,%s" %(datetime.utcnow().isoformat(),
-                                             1 if parent_solved else 0,
-                                             1 if aux_solved else 0)
-                    defer.returnValue(parent_solved or aux_solved)
+                    return
+
+                parent_hash = solution['hash']
+                merkle_root = solution['aux'][:-16] # strip off size and nonce
+                if not self.merkle_trees.has_key(merkle_root):
+                    print>>sys.stderr, "stale merkle root %s" %(merkle_root)
+                    defer.returnValue(False)
+                    return
+
+                merkle_tree = self.merkle_trees[merkle_root]
+
+                # submit to each aux chain
+                for chain in range(len(self.auxs)):
+                    chain_merkle_index = self.calc_merkle_index(chain)
+                    aux_solved.append(False)
+                    # try submitting if under target
+                    if self.aux_targets[chain] > parent_hash and not chain_merkle_index is None:
+                        branch = self.merkle_branch(chain_merkle_index, merkle_tree)
+                        proof = (
+                            yield self.parent.rpc_getworkaux("", data, chain_merkle_index, *branch))
+                        if proof is False:
+                            print>>sys.stderr, "aux pow request rejected by parent, chain %d" %(chain)
+                        else:
+                            aux_hash = merkle_tree[chain_merkle_index]
+                            aux_solved[-1] = (
+                                yield self.auxs[chain].rpc_getauxblock(aux_hash, proof['auxpow']))
+                            any_solved = any_solved or aux_solved[-1]
+
+                # submit to parent
+                parent_solved = (yield self.parent.rpc_getworkaux("submit", data))
+                any_solved = any_solved or parent_solved
+
+                print "%s,solve,%s,%s" %(datetime.utcnow().isoformat(),
+                                         "1" if parent_solved else "0",
+                                         ",".join(["1" if solve else "0" for solve in aux_solved]))
+                defer.returnValue(any_solved)
             else:
-                # Get work
-                aux_block = (yield self.auxs[0].rpc_getauxblock())
-                aux_block_hash = aux_block['hash']
-                # trivial merkle tree for now
-                aux_merkle_root = aux_block_hash
-                # merkle tree size = 1, nonce = 0
-                aux = aux_merkle_root + "01000000" + "00000000"
+                # Get work based on the latest tree
+                merkle_root = self.merkle_tree_queue[-1]
+                # nonce = 0, one byte merkle size
+                aux = merkle_root + ("%02x000000" % self.merkle_size) + "00000000"
                 work = (yield self.parent.rpc_getworkaux(aux))
                 # Find highest target
                 targets = [work['target'][::-1]] # reverse hex string due to endianess
-                targets.append(aux_block['target'][::-1])
+                targets.extend(self.aux_targets)
                 targets.sort()
                 work['target'] = targets[-1][::-1]
                 defer.returnValue(work)
@@ -253,9 +338,21 @@ class Listener(Server):
 
 def main(args):
     parent = Proxy(args.parent_url)
-    aux_urls = args.aux_urls or ['http://pw:un@127.0.0.1:8342/']
+    aux_urls = args.aux_urls or ['http://un:pw@127.0.0.1:8342/']
     auxs = [Proxy(url) for url in aux_urls]
-    reactor.listenTCP(args.worker_port, server.Site(Listener(parent, auxs)))
+    if args.merkle_size is None:
+        for i in range(8):
+            if (1<<i) > len(aux_urls):
+                args.merkle_size = i
+                print 'merkle size = %d'%(i)
+                break
+
+    if len(aux_urls) > args.merkle_size:
+        raise ValueError('the merkle size must be at least as large as the number of aux chains')
+
+    listener = Listener(parent, auxs, args.merkle_size)
+    listener.update_aux_process()
+    reactor.listenTCP(args.worker_port, server.Site(listener))
 
 def run():
     parser = argparse.ArgumentParser(description='merge-mine-proxy (version %s)' % (__version__,))
@@ -264,18 +361,23 @@ def run():
     worker_group.add_argument('-w', '--worker-port', metavar='PORT',
         help='listen on PORT for RPC connections from miners asking for work and providing responses (default: 9992)',
         type=int, action='store', default=9992, dest='worker_port')
+
     parent_group = parser.add_argument_group('parent chain (bitcoin) interface')
     parent_group.add_argument('-p', '--parent-url', metavar='PARENT_URL',
-                                help='connect to the parent RPC at this address (default: http://pw:un@127.0.0.1:8332/)',
-                                type=str, action='store',
-                                default='http://pw:un@127.0.0.1:8332/',
-                                dest='parent_url')
+                              help='connect to the parent RPC at this address (default: http://un:pw@127.0.0.1:8332/)',
+                              type=str, action='store',
+                              default='http://un:pw@127.0.0.1:8332/',
+                              dest='parent_url')
 
     aux_group = parser.add_argument_group('aux chain (e.g. namecoin) interface(s)')
     aux_group.add_argument('-x', '--aux-url', metavar='AUX_URL',
-                                help='connect to the aux RPC at this address (default: http://pw:un@127.0.0.1:8342/)',
-                                type=str, action='store', nargs='+',
-                                dest='aux_urls')
+                           help='connect to the aux RPC at this address (default: http://un:pw@127.0.0.1:8342/)',
+                           type=str, action='store', nargs='+',
+                           dest='aux_urls')
+    aux_group.add_argument('-s', '--merkle-size', metavar='SIZE',
+                           help='use these many entries in the merkle tree.  Must be a power of 2. Default is lowest power of 2 greater than number of aux chains.',
+                           type=int, action='store', default=None,
+                           dest='merkle_size')
     
     args = parser.parse_args()
     reactor.callWhenRunning(main, args)

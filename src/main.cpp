@@ -629,9 +629,10 @@ bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
 
 void CBlock::SetAuxPow(CAuxPow* pow)
 {
-    nVersion = BLOCK_VERSION_DEFAULT;
     if (pow != NULL)
         nVersion |=  BLOCK_VERSION_AUXPOW;
+    else
+        nVersion &=  ~BLOCK_VERSION_AUXPOW;
     auxpow.reset(pow);
 }
 

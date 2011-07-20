@@ -11,7 +11,7 @@ using namespace boost;
 
 bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
 {
-    if (parentBlock.GetChainID() == nChainID)
+    if (!fTestNet && parentBlock.GetChainID() == nChainID)
         return error("Aux POW parent has our chain ID");
 
     if (vChainMerkleBranch.size() > 30)

@@ -1417,15 +1417,16 @@ Value getwork(const Array& params, bool fHelp)
     }
 }
 
-
 Value getworkaux(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1)
         throw runtime_error(
             "getworkaux <aux>\n"
-            "getworkaux "" <data> [<chain-index> <branch>*]\n"
+            "getworkaux '' <data>\n"
+            "getworkaux 'submit' <data>\n"
+            "getworkaux '' <data> <chain-index> <branch>*\n"
             " get work with auxiliary data in coinbase, for multichain mining\n"
-            "<aux> is the merkle root of the auxiliary chain block hashes concatenated with the aux chain merkle tree size and a nonce\n"
+            "<aux> is the merkle root of the auxiliary chain block hashes, concatenated with the aux chain merkle tree size and a nonce\n"
             "<chain-index> is the aux chain index in the aux chain merkle tree\n"
             "<branch> is the optional merkle branch of the aux chain\n"
             "If <data> is not specified, returns formatted hash data to work on:\n"
@@ -1433,7 +1434,8 @@ Value getworkaux(const Array& params, bool fHelp)
             "  \"data\" : block data\n"
             "  \"hash1\" : formatted hash buffer for second hash\n"
             "  \"target\" : little endian hash target\n"
-            "If <data> is specified, tries to solve the block for this (parent) chain and returns true if it was successful."
+            "If <data> is specified and 'submit', tries to solve the block for this (parent) chain and returns true if it was successful."
+            "If <data> is specified and empty first argument, returns the aux merkle root, with size and nonce."
             "If <data> and <chain-index> are specified, creates an auxiliary proof of work for the chain specified and returns:\n"
             "  \"aux\" : merkle root of auxiliary chain block hashes\n"
             "  \"auxpow\" : aux proof of work to submit to aux chain\n"
@@ -1509,8 +1511,8 @@ Value getworkaux(const Array& params, bool fHelp)
     }
     else
     {
-        if (params[0].get_str().size() > 0)
-            throw JSONRPCError(-8, "<aux> must be the empty string if work is being submitted");
+        if (params[0].get_str() != "submit" && params[0].get_str() != "")
+            throw JSONRPCError(-8, "<aux> must be the empty string or 'submit' if work is being submitted");
         // Parse parameters
         vector<unsigned char> vchData = ParseHex(params[1].get_str());
         if (vchData.size() != 128)
@@ -1549,8 +1551,16 @@ Value getworkaux(const Array& params, bool fHelp)
         {
             // Requested aux proof of work
             int nChainIndex = params[2].get_int();
-            // TODO handle branch
+
             CAuxPow pow(pblock->vtx[0]);
+
+            for (int i = 3 ; i < params.size() ; i++)
+            {
+                uint256 nHash;
+                nHash.SetHex(params[i].get_str());
+                pow.vChainMerkleBranch.push_back(nHash);
+            }
+
             pow.SetMerkleBranch(pblock);
             pow.nChainIndex = nChainIndex;
             pow.parentBlock = *pblock;
@@ -1558,12 +1568,21 @@ Value getworkaux(const Array& params, bool fHelp)
             ss << pow;
             Object result;
             result.push_back(Pair("auxpow", HexStr(ss.begin(), ss.end())));
-            result.push_back(Pair("aux", HexStr(vchAux.begin(), vchAux.end())));
             return result;
         }
         else
         {
-            return CheckWork(pblock, *pwalletMain, reservekey);
+            if (params[0].get_str() == "submit")
+            {
+                return CheckWork(pblock, *pwalletMain, reservekey);
+            }
+            else
+            {
+                Object result;
+                result.push_back(Pair("aux", HexStr(vchAux.begin(), vchAux.end())));
+                result.push_back(Pair("hash", pblock->GetHash().GetHex()));
+                return result;
+            }
         }
     }
 }
@@ -1638,6 +1657,7 @@ Value getauxblock(const Array& params, bool fHelp)
         Object result;
         result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
         result.push_back(Pair("hash", pblock->GetHash().GetHex()));
+        result.push_back(Pair("chainid", pblock->GetChainID()));
         return result;
     }
     else
@@ -1663,6 +1683,42 @@ Value getauxblock(const Array& params, bool fHelp)
             return true;
         }
     }
+}
+
+Value buildmerkletree(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1)
+        throw runtime_error(
+                "buildmerkletree <obj>...\n"
+                " build a merkle tree with the given hex-encoded objects\n"
+                );
+    vector<uint256> vTree;
+    BOOST_FOREACH(const Value& obj, params)
+    {
+        uint256 nHash;
+        nHash.SetHex(obj.get_str());
+        vTree.push_back(nHash);
+    }
+
+    int j = 0;
+    for (int nSize = params.size(); nSize > 1; nSize = (nSize + 1) / 2)
+    {
+        for (int i = 0; i < nSize; i += 2)
+        {
+            int i2 = std::min(i+1, nSize-1);
+            vTree.push_back(Hash(BEGIN(vTree[j+i]),  END(vTree[j+i]),
+                        BEGIN(vTree[j+i2]), END(vTree[j+i2])));
+        }
+        j += nSize;
+    }
+
+    Array result;
+    BOOST_FOREACH(uint256& nNode, vTree)
+    {
+        result.push_back(nNode.GetHex());
+    }
+
+    return result;
 }
 
 
@@ -1717,6 +1773,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("getwork",               &getwork),
     make_pair("getworkaux",            &getworkaux),
     make_pair("getauxblock",           &getauxblock),
+    make_pair("buildmerkletree",       &buildmerkletree),
     make_pair("listaccounts",          &listaccounts),
     make_pair("settxfee",              &settxfee),
 };
@@ -2198,7 +2255,7 @@ void ThreadRPCServer2(void* parg)
             if (valMethod.type() != str_type)
                 throw JSONRPCError(-32600, "Method must be a string");
             string strMethod = valMethod.get_str();
-            if (strMethod != "getwork" && strMethod != "getworkaux" && strMethod != "getauxblock")
+            if (strMethod != "getwork" && strMethod != "getworkaux" && strMethod != "getauxblock" && strMethod != "buildmerkletree")
                 printf("ThreadRPCServer method=%s\n", strMethod.c_str());
 
             // Parse params
