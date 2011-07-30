@@ -95,6 +95,16 @@ public:
     {
         return 24000;
     }
+
+    string GetAlertPubkey1()
+    {
+        return "04ba207043c1575208f08ea6ac27ed2aedd4f84e70b874db129acb08e6109a3bbb7c479ae22565973ebf0ac0391514511a22cb9345bdb772be20cfbd38be578b0c";
+    }
+
+    string GetAlertPubkey2()
+    {
+        return "04fc4366270096c7e40adb8c3fcfbff12335f3079e5e7905bce6b1539614ae057ee1e61a25abdae4a7a2368505db3541cd81636af3f7c7afe8591ebc85b2a1acdd";
+    }
 };
 
 int64 getAmount(Value value)
