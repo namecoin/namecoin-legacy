@@ -146,7 +146,7 @@ CHooks* InitHook()
 
 unsigned short GetDefaultPort()
 {
-    return fTestNet ? htons(18333) : htons(8333);
+    return fTestNet ? 18333 : 8333;
 }
 
 const char *strDNSSeed[] = {
