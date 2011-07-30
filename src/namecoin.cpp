@@ -1688,10 +1688,10 @@ string CNamecoinHooks::IrcPrefix()
 
 unsigned short GetDefaultPort()
 {
-    return fTestNet ? htons(18334) : htons(8334);
+    return fTestNet ? 18334 : 8334;
 }
 
-unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, 0 };
+unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, 0x291f20b2, 0 };
 const char *strDNSSeed[] = { NULL };
 
 string GetDefaultDataDirSuffix() {
