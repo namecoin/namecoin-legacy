@@ -37,6 +37,13 @@ public:
     virtual int GetOurChainID() = 0;
 
     virtual int GetAuxPowStartBlock() = 0;
+
+    virtual std::string GetAlertPubkey1()
+    {
+        return "04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284";
+    }
+
+    virtual std::string GetAlertPubkey2() { return GetAlertPubkey1(); }
 };
 
 extern CHooks* InitHook();

@@ -1567,19 +1567,7 @@ public:
         return false;
     }
 
-    bool CheckSignature()
-    {
-        CKey key;
-        if (!key.SetPubKey(ParseHex("04fc9702847840aaf195de8442ebecedf5b095cdbb9bc716bda9110971b28a49e0ead8564ff0db22209e0374782c093bb899692d524e9d6a6956e7c5ecbcd68284")))
-            return error("CAlert::CheckSignature() : SetPubKey failed");
-        if (!key.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig))
-            return error("CAlert::CheckSignature() : verify signature failed");
-
-        // Now unserialize the data
-        CDataStream sMsg(vchMsg);
-        sMsg >> *(CUnsignedAlert*)this;
-        return true;
-    }
+    bool CheckSignature();
 
     bool ProcessAlert();
 };

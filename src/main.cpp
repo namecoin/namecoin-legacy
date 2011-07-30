@@ -1761,6 +1761,22 @@ string GetWarnings(string strFor)
     return "error";
 }
 
+bool CAlert::CheckSignature()
+{
+    CKey key1, key2;
+    if (!key1.SetPubKey(ParseHex(hooks->GetAlertPubkey1())))
+        return error("CAlert::CheckSignature() : SetPubKey failed");
+    if (!key2.SetPubKey(ParseHex(hooks->GetAlertPubkey2())))
+        return error("CAlert::CheckSignature() : SetPubKey failed");
+    if (!key1.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig) && !key2.Verify(Hash(vchMsg.begin(), vchMsg.end()), vchSig) )
+        return error("CAlert::CheckSignature() : verify signature failed");
+
+    // Now unserialize the data
+    CDataStream sMsg(vchMsg);
+    sMsg >> *(CUnsignedAlert*)this;
+    return true;
+}
+
 bool CAlert::ProcessAlert()
 {
     if (!CheckSignature())
