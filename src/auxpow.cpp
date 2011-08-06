@@ -9,6 +9,15 @@
 using namespace std;
 using namespace boost;
 
+unsigned char pchMergedMiningHeader[] = { 0xfa, 0xbe, 'm', 'm' } ;
+
+void RemoveMergedMiningHeader(vector<unsigned char>& vchAux)
+{
+    if (vchAux.begin() != std::search(vchAux.begin(), vchAux.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader)))
+        throw runtime_error("merged mining aux too short");
+    vchAux.erase(vchAux.begin(), vchAux.begin() + sizeof(pchMergedMiningHeader));
+}
+
 bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
 {
     if (!fTestNet && parentBlock.GetChainID() == nChainID)
@@ -28,18 +37,36 @@ bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
 
     const CScript script = vin[0].scriptSig;
 
+    // Check that the same work is not submitted twice to our chain.
+    //
+
+    CScript::const_iterator pcHead =
+        std::search(script.begin(), script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
+
     CScript::const_iterator pc =
         std::search(script.begin(), script.end(), vchRootHash.begin(), vchRootHash.end());
 
     if (pc == script.end())
         return error("Aux POW missing chain merkle root in parent coinbase");
 
-    // Check that the same work is not submitted twice to our chain.
-    //
-    // Enforce only one chain merkle root by checking that it starts early in the coinbase.
-    // 8-12 bytes are enough to encode extraNonce and nBits.
-    if (pc - script.begin() > 20)
-        return error("Aux POW chain merkle root must start in the first 20 bytes of the parent coinbase");
+    if (pcHead != script.end())
+    {
+        // Enforce only one chain merkle root by checking that a single instance of the merged
+        // mining header exists just before.
+        if (script.end() != std::search(pcHead + 1, script.end(), UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader)))
+            return error("Multiple merged mining headers in coinbase");
+        if (pcHead + sizeof(pchMergedMiningHeader) != pc)
+            return error("Merged mining header is not just before chain merkle root");
+    }
+    else
+    {
+        // For backward compatibility.
+        // Enforce only one chain merkle root by checking that it starts early in the coinbase.
+        // 8-12 bytes are enough to encode extraNonce and nBits.
+        if (pc - script.begin() > 20)
+            return error("Aux POW chain merkle root must start in the first 20 bytes of the parent coinbase");
+    }
+
 
     // Ensure we are at a deterministic point in the merkle leaves by hashing
     // a nonce and our chain ID and comparing to the index.
@@ -71,3 +98,29 @@ bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
 
     return true;
 }
+
+CScript MakeCoinbaseWithAux(unsigned int nBits, unsigned int nExtraNonce, vector<unsigned char>& vchAux)
+{
+    vector<unsigned char> vchAuxWithHeader(UBEGIN(pchMergedMiningHeader), UEND(pchMergedMiningHeader));
+    vchAuxWithHeader.insert(vchAuxWithHeader.end(), vchAux.begin(), vchAux.end());
+
+    // Push OP_2 just in case we want versioning later
+    return CScript() << nBits << nExtraNonce << OP_2 << vchAuxWithHeader;
+}
+
+
+void IncrementExtraNonceWithAux(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime, vector<unsigned char>& vchAux)
+{
+    // Update nExtraNonce
+    int64 nNow = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
+    if (++nExtraNonce >= 0x7f && nNow > nPrevTime+1)
+    {
+        nExtraNonce = 1;
+        nPrevTime = nNow;
+    }
+
+    pblock->vtx[0].vin[0].scriptSig = MakeCoinbaseWithAux(pblock->nBits, nExtraNonce, vchAux);
+    pblock->hashMerkleRoot = pblock->BuildMerkleTree();
+}
+
+

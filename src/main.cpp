@@ -2919,22 +2919,6 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 }
 
 // Create coinbase with auxiliary data, for multichain mining
-void IncrementExtraNonceWithAux(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime, vector<unsigned char>& vchAux)
-{
-    // Update nExtraNonce
-    int64 nNow = max(pindexPrev->GetMedianTimePast()+1, GetAdjustedTime());
-    if (++nExtraNonce >= 0x7f && nNow > nPrevTime+1)
-    {
-        nExtraNonce = 1;
-        nPrevTime = nNow;
-    }
-
-    // Push OP_1 just in case we want versioning later
-    pblock->vtx[0].vin[0].scriptSig = CScript() << pblock->nBits << CBigNum(nExtraNonce) << OP_1 << vchAux;
-    pblock->hashMerkleRoot = pblock->BuildMerkleTree();
-}
-
-
 void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash1)
 {
     //
