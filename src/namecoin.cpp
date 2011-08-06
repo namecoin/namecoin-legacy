@@ -93,6 +93,8 @@ public:
 
     virtual int GetAuxPowStartBlock()
     {
+        if (fTestNet)
+            return 0;
         return 24000;
     }
 
