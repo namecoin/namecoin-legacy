@@ -35,6 +35,12 @@ bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
         return error("Aux POW missing chain merkle root in parent coinbase");
 
     // Check that the same work is not submitted twice to our chain.
+    //
+    // Enforce only one chain merkle root by checking that it starts early in the coinbase.
+    // 8-12 bytes are enough to encode extraNonce and nBits.
+    if (pc - script.begin() > 20)
+        return error("Aux POW chain merkle root must start in the first 20 bytes of the parent coinbase");
+
     // Ensure we are at a deterministic point in the merkle leaves by hashing
     // a nonce and our chain ID and comparing to the index.
     pc += vchRootHash.size();
