@@ -1681,12 +1681,14 @@ Value getworkaux(const Array& params, bool fHelp)
         script.GetOp(pc, opcode);
         script.GetOp(pc, opcode);
         script.GetOp(pc, opcode);
-        if (opcode != OP_1)
+        if (opcode != OP_2)
             throw runtime_error("invalid aux pow script");
         vector<unsigned char> vchAux;
         script.GetOp(pc, opcode, vchAux);
 
-        pblock->vtx[0].vin[0].scriptSig = CScript() << pblock->nBits << CBigNum(nExtraNonce) << OP_1 << vchAux;
+        RemoveMergedMiningHeader(vchAux);
+
+        pblock->vtx[0].vin[0].scriptSig = MakeCoinbaseWithAux(pblock->nBits, nExtraNonce, vchAux);
         pblock->hashMerkleRoot = pblock->BuildMerkleTree();
 
         if (params.size() > 2)
