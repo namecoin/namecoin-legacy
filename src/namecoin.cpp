@@ -95,7 +95,7 @@ public:
     {
         if (fTestNet)
             return 0;
-        return 24000;
+        return 19200;
     }
 
     string GetAlertPubkey1()
