@@ -344,7 +344,7 @@ void ThreadIRCSeed2(void* parg)
         }
 
         string channel = hooks->IrcPrefix();
-        string channel_number = fTestNet ? "" : strprintf("%02d", GetRandInt(100));
+        string channel_number = fTestNet ? "" : strprintf("%02d", GetRandInt(2));
         if (fTestNet)
           channel += "TEST";
         string cmd = "JOIN #" + channel + channel_number + "\r";
