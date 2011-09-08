@@ -14,12 +14,13 @@ News
 
 Stable releases: only releases a tag that starts with "nc", that are signed and that do not end with -rc0-9 should be considered stable.  All others are experimental.
 
-IMPORTANT VALIDATION CHANGES at block 24000!
+IMPORTANT VALIDATION CHANGES at block 19200 and 24000!
 
-* Effective at block 24000, names registered at block 12000 onward will expire after 36000 blocks instead of the current valud of 12000
+* Effective at block 19200, merged mining comes into effect
+* Effective at block 24000, names registered at block 12000 onward will expire after 36000 blocks instead of the current value of 12000
 * Also effective at block 24000, the decline in network fees will speed up by a factor of 4
 
-You must upgrade to version 0.3.24, once it is released, before block 24000, or your client will start rejecting blocks and will be unable to participate in the network.
+You must upgrade to version 0.3.24 before block 19200 or your client will start rejecting blocks and will be unable to participate in the network.
 
 Technical
 =====================
