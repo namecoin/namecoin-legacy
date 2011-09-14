@@ -1685,7 +1685,10 @@ bool CNamecoinHooks::GenesisBlock(CBlock& block)
 
 int CNamecoinHooks::LockinHeight()
 {
-    return 0;
+    if (fTestNet)
+        return 0;
+
+    return 18940;
 }
 
 bool CNamecoinHooks::Lockin(int nHeight, uint256 hash)
