@@ -801,7 +801,7 @@ Value name_update(const Array& params, bool fHelp)
     {
         if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
         {
-            error("name_firstupdate() : there are %d pending operations on that name, including %s",
+            error("name_update() : there are %d pending operations on that name, including %s",
                     mapNamePending[vchName].size(),
                     mapNamePending[vchName].begin()->GetHex().c_str());
             throw runtime_error("there are pending operations on that name");
