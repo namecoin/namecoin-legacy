@@ -98,6 +98,13 @@ public:
         return 19200;
     }
 
+    virtual int GetFullRetargetStartBlock()
+    {
+        if (fTestNet)
+            return 0;
+        return 19200;
+    }
+
     string GetAlertPubkey1()
     {
         return "04ba207043c1575208f08ea6ac27ed2aedd4f84e70b874db129acb08e6109a3bbb7c479ae22565973ebf0ac0391514511a22cb9345bdb772be20cfbd38be578b0c";
