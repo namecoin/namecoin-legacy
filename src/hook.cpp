@@ -61,6 +61,11 @@ public:
         else
             return INT_MAX; // Never on prodnet
     }
+
+    virtual int GetFullRetargetStartBlock()
+    {
+        return INT_MAX; // Never
+    }
 };
 
 int CStandardHooks::LockinHeight()

@@ -37,6 +37,7 @@ public:
     virtual int GetOurChainID() = 0;
 
     virtual int GetAuxPowStartBlock() = 0;
+    virtual int GetFullRetargetStartBlock() = 0;
 
     virtual std::string GetAlertPubkey1()
     {
