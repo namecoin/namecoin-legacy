@@ -43,6 +43,9 @@ Currently only one aux chain is supported.
 AUX_UPDATE_INTERVAL = 10
 MERKLE_TREES_TO_KEEP = 12
 
+def reverse_chunks(s, l):
+    return ''.join(reversed([s[x:x+l] for x in xrange(0, len(s), l)]))
+
 class Error(Exception):
     def __init__(self, code, message, data=''):
         if not isinstance(code, int):
@@ -251,7 +254,7 @@ class Listener(Server):
             self.chain_ids[chain] = aux_block['chainid']
             chain_merkle_index = self.calc_merkle_index(chain)
             merkle_leaves[chain_merkle_index] = aux_block_hash
-            self.aux_targets[chain] = aux_block['target'][::-1] # reverse hex string due to endianess
+            self.aux_targets[chain] = reverse_chunks(aux_block['target'], 2) # fix endian
 
         # create merkle tree
         merkle_tree = (yield self.parent.rpc_buildmerkletree(*merkle_leaves))
@@ -327,10 +330,10 @@ class Listener(Server):
                 aux = merkle_root + ("%02x000000" % self.merkle_size) + "00000000"
                 work = (yield self.parent.rpc_getworkaux(aux))
                 # Find highest target
-                targets = [work['target'][::-1]] # reverse hex string due to endianess
+                targets = [reverse_chunks(work['target'], 2)] # reverse hex string due to endianess
                 targets.extend(self.aux_targets)
                 targets.sort()
-                work['target'] = targets[-1][::-1]
+                work['target'] = reverse_chunks(targets[-1], 2)
                 defer.returnValue(work)
         except Exception:
             #traceback.print_exc()
