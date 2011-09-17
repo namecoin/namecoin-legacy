@@ -19,10 +19,11 @@ Stable releases: only releases a tag that starts with "nc", that are signed and 
 IMPORTANT VALIDATION CHANGES at block 19200 and 24000!
 
 * Effective at block 19200, merged mining comes into effect
+* Also effective at block 19200, timetravel (2015-2016 retarget) hole is closed
 * Effective at block 24000, names registered at block 12000 onward will expire after 36000 blocks instead of the current value of 12000
 * Also effective at block 24000, the decline in network fees will speed up by a factor of 4
 
-You must upgrade to version 0.3.24 before block 19200 or your client will start rejecting blocks and will be unable to participate in the network.
+You must upgrade to the latest version nc0.3.24.\* before block 19200 or your client will start rejecting blocks and will be unable to participate in the network.
 
 Technical
 =====================
