@@ -5,6 +5,7 @@
 # file COPYING.
 #
 
+import logging
 import argparse
 import os
 import sys
@@ -19,7 +20,7 @@ from twisted.internet.error import ConnectionRefusedError
 import twisted.internet.error
 from urlparse import urlsplit
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 '''
 merge-mine-proxy
@@ -28,7 +29,7 @@ Run behind a pool or a miner to mine a parent chain and a set of auxiliary chain
 
 Output is in the form:
 
-2011-07-07T00:00:00,solve,1,1
+2011-07-07T00:00:00,solve,1,1,HASH
 
 Where the fields are:
 
@@ -36,12 +37,15 @@ Where the fields are:
     * The word "solve"
     * 1 if the proof of work was accepted by the parent chain
     * 1 if the proof of work was accepted by each aux chain
+    * HASH parent block hash
 
-Currently only one aux chain is supported.
 '''
 
-AUX_UPDATE_INTERVAL = 10
-MERKLE_TREES_TO_KEEP = 12
+AUX_UPDATE_INTERVAL = 5
+MERKLE_TREES_TO_KEEP = 24
+
+logger = logging.getLogger('merged-mine-proxy')
+logger.setLevel(logging.DEBUG)
 
 def reverse_chunks(s, l):
     return ''.join(reversed([s[x:x+l] for x in xrange(0, len(s), l)]))
@@ -102,11 +106,10 @@ class Proxy(object):
             if resp['id'] != id_:
                 raise ValueError('invalid id')
             if 'error' in resp and resp['error'] is not None:
-                print>>sys.stderr, "Error from %s : %s" %(self._url, resp['error'])
                 raise Error(resp['error']['code'], resp['error']['message'])
             defer.returnValue(resp['result'])
         except ConnectionRefusedError:
-            print>>sys.stderr, "Could not connect to %s" %(self._url)
+            logger.error("Could not connect to %s", self._url)
             raise Error(-32099, u'Could not connect to backend', self._url)
     
     def __getattr__(self, attr):
@@ -187,6 +190,7 @@ class Server(resource.Resource):
             #except Error, e:
             #w    raise e
             except Exception, e:
+                logger.error(str(e))
                 raise Error(-32099, u'Unknown error: ' + str(e))
             
             res = json.dumps({
@@ -208,7 +212,7 @@ class Server(resource.Resource):
             request.write(res)
 
 class Listener(Server):
-    def __init__(self, parent, auxs, merkle_size):
+    def __init__(self, parent, auxs, merkle_size, rewrite_target):
         Server.__init__(self)
         self.parent = parent
         self.auxs = auxs
@@ -217,6 +221,9 @@ class Listener(Server):
         self.merkle_size = merkle_size
         self.merkle_tree_queue = []
         self.merkle_trees = {}
+        self.rewrite_target = None
+        if rewrite_target:
+            self.rewrite_target = reverse_chunks("00000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 2)
         if merkle_size > 255:
             raise ValueError('merkle size up to 255')
         self.putChild('', self)
@@ -285,14 +292,14 @@ class Listener(Server):
                 solution = (yield self.parent.rpc_getworkaux("", data))
 
                 if solution is False:
-                    print>>sys.stderr, "stale work"
+                    logger.error("stale work")
                     defer.returnValue(False)
                     return
 
                 parent_hash = solution['hash']
                 merkle_root = solution['aux'][:-16] # strip off size and nonce
                 if not self.merkle_trees.has_key(merkle_root):
-                    print>>sys.stderr, "stale merkle root %s" %(merkle_root)
+                    logger.error("stale merkle root %s", merkle_root)
                     defer.returnValue(False)
                     return
 
@@ -308,7 +315,7 @@ class Listener(Server):
                         proof = (
                             yield self.parent.rpc_getworkaux("", data, chain_merkle_index, *branch))
                         if proof is False:
-                            print>>sys.stderr, "aux pow request rejected by parent, chain %d" %(chain)
+                            logger.error("aux pow request rejected by parent, chain %d", chain)
                         else:
                             aux_hash = merkle_tree[chain_merkle_index]
                             aux_solved[-1] = (
@@ -319,9 +326,10 @@ class Listener(Server):
                 parent_solved = (yield self.parent.rpc_getworkaux("submit", data))
                 any_solved = any_solved or parent_solved
 
-                print "%s,solve,%s,%s" %(datetime.utcnow().isoformat(),
-                                         "1" if parent_solved else "0",
-                                         ",".join(["1" if solve else "0" for solve in aux_solved]))
+                logger.info("%s,solve,%s,%s,%s", datetime.utcnow().isoformat(),
+                                            "1" if parent_solved else "0",
+                                            ",".join(["1" if solve else "0" for solve in aux_solved]),
+                                            parent_hash)
                 defer.returnValue(any_solved)
             else:
                 # Get work based on the latest tree
@@ -329,14 +337,18 @@ class Listener(Server):
                 # nonce = 0, one byte merkle size
                 aux = merkle_root + ("%02x000000" % self.merkle_size) + "00000000"
                 work = (yield self.parent.rpc_getworkaux(aux))
-                # Find highest target
-                targets = [reverse_chunks(work['target'], 2)] # reverse hex string due to endianess
-                targets.extend(self.aux_targets)
-                targets.sort()
-                work['target'] = reverse_chunks(targets[-1], 2)
+                if self.rewrite_target:
+                    work['target'] = self.rewrite_target
+                else:
+                    # Find highest target
+                    targets = [reverse_chunks(work['target'], 2)] # fix endian
+                    targets.extend(self.aux_targets)
+                    targets.sort()
+                    work['target'] = reverse_chunks(targets[-1], 2) # fix endian
                 defer.returnValue(work)
         except Exception:
-            #traceback.print_exc()
+            # Exceptions here are normally already handled by the rpc functions
+            #logger.debug(traceback.format_exc())
             raise
 
 def main(args):
@@ -347,13 +359,18 @@ def main(args):
         for i in range(8):
             if (1<<i) > len(aux_urls):
                 args.merkle_size = i
-                print 'merkle size = %d'%(i)
+                logger.info('merkle size = %d', i)
                 break
 
     if len(aux_urls) > args.merkle_size:
         raise ValueError('the merkle size must be at least as large as the number of aux chains')
 
-    listener = Listener(parent, auxs, args.merkle_size)
+    if args.pidfile:
+        pidfile = open(args.pidfile, 'w')
+        pidfile.write(str(os.getpid()))
+        pidfile.close()
+
+    listener = Listener(parent, auxs, args.merkle_size, args.rewrite_target)
     listener.update_aux_process()
     reactor.listenTCP(args.worker_port, server.Site(listener))
 
@@ -381,8 +398,21 @@ def run():
                            help='use these many entries in the merkle tree.  Must be a power of 2. Default is lowest power of 2 greater than number of aux chains.',
                            type=int, action='store', default=None,
                            dest='merkle_size')
-    
+
+    parser.add_argument('-r', '--rewrite-target', help='rewrite target difficulty to 1',
+                           action='store_true', default=False,
+                           dest='rewrite_target')
+
+    parser.add_argument('-i', '--pidfile', metavar='PID', type=str, action='store', default=None, dest='pidfile')
+    parser.add_argument('-l', '--logfile', metavar='LOG', type=str, action='store', default=None, dest='logfile')
+
     args = parser.parse_args()
+
+    if args.logfile:
+        logger.addHandler(logging.FileHandler(args.logfile))
+    else:
+        logger.addHandler(logging.StreamHandler())
+    
     reactor.callWhenRunning(main, args)
     reactor.run()
 
