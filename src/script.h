@@ -326,6 +326,11 @@ inline std::string ValueString(const std::vector<unsigned char>& vch)
         return HexStr(vch);
 }
 
+inline std::string PureString(const std::vector<unsigned char>& vch)
+{
+    return HexStr(vch);
+}
+
 inline std::string StackString(const std::vector<std::vector<unsigned char> >& vStack)
 {
     std::string str;
@@ -688,7 +693,7 @@ public:
                 return str;
             }
             if (0 <= opcode && opcode <= OP_PUSHDATA4)
-                str += ValueString(vch);
+                str += PureString(vch);
             else
                 str += GetOpName(opcode);
         }
