@@ -181,7 +181,7 @@ inline bool AddressToHash160(const char* psz, uint160& hash160Ret)
     if (vch.size() != sizeof(hash160Ret) + 1)
         return false;
     memcpy(&hash160Ret, &vch[1], sizeof(hash160Ret));
-    return (nVersion <= GetAddressVersion());
+    return (nVersion == GetAddressVersion());
 }
 
 inline bool AddressToHash160(const std::string& str, uint160& hash160Ret)

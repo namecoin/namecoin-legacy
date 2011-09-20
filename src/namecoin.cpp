@@ -595,6 +595,51 @@ Value name_debug1(const Array& params, bool fHelp)
     return true;
 }
 
+Value name_history(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1)
+        throw runtime_error(
+            "name_history <name>\n"
+            "List all name values of a name.\n");
+    
+    Array oRes;
+    vector<unsigned char> vchName = vchFromValue(params[0]);
+    string name = stringFromVch(vchName);
+    CRITICAL_BLOCK(cs_main)
+    {
+        vector<CDiskTxPos> vtxPos;
+        CNameDB dbName("r");
+        if (!dbName.ReadName(vchName, vtxPos))
+            throw JSONRPCError(-4, "failed to read from name DB");
+        
+        CDiskTxPos txPos;
+        foreach(txPos, vtxPos)
+        {
+            CTransaction tx;
+            if (!tx.ReadFromDisk(txPos))
+            {
+                error("could not read txpos %s", txPos.ToString().c_str());
+                continue;
+            }
+
+            Object oName;
+            vector<unsigned char> vchValue;
+            int nHeight;
+            uint256 hash;
+            if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, hash, nHeight))
+            {
+                oName.push_back(Pair("name", name));
+                string value = stringFromVch(vchValue);
+                oName.push_back(Pair("value", value));
+                oName.push_back(Pair("txid", tx.GetHash().GetHex()));
+                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                oRes.push_back(oName);
+            }
+        }
+    }
+    return oRes;
+}
+
 Value name_scan(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
@@ -1109,6 +1154,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_history", &name_history));
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
