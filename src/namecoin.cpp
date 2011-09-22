@@ -613,7 +613,7 @@ Value name_history(const Array& params, bool fHelp)
             throw JSONRPCError(-4, "failed to read from name DB");
         
         CDiskTxPos txPos;
-        foreach(txPos, vtxPos)
+        BOOST_FOREACH(txPos, vtxPos)
         {
             CTransaction tx;
             if (!tx.ReadFromDisk(txPos))
