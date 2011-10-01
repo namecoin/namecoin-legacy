@@ -20,7 +20,7 @@ from twisted.internet.error import ConnectionRefusedError
 import twisted.internet.error
 from urlparse import urlsplit
 
-__version__ = '0.2'
+__version__ = '0.2.1'
 
 '''
 merge-mine-proxy
@@ -222,8 +222,10 @@ class Listener(Server):
         self.merkle_tree_queue = []
         self.merkle_trees = {}
         self.rewrite_target = None
-        if rewrite_target:
+        if rewrite_target == 1:
             self.rewrite_target = reverse_chunks("00000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffe", 2)
+        elif rewrite_target == 100:
+            self.rewrite_target = reverse_chunks("00000000028f5c28000000000000000000000000000000000000000000000000", 2)
         if merkle_size > 255:
             raise ValueError('merkle size up to 255')
         self.putChild('', self)
@@ -280,8 +282,36 @@ class Listener(Server):
         reactor.callLater(AUX_UPDATE_INTERVAL, self.update_aux_process)
         self.update_auxs()
 
+    def rpc_getaux(self, data=None):
+        ''' Use this rpc call to get the aux chain merkle root and aux target.  Pool software
+        can then call getworkaux(aux) instead of going through this proxy.  It is enough to call this
+        once a second.
+        '''
+        try:
+            # Get aux based on the latest tree
+            merkle_root = self.merkle_tree_queue[-1]
+            # nonce = 0, one byte merkle size
+            aux = merkle_root + ("%02x000000" % self.merkle_size) + "00000000"
+            result = {'aux': aux}
+
+            if self.rewrite_target:
+                result['aux_target'] = self.rewrite_target
+            else:
+                # Find highest target
+                targets = []
+                targets.extend(self.aux_targets)
+                targets.sort()
+                result['aux_target'] = reverse_chunks(targets[-1], 2) # fix endian
+            return result
+        except Exception:
+            logger.error(traceback.format_exc())
+            raise
+
     @defer.inlineCallbacks
     def rpc_getwork(self, data=None):
+        ''' This rpc call generates bitcoin miner compatible work from data received
+        from the aux and parent chains.
+        '''
         try:
             if data:
                 # Submit work upstream
@@ -400,7 +430,10 @@ def run():
                            dest='merkle_size')
 
     parser.add_argument('-r', '--rewrite-target', help='rewrite target difficulty to 1',
-                           action='store_true', default=False,
+                           action='store_const', const=1, default=False,
+                           dest='rewrite_target')
+    parser.add_argument('-R', '--rewrite-target-100', help='rewrite target difficulty to 100',
+                           action='store_const', const=100, default=False,
                            dest='rewrite_target')
 
     parser.add_argument('-i', '--pidfile', metavar='PID', type=str, action='store', default=None, dest='pidfile')
