@@ -43,7 +43,13 @@ Please read DESIGN-namecoind.md before proceeding.
 BUILDING
 ======================
 
-Building is only supported on Linux for now.  Follow the bitcoin build instructions.  Use "makefile.unix" - it will generate namecoind.  Usage is similar to bitcoind, plus new RPC calls for the new operations.  A GUI is on the roadmap.
+Building can be achived for Linux or Mac OS X using CMake.
+  
+    cd src
+    cmake .
+    make
+
+Alternatively, you can use the official unix makefile system.  Follow the bitcoin build instructions.  Use "makefile.unix" - it will generate namecoind.  Usage is similar to bitcoind, plus new RPC calls for the new operations.  A GUI is on the roadmap.
 
 RUNNING
 ======================
