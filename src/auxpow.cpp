@@ -20,6 +20,9 @@ void RemoveMergedMiningHeader(vector<unsigned char>& vchAux)
 
 bool CAuxPow::Check(uint256 hashAuxBlock, int nChainID)
 {
+    if (nIndex != 0)
+        return error("AuxPow is not a generate");
+
     if (!fTestNet && parentBlock.GetChainID() == nChainID)
         return error("Aux POW parent has our chain ID");
 
