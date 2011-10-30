@@ -48,6 +48,7 @@ extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, 
 extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
 extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
+bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -520,6 +521,15 @@ Value name_list(const Array& params, bool fHelp)
                 if (!hooks->IsMine(pwalletMain->mapWallet[hash]))
                     oName.push_back(Pair("transferred", 1));
                 oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                int op;
+                int nOut;
+                vector<vector<unsigned char> > vvch;
+                CTransaction tx;
+                tx.ReadFromDisk(txPos);
+                DecodeNameTx(tx, op, nOut, vvch);
+                const CTxOut& txout = tx.vout[nOut];
+                const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+                oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
                 oRes.push_back(oName);
             }
         }
@@ -633,6 +643,13 @@ Value name_history(const Array& params, bool fHelp)
                 oName.push_back(Pair("value", value));
                 oName.push_back(Pair("txid", tx.GetHash().GetHex()));
                 oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                int op;
+                int nOut;
+                vector<vector<unsigned char> > vvch;
+                DecodeNameTx(tx, op, nOut, vvch);
+                const CTxOut& txout = tx.vout[nOut];
+                const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+                oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
                 oRes.push_back(oName);
             }
         }
@@ -685,6 +702,15 @@ Value name_scan(const Array& params, bool fHelp)
             oName.push_back(Pair("value", value));
             oName.push_back(Pair("txid", hash.GetHex()));
             oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+            int op;
+            int nOut;
+            vector<vector<unsigned char> > vvch;
+            CTransaction tx;
+            tx.ReadFromDisk(txPos);
+            DecodeNameTx(tx, op, nOut, vvch);
+            const CTxOut& txout = tx.vout[nOut];
+            const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+            oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
         }
         else
         {
