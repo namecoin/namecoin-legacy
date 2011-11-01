@@ -483,7 +483,13 @@ Value name_list(const Array& params, bool fHelp)
 
     vector<unsigned char> vchName;
     vector<unsigned char> vchLastName;
-    int nMax = 500;
+    int nMax = 10000000;
+
+    if (params.size() == 1)
+    {
+        vchName = vchFromValue(params[0]);
+        nMax = 1;
+    }
 
     Array oRes;
 
