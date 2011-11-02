@@ -160,7 +160,7 @@ int GetExpirationDepth(int nHeight) {
 
 // For display purposes, pass the name height.
 int GetDisplayExpirationDepth(int nHeight) {
-    if (nHeight < 24000)
+    if (nHeight < 12000)
         return 12000;
     return 36000;
 }
