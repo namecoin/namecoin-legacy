@@ -48,6 +48,7 @@ extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, 
 extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
 extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
+bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -472,6 +473,22 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
     return true;
 }
 
+bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
+{
+    CTransaction tx;
+    if (!tx.ReadFromDisk(txPos))
+        return error("GetNameAddress() : could not read tx from disk");
+
+    int op;
+    int nOut;
+    vector<vector<unsigned char> > vvch;
+    DecodeNameTx(tx, op, nOut, vvch);
+    const CTxOut& txout = tx.vout[nOut];
+    const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+    strAddress = scriptPubKey.GetBitcoinAddress();
+    return true;
+}
+
 Value name_list(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -482,7 +499,13 @@ Value name_list(const Array& params, bool fHelp)
 
     vector<unsigned char> vchName;
     vector<unsigned char> vchLastName;
-    int nMax = 500;
+    int nMax = 10000000;
+
+    if (params.size() == 1)
+    {
+        vchName = vchFromValue(params[0]);
+        nMax = 1;
+    }
 
     Array oRes;
 
@@ -519,7 +542,17 @@ Value name_list(const Array& params, bool fHelp)
                 oName.push_back(Pair("value", value));
                 if (!hooks->IsMine(pwalletMain->mapWallet[hash]))
                     oName.push_back(Pair("transferred", 1));
-                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                string strAddress = "";
+                GetNameAddress(txPos, strAddress);
+                oName.push_back(Pair("address", strAddress));
+                if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+                {
+                    oName.push_back(Pair("expired", 1));
+                }
+                else
+                {
+                    oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                }
                 oRes.push_back(oName);
             }
         }
@@ -632,7 +665,17 @@ Value name_history(const Array& params, bool fHelp)
                 string value = stringFromVch(vchValue);
                 oName.push_back(Pair("value", value));
                 oName.push_back(Pair("txid", tx.GetHash().GetHex()));
-                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                string strAddress = "";
+                GetNameAddress(txPos, strAddress);
+                oName.push_back(Pair("address", strAddress));
+                if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+                {
+                    oName.push_back(Pair("expired", 1));
+                }
+                else
+                {
+                    oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+                }
                 oRes.push_back(oName);
             }
         }
@@ -679,16 +722,21 @@ Value name_scan(const Array& params, bool fHelp)
         vector<unsigned char> vchValue;
         int nHeight;
         uint256 hash;
-        if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, hash, nHeight))
+        if (txPos.IsNull() ||
+            !GetValueOfTxPos(txPos, vchValue, hash, nHeight) ||
+            (GetValueOfTxPos(txPos, vchValue, hash, nHeight) && nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0))
+        {
+            oName.push_back(Pair("expired", 1));
+        }
+        else
         {
             string value = stringFromVch(vchValue);
             oName.push_back(Pair("value", value));
             oName.push_back(Pair("txid", hash.GetHex()));
+            string strAddress = "";
+            GetNameAddress(txPos, strAddress);
+            oName.push_back(Pair("address", strAddress));
             oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
-        }
-        else
-        {
-            oName.push_back(Pair("expired", 1));
         }
         oRes.push_back(oName);
     }
