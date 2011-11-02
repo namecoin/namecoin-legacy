@@ -473,6 +473,22 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
     return true;
 }
 
+bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
+{
+    CTransaction tx;
+    if (!tx.ReadFromDisk(txPos))
+        return error("GetNameAddress() : could not read tx from disk");
+
+    int op;
+    int nOut;
+    vector<vector<unsigned char> > vvch;
+    DecodeNameTx(tx, op, nOut, vvch);
+    const CTxOut& txout = tx.vout[nOut];
+    const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
+    strAddress = scriptPubKey.GetBitcoinAddress();
+    return true;
+}
+
 Value name_list(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -526,15 +542,9 @@ Value name_list(const Array& params, bool fHelp)
                 oName.push_back(Pair("value", value));
                 if (!hooks->IsMine(pwalletMain->mapWallet[hash]))
                     oName.push_back(Pair("transferred", 1));
-                int op;
-                int nOut;
-                vector<vector<unsigned char> > vvch;
-                CTransaction tx;
-                tx.ReadFromDisk(txPos);
-                DecodeNameTx(tx, op, nOut, vvch);
-                const CTxOut& txout = tx.vout[nOut];
-                const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
-                oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
+                string strAddress = "";
+                GetNameAddress(txPos, strAddress);
+                oName.push_back(Pair("address", strAddress));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
                     oName.push_back(Pair("expired", 1));
@@ -655,13 +665,9 @@ Value name_history(const Array& params, bool fHelp)
                 string value = stringFromVch(vchValue);
                 oName.push_back(Pair("value", value));
                 oName.push_back(Pair("txid", tx.GetHash().GetHex()));
-                int op;
-                int nOut;
-                vector<vector<unsigned char> > vvch;
-                DecodeNameTx(tx, op, nOut, vvch);
-                const CTxOut& txout = tx.vout[nOut];
-                const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
-                oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
+                string strAddress = "";
+                GetNameAddress(txPos, strAddress);
+                oName.push_back(Pair("address", strAddress));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
                     oName.push_back(Pair("expired", 1));
@@ -727,15 +733,9 @@ Value name_scan(const Array& params, bool fHelp)
             string value = stringFromVch(vchValue);
             oName.push_back(Pair("value", value));
             oName.push_back(Pair("txid", hash.GetHex()));
-            int op;
-            int nOut;
-            vector<vector<unsigned char> > vvch;
-            CTransaction tx;
-            tx.ReadFromDisk(txPos);
-            DecodeNameTx(tx, op, nOut, vvch);
-            const CTxOut& txout = tx.vout[nOut];
-            const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
-            oName.push_back(Pair("address", scriptPubKey.GetBitcoinAddress()));
+            string strAddress = "";
+            GetNameAddress(txPos, strAddress);
+            oName.push_back(Pair("address", strAddress));
             oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
         }
         oRes.push_back(oName);
