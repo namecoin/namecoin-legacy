@@ -80,7 +80,8 @@ class NamecoinThread(threading.Thread):
         names = {}
         for el in scan:
           if el['name'][0:2] == 'd/':
-            names[el['name'][2:]] = el['value']
+            if not el.has_key('expired'):
+              names[el['name'][2:]] = el['value']
       except IOError:
         print "could not connect to namecoin, will retry"
       time.sleep(60)
