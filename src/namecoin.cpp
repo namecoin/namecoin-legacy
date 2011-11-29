@@ -545,13 +545,10 @@ Value name_list(const Array& params, bool fHelp)
                 string strAddress = "";
                 GetNameAddress(txPos, strAddress);
                 oName.push_back(Pair("address", strAddress));
+                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
                     oName.push_back(Pair("expired", 1));
-                }
-                else
-                {
-                    oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 }
                 oRes.push_back(oName);
             }
@@ -668,13 +665,10 @@ Value name_history(const Array& params, bool fHelp)
                 string strAddress = "";
                 GetNameAddress(txPos, strAddress);
                 oName.push_back(Pair("address", strAddress));
+                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
                     oName.push_back(Pair("expired", 1));
-                }
-                else
-                {
-                    oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 }
                 oRes.push_back(oName);
             }
