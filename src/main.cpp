@@ -1385,7 +1385,7 @@ bool CBlock::AcceptBlock()
     return true;
 }
 
-bool static ProcessBlock(CNode* pfrom, CBlock* pblock)
+bool ProcessBlock(CNode* pfrom, CBlock* pblock)
 {
     // Check for duplicate
     uint256 hash = pblock->GetHash();
