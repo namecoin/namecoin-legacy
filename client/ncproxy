@@ -76,7 +76,7 @@ class NamecoinThread(threading.Thread):
     while 1:
       print "scan"
       try:
-        scan = self.namecoin.name_scan('\0', 10000)
+        scan = self.namecoin.name_scan('\0', 100000)
         if (count == len(scan)):
           time.sleep(60)
           continue
