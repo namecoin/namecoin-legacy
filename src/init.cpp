@@ -186,6 +186,7 @@ bool AppInit2(int argc, char* argv[])
 #endif
 #endif
             "  -paytxfee=<amt>  \t  "   + _("Fee per KB to add to transactions you send\n") +
+            "  -mininput=<amt>  \t  "   + _("When creating transactions, ignore inputs with value less than this (default: 0.0001)\n") +
 #ifdef GUI
             "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
 #endif
@@ -510,6 +511,15 @@ bool AppInit2(int argc, char* argv[])
         }
         if (nTransactionFee > 0.25 * COIN)
             wxMessageBox(_("Warning: -paytxfee is set very high.  This is the transaction fee you will pay if you send a transaction."), "Bitcoin", wxOK | wxICON_EXCLAMATION);
+    }
+
+    if (mapArgs.count("-mininput"))
+    {
+        if (!ParseMoney(mapArgs["-mininput"], nMinimumInputValue))
+        {
+            wxMessageBox(_("Invalid amount for -mininput=<amount>"), "Litecoin");
+            return false;
+        }
     }
 
     if (fHaveUPnP)
