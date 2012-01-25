@@ -542,9 +542,8 @@ public:
         {
             if (nBlockSize == 1)
             {
-                // Transactions under 10K are free
-                // (about 4500bc if made of 50bc inputs)
-                if (nBytes < 10000)
+                // Transactions under 1K are free
+                if (nBytes < 1000)
                     nMinFee = 0;
             }
             else
