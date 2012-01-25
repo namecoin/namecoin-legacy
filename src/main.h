@@ -561,7 +561,7 @@ public:
                     nMinFee += nBaseFee;
 
         // Raise the price as the block approaches full
-        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
+        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/4)
         {
             if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
                 return MAX_MONEY;
