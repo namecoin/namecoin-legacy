@@ -36,7 +36,7 @@ static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
 static const int64 COIN = 100000000;
 static const int64 CENT = 1000000;
-static const int64 MIN_TX_FEE = 50000;
+static const int64 MIN_TX_FEE = 500000;
 static const int64 MIN_RELAY_TX_FEE = 10000;
 static const int64 MAX_MONEY = 21000000 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
@@ -72,6 +72,7 @@ extern std::set<CWallet*> setpwalletRegistered;
 // Settings
 extern int fGenerateBitcoins;
 extern int64 nTransactionFee;
+extern int64 nMinimumInputValue;
 extern int fLimitProcessors;
 extern int nLimitProcessors;
 extern int fMinimizeToTray;
@@ -88,6 +89,7 @@ class CTxIndex;
 
 void RegisterWallet(CWallet* pwalletIn);
 void UnregisterWallet(CWallet* pwalletIn);
+bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64 nAdditionalBytes=0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
@@ -540,15 +542,14 @@ public:
         {
             if (nBlockSize == 1)
             {
-                // Transactions under 10K are free
-                // (about 4500bc if made of 50bc inputs)
-                if (nBytes < 10000)
+                // Transactions under 1K are free
+                if (nBytes < 1000)
                     nMinFee = 0;
             }
             else
             {
                 // Free transaction area
-                if (nNewBlockSize < 27000)
+                if (nNewBlockSize < 9000)
                     nMinFee = 0;
             }
         }
@@ -557,10 +558,10 @@ public:
         if (nMinFee < nBaseFee)
             BOOST_FOREACH(const CTxOut& txout, vout)
                 if (txout.nValue < CENT)
-                    nMinFee = nBaseFee;
+                    nMinFee += nBaseFee;
 
         // Raise the price as the block approaches full
-        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
+        if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/4)
         {
             if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
                 return MAX_MONEY;
