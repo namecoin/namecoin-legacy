@@ -197,8 +197,8 @@ int GetTxPosHeight(const CDiskTxPos& txPos)
 }
 int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
 {
-	nHeight = GetTxPosHeight(txPos);
-	return nHeight;
+    nHeight = GetTxPosHeight(txPos);
+    return nHeight;
 }
 
 
@@ -496,7 +496,7 @@ bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
     if (!tx.ReadFromDisk(txPos))
         return error("GetNameAddress() : could not read tx from disk");
 
-	return GetNameAddress(tx, strAddress);
+    return GetNameAddress(tx, strAddress);
 }
 
 Value name_list(const Array& params, bool fHelp)
@@ -537,11 +537,11 @@ Value name_list(const Array& params, bool fHelp)
 
             vchLastName = pairScan.first;
             vector<unsigned char> vchValue;
-			CTransaction tx;
+            CTransaction tx;
             CDiskTxPos txPos = pairScan.second;
             if (!txPos.IsNull() &&
-			        tx.ReadFromDisk(txPos) &&
-					GetValueOfNameTx(tx, vchValue) &&
+                    tx.ReadFromDisk(txPos) &&
+                    GetValueOfNameTx(tx, vchValue) &&
                     pwalletMain->mapWallet.count(tx.GetHash())
                     )
             {
@@ -556,7 +556,7 @@ Value name_list(const Array& params, bool fHelp)
                 GetNameAddress(tx, strAddress);
                 oName.push_back(Pair("address", strAddress));
                 int nHeight;
-			    nHeight = GetTxPosHeight(txPos);
+                nHeight = GetTxPosHeight(txPos);
                 oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
@@ -570,7 +570,7 @@ Value name_list(const Array& params, bool fHelp)
         if (vchName == vchLastName)
             break;
         vchName = vchLastName;
-		break;
+        break;
     }
 
     return oRes;
@@ -638,9 +638,59 @@ Value name_debug1(const Array& params, bool fHelp)
     return true;
 }
 
+Value name_show(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "name_show <name>\n"
+            "Show values of a name.\n"
+            );
+    
+    Object oLastName;
+    vector<unsigned char> vchName = vchFromValue(params[0]);
+    string name = stringFromVch(vchName);
+    CRITICAL_BLOCK(cs_main)
+    {
+        vector<CDiskTxPos> vtxPos;
+        CNameDB dbName("r");
+        if (!dbName.ReadName(vchName, vtxPos))
+            throw JSONRPCError(-4, "failed to read from name DB");
+       
+		if (vtxPos.size() < 1)
+            throw JSONRPCError(-4, "no result returned");
+
+        CDiskTxPos txPos = vtxPos[vtxPos.size() - 1];
+        CTransaction tx;
+        if (!tx.ReadFromDisk(txPos))
+            throw JSONRPCError(-4, "failed to read from from disk");
+
+        Object oName;
+        vector<unsigned char> vchValue;
+        int nHeight;
+        uint256 hash;
+        if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, hash, nHeight))
+        {
+            oName.push_back(Pair("name", name));
+            string value = stringFromVch(vchValue);
+            oName.push_back(Pair("value", value));
+            oName.push_back(Pair("txid", tx.GetHash().GetHex()));
+            string strAddress = "";
+            GetNameAddress(txPos, strAddress);
+            oName.push_back(Pair("address", strAddress));
+            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+            if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            {
+                oName.push_back(Pair("expired", 1));
+            }
+            oLastName = oName;
+        }
+    }
+    return oLastName;
+}
+
 Value name_history(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 1)
+    if (fHelp || params.size() != 1)
         throw runtime_error(
             "name_history <name>\n"
             "List all name values of a name.\n");
@@ -726,14 +776,13 @@ Value name_scan(const Array& params, bool fHelp)
         string name = stringFromVch(pairScan.first);
         oName.push_back(Pair("name", name));
         vector<unsigned char> vchValue;
-		CTransaction tx;
-        int nHeight;
+        CTransaction tx;
         CDiskTxPos txPos = pairScan.second;
-		nHeight = GetTxPosHeight(txPos);
+        int nHeight = GetTxPosHeight(txPos);
         if (txPos.IsNull()
-			|| (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-			|| !tx.ReadFromDisk(txPos)
-			|| !GetValueOfNameTx(tx, vchValue))
+            || (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            || !tx.ReadFromDisk(txPos)
+            || !GetValueOfNameTx(tx, vchValue))
         {
             oName.push_back(Pair("expired", 1));
         }
@@ -1211,6 +1260,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_show", &name_show));
     mapCallTable.insert(make_pair("name_history", &name_history));
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
