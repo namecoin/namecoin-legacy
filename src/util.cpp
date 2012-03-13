@@ -719,13 +719,23 @@ string GetDataDir()
     return pszDir;
 }
 
-string GetConfigFile()
+string GetConfigFile(string confFile)
 {
     namespace fs = boost::filesystem;
-    fs::path pathConfig(GetArg("-conf", "bitcoin.conf"));
+    fs::path pathConfig(GetArg("-conf", confFile));
     if (!pathConfig.is_complete())
         pathConfig = fs::path(GetDataDir()) / pathConfig;
     return pathConfig.string();
+}
+
+string GetConfigFile()
+{
+	string confFile = GetConfigFile("namecoin.conf");
+	if (!boost::filesystem::exists(confFile))
+	{
+		confFile = GetConfigFile("bitcoin.conf");
+	}
+	return confFile;
 }
 
 void ReadConfigFile(map<string, string>& mapSettingsRet,
