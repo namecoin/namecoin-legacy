@@ -180,6 +180,11 @@ int64 GetNetworkFee(int nHeight)
     return nRes;
 }
 
+int GetTxPosHeight(const CNameIndex& txPos)
+{
+    return txPos.nHeight;
+}
+
 int GetTxPosHeight(const CDiskTxPos& txPos)
 {
     // Read block header
@@ -204,14 +209,16 @@ int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
 
 int GetNameHeight(CTxDB& txdb, vector<unsigned char> vchName) {
     CNameDB dbName("cr", txdb);
-    vector<CDiskTxPos> vtxPos;
+    //vector<CDiskTxPos> vtxPos;
+    vector<CNameIndex> vtxPos;
     if (dbName.ExistsName(vchName))
     {
         if (!dbName.ReadName(vchName, vtxPos))
             return error("GetNameHeight() : failed to read from name DB");
         if (vtxPos.empty())
             return -1;
-        CDiskTxPos& txPos = vtxPos.back();
+        //CDiskTxPos& txPos = vtxPos.back();
+        CNameIndex& txPos = vtxPos.back();
         return GetTxPosHeight(txPos);
     }
     return -1;
@@ -434,6 +441,16 @@ string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, C
     return "";
 }
 
+bool GetValueOfTxPos(const CNameIndex& txPos, vector<unsigned char>& vchValue, uint256& hash, int& nHeight)
+{
+    nHeight = GetTxPosHeight(txPos);
+    vchValue = txPos.vValue;
+    CTransaction tx;
+    if (!tx.ReadFromDisk(txPos.txPos))
+        return error("GetValueOfTxPos() : could not read tx from disk");
+    hash = tx.GetHash();
+    return true;
+}
 
 bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, uint256& hash, int& nHeight)
 {
@@ -449,23 +466,32 @@ bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, u
 
 bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsigned char>& vchValue, int& nHeight)
 {
-    vector<CDiskTxPos> vtxPos;
+    //vector<CDiskTxPos> vtxPos;
+    vector<CNameIndex> vtxPos;
     if (!dbName.ReadName(vchName, vtxPos) || vtxPos.empty())
         return false;
-    CDiskTxPos& txPos = vtxPos.back();
+    /*CDiskTxPos& txPos = vtxPos.back();
 
     uint256 hash;
 
-    return GetValueOfTxPos(txPos, vchValue, hash, nHeight);
+    return GetValueOfTxPos(txPos, vchValue, hash, nHeight);*/
+
+    CNameIndex& txPos = vtxPos.back();
+    nHeight = txPos.nHeight;
+    vchValue = txPos.vValue;
+    return true;
 }
 
 bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& tx)
 {
-    vector<CDiskTxPos> vtxPos;
+    //vector<CDiskTxPos> vtxPos;
+    vector<CNameIndex> vtxPos;
     if (!dbName.ReadName(vchName, vtxPos) || vtxPos.empty())
         return false;
-    CDiskTxPos& txPos = vtxPos.back();
-    int nHeight = GetTxPosHeight(txPos);
+    //CDiskTxPos& txPos = vtxPos.back();
+    CNameIndex& txPos = vtxPos.back();
+    //int nHeight = GetTxPosHeight(txPos);
+    int nHeight = txPos.nHeight;
     if (nHeight + GetExpirationDepth(pindexBest->nHeight) < pindexBest->nHeight)
     {
         string name = stringFromVch(vchName);
@@ -473,7 +499,7 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
         return false;
     }
 
-    if (!tx.ReadFromDisk(txPos))
+    if (!tx.ReadFromDisk(txPos.txPos))
         return error("GetTxOfName() : could not read tx from disk");
     return true;
 }
@@ -517,62 +543,75 @@ Value name_list(const Array& params, bool fHelp)
         nMax = 1;
     }
 
-    Array oRes;
-
-    CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
-    for (;;)
+    vector<unsigned char> vchNameUniq;
+    if (params.size() == 1)
     {
-        CNameDB dbName("r");
-
-        vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
-        if (!dbName.ScanNames(vchName, nMax, nameScan))
-            throw JSONRPCError(-4, "scan failed");
-
-        pair<vector<unsigned char>, CDiskTxPos> pairScan;
-        BOOST_FOREACH(pairScan, nameScan)
-        {
-            // skip previous last
-            if (pairScan.first == vchLastName)
-                continue;
-
-            vchLastName = pairScan.first;
-            vector<unsigned char> vchValue;
-            CTransaction tx;
-            CDiskTxPos txPos = pairScan.second;
-            if (!txPos.IsNull() &&
-                    tx.ReadFromDisk(txPos) &&
-                    GetValueOfNameTx(tx, vchValue) &&
-                    pwalletMain->mapWallet.count(tx.GetHash())
-                    )
-            {
-                string value = stringFromVch(vchValue);
-                Object oName;
-                string name = stringFromVch(pairScan.first);
-                oName.push_back(Pair("name", name));
-                oName.push_back(Pair("value", value));
-                if (!hooks->IsMine(pwalletMain->mapWallet[tx.GetHash()]))
-                    oName.push_back(Pair("transferred", 1));
-                string strAddress = "";
-                GetNameAddress(tx, strAddress);
-                oName.push_back(Pair("address", strAddress));
-                int nHeight;
-                nHeight = GetTxPosHeight(txPos);
-                oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
-                if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-                {
-                    oName.push_back(Pair("expired", 1));
-                }
-                oRes.push_back(oName);
-            }
-        }
-
-        // break if nothing more
-        if (vchName == vchLastName)
-            break;
-        vchName = vchLastName;
-        break;
+        vchNameUniq = vchFromValue(params[0]);
     }
 
+    Array oRes;
+    map< vector<unsigned char>, int > vNamesI;
+    map< vector<unsigned char>, Object > vNamesO;
+
+    CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
+    {
+        CTxIndex txindex;
+        uint256 hash;
+        CTxDB txdb("r");
+        CTransaction tx;
+
+        vector<unsigned char> vchName;
+        vector<unsigned char> vchValue;
+        int nHeight;
+
+        BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet)
+        {
+            hash = item.second.GetHash();
+            if(!txdb.ReadDiskTx(hash, tx, txindex))
+                continue;
+
+            if (tx.nVersion != NAMECOIN_TX_VERSION)
+                continue;
+
+            // name
+            if(!GetNameOfTx(tx, vchName))
+                continue;
+            if(vchNameUniq.size() > 0 && vchNameUniq != vchName)
+                continue;
+
+            // value
+            if(!GetValueOfNameTx(tx, vchValue))
+                continue;
+
+            // height
+            nHeight = GetTxPosHeight(txindex.pos);
+
+            Object oName;
+            oName.push_back(Pair("name", stringFromVch(vchName)));
+            oName.push_back(Pair("value", stringFromVch(vchValue)));
+            if (!hooks->IsMine(pwalletMain->mapWallet[tx.GetHash()]))
+                oName.push_back(Pair("transferred", 1));
+            string strAddress = "";
+            GetNameAddress(tx, strAddress);
+            oName.push_back(Pair("address", strAddress));
+            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+            if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            {
+                oName.push_back(Pair("expired", 1));
+            }
+
+            // get last active name only
+            if(vNamesI.find(vchName) != vNamesI.end() && vNamesI[vchName] > nHeight)
+                continue;
+
+            vNamesI[vchName] = nHeight;
+            vNamesO[vchName] = oName;
+        }
+    }
+
+    BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Object)& item, vNamesO)
+        oRes.push_back(item.second);
+    
     return oRes;
 }
 
@@ -615,20 +654,22 @@ Value name_debug1(const Array& params, bool fHelp)
     printf("Dump name:\n");
     CRITICAL_BLOCK(cs_main)
     {
-        vector<CDiskTxPos> vtxPos;
+        //vector<CDiskTxPos> vtxPos;
+        vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
         {
             error("failed to read from name DB");
             return false;
         }
-        CDiskTxPos txPos;
+        //CDiskTxPos txPos;
+        CNameIndex txPos;
         BOOST_FOREACH(txPos, vtxPos)
         {
             CTransaction tx;
-            if (!tx.ReadFromDisk(txPos))
+            if (!tx.ReadFromDisk(txPos.txPos))
             {
-                error("could not read txpos %s", txPos.ToString().c_str());
+                error("could not read txpos %s", txPos.txPos.ToString().c_str());
                 continue;
             }
             printf("@%d %s\n", GetTxPosHeight(txPos), tx.GetHash().GetHex().c_str());
@@ -651,15 +692,16 @@ Value name_show(const Array& params, bool fHelp)
     string name = stringFromVch(vchName);
     CRITICAL_BLOCK(cs_main)
     {
-        vector<CDiskTxPos> vtxPos;
+        //vector<CDiskTxPos> vtxPos;
+        vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
             throw JSONRPCError(-4, "failed to read from name DB");
        
-		if (vtxPos.size() < 1)
+        if (vtxPos.size() < 1)
             throw JSONRPCError(-4, "no result returned");
 
-        CDiskTxPos txPos = vtxPos[vtxPos.size() - 1];
+        CDiskTxPos txPos = vtxPos[vtxPos.size() - 1].txPos;
         CTransaction tx;
         if (!tx.ReadFromDisk(txPos))
             throw JSONRPCError(-4, "failed to read from from disk");
@@ -700,14 +742,17 @@ Value name_history(const Array& params, bool fHelp)
     string name = stringFromVch(vchName);
     CRITICAL_BLOCK(cs_main)
     {
-        vector<CDiskTxPos> vtxPos;
+        //vector<CDiskTxPos> vtxPos;
+        vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
             throw JSONRPCError(-4, "failed to read from name DB");
         
+        CNameIndex txPos2;
         CDiskTxPos txPos;
-        BOOST_FOREACH(txPos, vtxPos)
+        BOOST_FOREACH(txPos2, vtxPos)
         {
+            txPos = txPos2.txPos;
             CTransaction tx;
             if (!tx.ReadFromDisk(txPos))
             {
@@ -765,35 +810,41 @@ Value name_scan(const Array& params, bool fHelp)
     CNameDB dbName("r");
     Array oRes;
 
-    vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
+    //vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
+    vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
     if (!dbName.ScanNames(vchName, nMax, nameScan))
         throw JSONRPCError(-4, "scan failed");
 
-    pair<vector<unsigned char>, CDiskTxPos> pairScan;
+    //pair<vector<unsigned char>, CDiskTxPos> pairScan;
+    pair<vector<unsigned char>, CNameIndex> pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
         Object oName;
         string name = stringFromVch(pairScan.first);
         oName.push_back(Pair("name", name));
-        vector<unsigned char> vchValue;
+        //vector<unsigned char> vchValue;
         CTransaction tx;
-        CDiskTxPos txPos = pairScan.second;
-        int nHeight = GetTxPosHeight(txPos);
-        if (txPos.IsNull()
-            || (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-            || !tx.ReadFromDisk(txPos)
-            || !GetValueOfNameTx(tx, vchValue))
+        CNameIndex txName = pairScan.second;
+        CDiskTxPos txPos = txName.txPos;
+        //CDiskTxPos txPos = pairScan.second;
+        //int nHeight = GetTxPosHeight(txPos);
+        int nHeight = txName.nHeight;
+        vector<unsigned char> vchValue = txName.vValue;
+        if ((nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            || txPos.IsNull()
+            || !tx.ReadFromDisk(txPos))
+            //|| !GetValueOfNameTx(tx, vchValue))
         {
             oName.push_back(Pair("expired", 1));
         }
         else
         {
             string value = stringFromVch(vchValue);
-            string strAddress = "";
-            GetNameAddress(tx, strAddress);
+            //string strAddress = "";
+            //GetNameAddress(tx, strAddress);
             oName.push_back(Pair("value", value));
-            oName.push_back(Pair("txid", tx.GetHash().GetHex()));
-            oName.push_back(Pair("address", strAddress));
+            //oName.push_back(Pair("txid", tx.GetHash().GetHex()));
+            //oName.push_back(Pair("address", strAddress));
             oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
         }
         oRes.push_back(oName);
@@ -1207,7 +1258,8 @@ bool CNameDB::test()
 bool CNameDB::ScanNames(
         const vector<unsigned char>& vchName,
         int nMax,
-        vector<pair<vector<unsigned char>, CDiskTxPos> >& nameScan)
+        vector<pair<vector<unsigned char>, CNameIndex> >& nameScan)
+        //vector<pair<vector<unsigned char>, CDiskTxPos> >& nameScan)
 {
     Dbc* pcursor = GetCursor();
     if (!pcursor)
@@ -1236,9 +1288,11 @@ bool CNameDB::ScanNames(
             vector<unsigned char> vchName;
             ssKey >> vchName;
             string strName = stringFromVch(vchName);
-            vector<CDiskTxPos> vtxPos;
+            //vector<CDiskTxPos> vtxPos;
+            vector<CNameIndex> vtxPos;
             ssValue >> vtxPos;
-            CDiskTxPos txPos;
+            //CDiskTxPos txPos;
+            CNameIndex txPos;
             if (!vtxPos.empty())
             {
                 txPos = vtxPos.back();
@@ -1645,15 +1699,27 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
 
         if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
         {
-            vector<CDiskTxPos> vtxPos;
+            //vector<CDiskTxPos> vtxPos;
+            vector<CNameIndex> vtxPos;
             if (dbName.ExistsName(vvchArgs[0]))
             {
                 if (!dbName.ReadName(vvchArgs[0], vtxPos))
                     return error("ConnectInputsHook() : failed to read from name DB");
             }
-            vtxPos.push_back(txPos);
+            vector<unsigned char> vchValue; // add
+            int nHeight;
+            uint256 hash;
+            GetValueOfTxPos(txPos, vchValue, hash, nHeight);
+            CNameIndex txPos2;
+            txPos2.nHeight = pindexBlock->nHeight;
+            txPos2.vValue = vchValue;
+            txPos2.txPos = txPos;
+            vtxPos.push_back(txPos2); // fin add
+            //vtxPos.push_back(txPos);
             if (!dbName.WriteName(vvchArgs[0], vtxPos))
+            {
                 return error("ConnectInputsHook() : failed to write to name DB");
+            }
         }
 
         dbName.TxnCommit();
@@ -1694,7 +1760,8 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
 
         dbName.TxnBegin();
 
-        vector<CDiskTxPos> vtxPos;
+        //vector<CDiskTxPos> vtxPos;
+        vector<CNameIndex> vtxPos;
         if (!dbName.ReadName(vvchArgs[0], vtxPos))
             return error("DisconnectInputsHook() : failed to read from name DB");
         // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not

@@ -185,6 +185,32 @@ public:
     }
 };
 
+class CNameIndex
+{
+public:
+    CDiskTxPos txPos;
+    unsigned int nHeight;
+    std::vector<unsigned char> vValue;
+
+    CNameIndex()
+    {
+    }
+
+    CNameIndex(CDiskTxPos txPosIn, unsigned int nHeightIn, std::vector<unsigned char> vValueIn)
+    {
+        txPos = txPosIn;
+        nHeight = nHeightIn;
+        vValue = vValueIn;
+    }
+
+    IMPLEMENT_SERIALIZE
+    (
+        READWRITE(txPos);
+        READWRITE(nHeight);
+        READWRITE(vValue);
+    )
+};
+
 
 
 
