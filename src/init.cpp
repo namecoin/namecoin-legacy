@@ -166,8 +166,8 @@ bool AppInit2(int argc, char* argv[])
             "  namecoin [options] help              \t\t  " + _("List commands\n") +
             "  namecoin [options] help <command>    \t\t  " + _("Get help for a command\n") +
           _("Options:\n") +
-            "  -conf=<file>     \t\t  " + _("Specify configuration file (default: bitcoin.conf)\n") +
-            "  -pid=<file>      \t\t  " + _("Specify pid file (default: bitcoind.pid)\n") +
+            "  -conf=<file>     \t\t  " + _("Specify configuration file (default: namecoin.conf)\n") +
+            "  -pid=<file>      \t\t  " + _("Specify pid file (default: namecoind.pid)\n") +
             "  -gen             \t\t  " + _("Generate coins\n") +
             "  -gen=0           \t\t  " + _("Don't generate coins\n") +
             "  -min             \t\t  " + _("Start minimized\n") +
@@ -196,7 +196,7 @@ bool AppInit2(int argc, char* argv[])
             "  -testnet         \t\t  " + _("Use the test network\n") +
             "  -rpcuser=<user>  \t  "   + _("Username for JSON-RPC connections\n") +
             "  -rpcpassword=<pw>\t  "   + _("Password for JSON-RPC connections\n") +
-            "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 8332)\n") +
+            "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 8336)\n") +
             "  -rpcallowip=<ip> \t\t  " + _("Allow JSON-RPC connections from specified IP address\n") +
             "  -rpcconnect=<ip> \t  "   + _("Send commands to node running on <ip> (default: 127.0.0.1)\n") +
             "  -keypool=<n>     \t  "   + _("Set key pool size to <n> (default: 100)\n") +

@@ -195,6 +195,11 @@ int GetTxPosHeight(const CDiskTxPos& txPos)
         return 0;
     return pindex->nHeight;
 }
+int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
+{
+    nHeight = GetTxPosHeight(txPos);
+    return nHeight;
+}
 
 
 int GetNameHeight(CTxDB& txdb, vector<unsigned char> vchName) {
@@ -473,12 +478,8 @@ bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& t
     return true;
 }
 
-bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
+bool GetNameAddress(const CTransaction& tx, std::string& strAddress)
 {
-    CTransaction tx;
-    if (!tx.ReadFromDisk(txPos))
-        return error("GetNameAddress() : could not read tx from disk");
-
     int op;
     int nOut;
     vector<vector<unsigned char> > vvch;
@@ -487,6 +488,15 @@ bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
     const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
     strAddress = scriptPubKey.GetBitcoinAddress();
     return true;
+}
+
+bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
+{
+    CTransaction tx;
+    if (!tx.ReadFromDisk(txPos))
+        return error("GetNameAddress() : could not read tx from disk");
+
+    return GetNameAddress(tx, strAddress);
 }
 
 Value name_list(const Array& params, bool fHelp)
@@ -526,25 +536,27 @@ Value name_list(const Array& params, bool fHelp)
                 continue;
 
             vchLastName = pairScan.first;
-            string name = stringFromVch(pairScan.first);
-            CDiskTxPos txPos = pairScan.second;
             vector<unsigned char> vchValue;
-            int nHeight;
-            uint256 hash;
+            CTransaction tx;
+            CDiskTxPos txPos = pairScan.second;
             if (!txPos.IsNull() &&
-                    GetValueOfTxPos(txPos, vchValue, hash, nHeight) &&
-                    pwalletMain->mapWallet.count(hash)
+                    tx.ReadFromDisk(txPos) &&
+                    GetValueOfNameTx(tx, vchValue) &&
+                    pwalletMain->mapWallet.count(tx.GetHash())
                     )
             {
                 string value = stringFromVch(vchValue);
                 Object oName;
+                string name = stringFromVch(pairScan.first);
                 oName.push_back(Pair("name", name));
                 oName.push_back(Pair("value", value));
-                if (!hooks->IsMine(pwalletMain->mapWallet[hash]))
+                if (!hooks->IsMine(pwalletMain->mapWallet[tx.GetHash()]))
                     oName.push_back(Pair("transferred", 1));
                 string strAddress = "";
-                GetNameAddress(txPos, strAddress);
+                GetNameAddress(tx, strAddress);
                 oName.push_back(Pair("address", strAddress));
+                int nHeight;
+                nHeight = GetTxPosHeight(txPos);
                 oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
                 if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                 {
@@ -558,6 +570,7 @@ Value name_list(const Array& params, bool fHelp)
         if (vchName == vchLastName)
             break;
         vchName = vchLastName;
+        break;
     }
 
     return oRes;
@@ -625,9 +638,59 @@ Value name_debug1(const Array& params, bool fHelp)
     return true;
 }
 
+Value name_show(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "name_show <name>\n"
+            "Show values of a name.\n"
+            );
+    
+    Object oLastName;
+    vector<unsigned char> vchName = vchFromValue(params[0]);
+    string name = stringFromVch(vchName);
+    CRITICAL_BLOCK(cs_main)
+    {
+        vector<CDiskTxPos> vtxPos;
+        CNameDB dbName("r");
+        if (!dbName.ReadName(vchName, vtxPos))
+            throw JSONRPCError(-4, "failed to read from name DB");
+       
+		if (vtxPos.size() < 1)
+            throw JSONRPCError(-4, "no result returned");
+
+        CDiskTxPos txPos = vtxPos[vtxPos.size() - 1];
+        CTransaction tx;
+        if (!tx.ReadFromDisk(txPos))
+            throw JSONRPCError(-4, "failed to read from from disk");
+
+        Object oName;
+        vector<unsigned char> vchValue;
+        int nHeight;
+        uint256 hash;
+        if (!txPos.IsNull() && GetValueOfTxPos(txPos, vchValue, hash, nHeight))
+        {
+            oName.push_back(Pair("name", name));
+            string value = stringFromVch(vchValue);
+            oName.push_back(Pair("value", value));
+            oName.push_back(Pair("txid", tx.GetHash().GetHex()));
+            string strAddress = "";
+            GetNameAddress(txPos, strAddress);
+            oName.push_back(Pair("address", strAddress));
+            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+            if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            {
+                oName.push_back(Pair("expired", 1));
+            }
+            oLastName = oName;
+        }
+    }
+    return oLastName;
+}
+
 Value name_history(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 1)
+    if (fHelp || params.size() != 1)
         throw runtime_error(
             "name_history <name>\n"
             "List all name values of a name.\n");
@@ -711,24 +774,25 @@ Value name_scan(const Array& params, bool fHelp)
     {
         Object oName;
         string name = stringFromVch(pairScan.first);
-        CDiskTxPos txPos = pairScan.second;
         oName.push_back(Pair("name", name));
         vector<unsigned char> vchValue;
-        int nHeight;
-        uint256 hash;
-        if (txPos.IsNull() ||
-            !GetValueOfTxPos(txPos, vchValue, hash, nHeight) ||
-            (GetValueOfTxPos(txPos, vchValue, hash, nHeight) && nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0))
+        CTransaction tx;
+        CDiskTxPos txPos = pairScan.second;
+        int nHeight = GetTxPosHeight(txPos);
+        if (txPos.IsNull()
+            || (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            || !tx.ReadFromDisk(txPos)
+            || !GetValueOfNameTx(tx, vchValue))
         {
             oName.push_back(Pair("expired", 1));
         }
         else
         {
             string value = stringFromVch(vchValue);
-            oName.push_back(Pair("value", value));
-            oName.push_back(Pair("txid", hash.GetHex()));
             string strAddress = "";
-            GetNameAddress(txPos, strAddress);
+            GetNameAddress(tx, strAddress);
+            oName.push_back(Pair("value", value));
+            oName.push_back(Pair("txid", tx.GetHash().GetHex()));
             oName.push_back(Pair("address", strAddress));
             oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
         }
@@ -1196,6 +1260,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_show", &name_show));
     mapCallTable.insert(make_pair("name_history", &name_history));
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
