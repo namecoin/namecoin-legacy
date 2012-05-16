@@ -1142,6 +1142,17 @@ Value deletetransaction(const Array& params, bool fHelp)
     }
 }
 
+Value rescanfornames(const Array& params, bool fHelp)
+{
+    printf("Rescanning blockchain for all names...\n");
+
+    CNameDB dbName("cr+");
+
+    // scan blockchain
+    dbName.ReconstructNameIndex();
+
+    return "Blockchain scanned for existing names";
+}
 Value name_clean(const Array& params, bool fHelp)
 {
     if (fHelp || params.size())
@@ -1307,6 +1318,65 @@ bool CNameDB::ScanNames(
     return true;
 }
 
+bool CNameDB::ReconstructNameIndex()
+{
+    CTxDB txdb("r");
+    vector<unsigned char> vchName;
+    vector<unsigned char> vchValue;
+    int nHeight;
+    CTxIndex txindex;
+    CBlockIndex* pindex = pindexGenesisBlock;
+    CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
+    {
+        //CNameDB dbName("cr+", txdb);
+        TxnBegin();
+
+        while (pindex)
+        {  
+            CBlock block;
+            block.ReadFromDisk(pindex, true);
+            BOOST_FOREACH(CTransaction& tx, block.vtx)
+            {
+                if (tx.nVersion != NAMECOIN_TX_VERSION)
+                    continue;
+
+                if(!GetNameOfTx(tx, vchName))
+                    continue;
+
+                if(!GetValueOfNameTx(tx, vchValue))
+                    continue;
+
+                if(!txdb.ReadDiskTx(tx.GetHash(), tx, txindex))
+                    continue;
+
+                nHeight = GetTxPosHeight(txindex.pos);
+
+               vector<CNameIndex> vtxPos;
+                if (ExistsName(vchName))
+                {   
+                    if (!ReadName(vchName, vtxPos))
+                        return error("Rescanfornames() : failed to read from name DB");
+                }
+                CNameIndex txPos2;
+                txPos2.nHeight = nHeight;
+                txPos2.vValue = vchValue;
+                txPos2.txPos = txindex.pos;
+                vtxPos.push_back(txPos2);
+                if (!WriteName(vchName, vtxPos))
+                {   
+                    return error("Rescanfornames() : failed to write to name DB");
+                }
+
+                //if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
+                //    ret++;
+            }
+            pindex = pindex->pnext;
+        }
+
+        TxnCommit();
+    }
+}
+
 CHooks* InitHook()
 {
     mapCallTable.insert(make_pair("name_new", &name_new));
@@ -1320,6 +1390,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
+    mapCallTable.insert(make_pair("rescanfornames", &rescanfornames));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
     return new CNamecoinHooks();

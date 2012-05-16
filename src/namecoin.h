@@ -47,5 +47,7 @@ public:
             //std::vector<std::pair<std::vector<unsigned char>, CDiskTxPos> >& nameScan);
 
     bool test();
+
+    bool ReconstructNameIndex();
 }
 ;
