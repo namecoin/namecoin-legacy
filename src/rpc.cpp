@@ -22,6 +22,7 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
+#include "namecoin.h"
 #define printf OutputDebugStringF
 // MinGW 3.4.5 gets "fatal error: had to relocate PCH" if the json headers are
 // precompiled in headers.h.  The problem might be when the pch file goes over
@@ -36,6 +37,7 @@ using namespace json_spirit;
 void ThreadRPCServer2(void* parg);
 typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
+void rescanfornames();
 
 
 Object JSONRPCError(int code, const string& message)
@@ -2383,6 +2385,14 @@ void ThreadRPCServer(void* parg)
 void ThreadRPCServer2(void* parg)
 {
     printf("ThreadRPCServer started\n");
+
+    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    if (!filesystem::exists(nameindexfile))
+    {
+        PrintConsole("Scanning blockchain for names to create fast index...");
+        rescanfornames();
+        PrintConsole("\n");
+    }
 
     if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
     {

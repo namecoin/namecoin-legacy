@@ -49,6 +49,7 @@ extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& valu
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
 extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
 bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+extern void rescanfornames();
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -1142,17 +1143,16 @@ Value deletetransaction(const Array& params, bool fHelp)
     }
 }
 
-Value rescanfornames(const Array& params, bool fHelp)
+void rescanfornames()
 {
-    printf("Rescanning blockchain for all names...\n");
+    printf("Scanning blockchain for names to create fast index...\n");
 
     CNameDB dbName("cr+");
 
     // scan blockchain
     dbName.ReconstructNameIndex();
-
-    return "Blockchain scanned for existing names";
 }
+
 Value name_clean(const Array& params, bool fHelp)
 {
     if (fHelp || params.size())
@@ -1390,7 +1390,6 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
-    mapCallTable.insert(make_pair("rescanfornames", &rescanfornames));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
     return new CNamecoinHooks();
