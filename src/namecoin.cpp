@@ -13,6 +13,7 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
+#include <boost/xpressive/xpressive_dynamic.hpp>
 
 using namespace std;
 using namespace json_spirit;
@@ -786,6 +787,112 @@ Value name_history(const Array& params, bool fHelp)
     return oRes;
 }
 
+Value name_filter(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() > 5)
+        throw runtime_error(
+                "name_filter [regexp] [maxage=36000] [from=0] [nb=0] [stat]\n"
+                "scan and filter names\n"
+                );
+
+    string strRegexp;
+    int nFrom = 0;
+    int nNb = 0;
+    int nMaxAge = 36000;
+    bool fStat = false;
+    int nCountFrom = 0;
+    int nCountNb = 0;
+
+
+    if (params.size() > 0)
+        strRegexp = params[0].get_str();
+
+    if (params.size() > 1)
+        nMaxAge = params[1].get_int();
+
+    if (params.size() > 2)
+        nFrom = params[2].get_int();
+
+    if (params.size() > 3)
+        nNb = params[3].get_int();
+
+    if (params.size() > 4)
+        fStat = (params[4].get_str() == "stat" ? true : false);
+
+
+    CNameDB dbName("r");
+    Array oRes;
+
+    vector<unsigned char> vchName;
+    vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
+    if (!dbName.ScanNames(vchName, 100000000, nameScan))
+        throw JSONRPCError(-4, "scan failed");
+
+    pair<vector<unsigned char>, CNameIndex> pairScan;
+    BOOST_FOREACH(pairScan, nameScan)
+    {
+        string name = stringFromVch(pairScan.first);
+
+        // regexp
+        using namespace boost::xpressive;
+        smatch nameparts;
+        sregex cregex = sregex::compile(strRegexp);
+        if(strRegexp != "" && !regex_search(name, nameparts, cregex))
+            continue;
+
+        CNameIndex txName = pairScan.second;
+        int nHeight = txName.nHeight;
+
+        // max age
+        if(nMaxAge != 0 && pindexBest->nHeight - nHeight >= nMaxAge)
+            continue;
+
+        // from limits
+        nCountFrom++;
+        if(nCountFrom < nFrom + 1)
+            continue;
+
+        Object oName;
+        oName.push_back(Pair("name", name));
+        CTransaction tx;
+        CDiskTxPos txPos = txName.txPos;
+        if ((nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
+            || txPos.IsNull()
+            || !tx.ReadFromDisk(txPos))
+            //|| !GetValueOfNameTx(tx, vchValue))
+        {
+            oName.push_back(Pair("expired", 1));
+        }
+        else
+        {
+            vector<unsigned char> vchValue = txName.vValue;
+            string value = stringFromVch(vchValue);
+            oName.push_back(Pair("value", value));
+            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+        }
+        oRes.push_back(oName);
+
+        nCountNb++;
+        // nb limits
+        if(nNb > 0 && nCountNb >= nNb)
+            break;
+    }
+
+    if (NAME_DEBUG) {
+        dbName.test();
+    }
+
+    if(fStat)
+    {
+        Object oStat;
+        oStat.push_back(Pair("count", oRes.size()));
+        //oStat.push_back(Pair("sha256sum", SHA256(oRes), true));
+        return oStat;
+    }
+
+    return oRes;
+}
+
 Value name_scan(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
@@ -1384,6 +1491,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_firstupdate", &name_firstupdate));
     mapCallTable.insert(make_pair("name_list", &name_list));
     mapCallTable.insert(make_pair("name_scan", &name_scan));
+    mapCallTable.insert(make_pair("name_filter", &name_filter));
     mapCallTable.insert(make_pair("name_show", &name_show));
     mapCallTable.insert(make_pair("name_history", &name_history));
     mapCallTable.insert(make_pair("name_debug", &name_debug));
