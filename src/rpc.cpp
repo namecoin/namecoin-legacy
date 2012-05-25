@@ -38,6 +38,7 @@ void ThreadRPCServer2(void* parg);
 typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
 void rescanfornames();
+Value sendtoaddress(const Array& params, bool fHelp);
 
 
 Object JSONRPCError(int code, const string& message)
@@ -2682,6 +2683,7 @@ int CommandLineRPC(int argc, char *argv[])
         if (strMethod == "name_filter"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
         if (strMethod == "name_filter"            && n > 2) ConvertTo<boost::int64_t>(params[2]);
         if (strMethod == "name_filter"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
+        if (strMethod == "sendtoname"             && n > 1) ConvertTo<double>(params[1]);
 
         if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
         if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);

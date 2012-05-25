@@ -51,6 +51,7 @@ extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned 
 extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
 bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
 extern void rescanfornames();
+extern Value sendtoaddress(const Array& params, bool fHelp);
 
 const int NAME_COIN_GENESIS_EXTRA = 521;
 uint256 hashNameCoinGenesisBlock("000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
@@ -525,6 +526,47 @@ bool GetNameAddress(const CDiskTxPos& txPos, std::string& strAddress)
         return error("GetNameAddress() : could not read tx from disk");
 
     return GetNameAddress(tx, strAddress);
+}
+
+Value sendtoname(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 4)
+        throw runtime_error(
+            "sendtoname <namecoinname> <amount> [comment] [comment-to]\n"
+            "<amount> is a real and is rounded to the nearest 0.01");
+    
+    vector<unsigned char> vchName = vchFromValue(params[0]);
+    CNameDB dbName("r");
+    if (!dbName.ExistsName(vchName))
+        throw JSONRPCError(-5, "Name not found");
+    
+    string strAddress;
+    CTransaction tx;
+    GetTxOfName(dbName, vchName, tx);
+    GetNameAddress(tx, strAddress);
+    
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(-5, "No valid namecoin address");
+
+    // Amount
+    int64 nAmount = AmountFromValue(params[1]);
+
+    // Wallet comments
+    CWalletTx wtx;
+    if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
+        wtx.mapValue["comment"] = params[2].get_str();
+    if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
+        wtx.mapValue["to"]      = params[3].get_str();
+
+    CRITICAL_BLOCK(cs_main)
+    {  
+        string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
+        if (strError != "")
+            throw JSONRPCError(-4, strError);
+    }
+
+    return wtx.GetHash().GetHex();
 }
 
 Value name_list(const Array& params, bool fHelp)
@@ -1497,6 +1539,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
+    mapCallTable.insert(make_pair("sendtoname", &sendtoname));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
