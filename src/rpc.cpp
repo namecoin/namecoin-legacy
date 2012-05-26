@@ -22,6 +22,7 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
+#include "namecoin.h"
 #define printf OutputDebugStringF
 // MinGW 3.4.5 gets "fatal error: had to relocate PCH" if the json headers are
 // precompiled in headers.h.  The problem might be when the pch file goes over
@@ -36,6 +37,8 @@ using namespace json_spirit;
 void ThreadRPCServer2(void* parg);
 typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
+void rescanfornames();
+Value sendtoaddress(const Array& params, bool fHelp);
 
 
 Object JSONRPCError(int code, const string& message)
@@ -2384,6 +2387,14 @@ void ThreadRPCServer2(void* parg)
 {
     printf("ThreadRPCServer started\n");
 
+    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    if (!filesystem::exists(nameindexfile))
+    {
+        PrintConsole("Scanning blockchain for names to create fast index...");
+        rescanfornames();
+        PrintConsole("\n");
+    }
+
     if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
     {
         string strWhatAmI = "To use namecoind";
@@ -2669,6 +2680,11 @@ int CommandLineRPC(int argc, char *argv[])
         //
         // Special case non-string parameter types
         //
+        if (strMethod == "name_filter"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+        if (strMethod == "name_filter"            && n > 2) ConvertTo<boost::int64_t>(params[2]);
+        if (strMethod == "name_filter"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
+        if (strMethod == "sendtoname"             && n > 1) ConvertTo<double>(params[1]);
+
         if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
         if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
         if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
