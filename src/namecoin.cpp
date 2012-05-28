@@ -927,7 +927,7 @@ Value name_filter(const Array& params, bool fHelp)
     if(fStat)
     {
         Object oStat;
-        oStat.push_back(Pair("count", oRes.size()));
+        oStat.push_back(Pair("count", int(oRes.size())));
         //oStat.push_back(Pair("sha256sum", SHA256(oRes), true));
         return oStat;
     }
