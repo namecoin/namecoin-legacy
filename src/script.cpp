@@ -94,7 +94,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
             //
             if (!script.GetOp(pc, opcode, vchPushValue))
                 return false;
-            if (vchPushValue.size() > 520)
+            if (vchPushValue.size() > 1023)
                 return false;
             if (opcode > OP_16 && ++nOpCount > 201)
                 return false;
