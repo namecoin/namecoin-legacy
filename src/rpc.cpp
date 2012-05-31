@@ -37,7 +37,6 @@ using namespace json_spirit;
 void ThreadRPCServer2(void* parg);
 typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
-void rescanfornames();
 Value sendtoaddress(const Array& params, bool fHelp);
 
 
@@ -2386,14 +2385,6 @@ void ThreadRPCServer(void* parg)
 void ThreadRPCServer2(void* parg)
 {
     printf("ThreadRPCServer started\n");
-
-    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindexfull.dat";
-    if (!filesystem::exists(nameindexfile))
-    {
-        PrintConsole("Scanning blockchain for names to create fast index...");
-        rescanfornames();
-        PrintConsole("\n");
-    }
 
     if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
     {
