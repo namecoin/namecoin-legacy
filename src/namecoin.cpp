@@ -1375,6 +1375,74 @@ Value name_clean(const Array& params, bool fHelp)
     return true;
 }
 
+Value sendtoalias(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 4)
+        throw runtime_error(
+            "sendtoalias <namecoinalias> <amount> [comment] [comment-to]\n"
+            "<amount> is a real and is rounded to the nearest 0.01");
+    
+    vector<unsigned char> vchName = vchFromString("id/" + params[0].get_str());
+
+    CNameDB dbName("r");
+    if (!dbName.ExistsName(vchName))
+        throw JSONRPCError(-5, "Alias not found");
+
+    vector<CNameIndex> vtxPos;
+    if (!dbName.ReadName(vchName, vtxPos))
+        throw JSONRPCError(-5, "Name history not found");
+
+    CNameIndex txPos = vtxPos.back();
+    Value valJson;
+    if (!read_string(stringFromVch(txPos.vValue), valJson))
+        throw JSONRPCError(-5, "couldn't parse json from name");
+    const Object& json = valJson.get_obj();
+    if (json.empty())
+        throw JSONRPCError(-5, "expected json to contain data");
+    
+    string strAddress;
+    const Value& namecoin = find_value(json, "namecoin");
+    if (namecoin.type() == null_type)
+        throw JSONRPCError(-5, "Namecoin data should be a string or a json object");
+	
+    if (namecoin.type() == obj_type)
+	{
+    	const Value& ndefault = find_value(namecoin.get_obj(), "default");
+    	if (ndefault.type() == null_type)
+        	throw JSONRPCError(-5, "A namecoin object should have a 'default' address");
+		else if (ndefault.type() == str_type)
+        	strAddress = ndefault.get_str();
+		else
+        	throw JSONRPCError(-5, "Namecoin default address should be a string");
+	} else if (namecoin.type() == str_type) {
+        strAddress = namecoin.get_str();
+	} else
+        throw JSONRPCError(-5, "Namecoin data should be a string or a json object");
+    
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(-5, "No valid namecoin address");
+
+    // Amount
+    int64 nAmount = AmountFromValue(params[1]);
+
+    // Wallet comments
+    CWalletTx wtx;
+    if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
+        wtx.mapValue["comment"] = params[2].get_str();
+    if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
+        wtx.mapValue["to"]      = params[3].get_str();
+
+    CRITICAL_BLOCK(cs_main)
+    {  
+        string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
+        if (strError != "")
+            throw JSONRPCError(-4, strError);
+    }
+
+    return wtx.GetHash().GetHex();
+}
+
 bool CNameDB::test()
 {
     Dbc* pcursor = GetCursor();
@@ -1541,6 +1609,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
     mapCallTable.insert(make_pair("sendtoname", &sendtoname));
+    mapCallTable.insert(make_pair("sendtoalias", &sendtoalias));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());
