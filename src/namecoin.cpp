@@ -1204,7 +1204,10 @@ Value name_new(const Array& params, bool fHelp)
     wtx.nVersion = NAMECOIN_TX_VERSION;
 
     uint64 rand = GetRand((uint64)-1);
-    vector<unsigned char> vchRand = CBigNum(rand).getvch();
+    vector<unsigned char> seedRand = CBigNum(rand).getvch();
+    string strRand = Hash(seedRand.begin(), seedRand.end()).ToString();
+    strRand.resize(16);
+    vector<unsigned char> vchRand = ParseHex(strRand);
     vector<unsigned char> vchToHash(vchRand);
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
     uint160 hash =  Hash160(vchToHash);
