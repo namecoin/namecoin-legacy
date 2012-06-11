@@ -76,17 +76,22 @@ class NamecoinThread(threading.Thread):
     while 1:
       print "scan"
       try:
-        scan = self.namecoin.name_scan('\0', 100000)
-        if (count == len(scan)):
+        if (count == 0):
+          names = {}
+          scan = self.namecoin.name_filter('^d/')
+        else:
+          scan = self.namecoin.name_filter('^d/', 3)
+        if (len(scan) == 0):
           time.sleep(60)
           continue
-        count = len(scan)
-        print "got %d names" %(len(scan))
-        names = {}
         for el in scan:
-          if el['name'][0:2] == 'd/':
-            if not el.has_key('expired'):
-              names[el['name'][2:]] = el['value']
+          try:
+            zone = json.loads(el['value'])
+            names[el['name'][2:]] = el['value']
+          except:
+            continue
+        print "scan %s, new %s, total %s" %(len(scan), len(names) - count, len(names))
+        count = len(names)
       except IOError:
         print "could not connect to namecoin, will retry"
       time.sleep(60)
