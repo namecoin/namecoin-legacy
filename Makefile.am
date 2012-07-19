@@ -1,58 +1,55 @@
-# -*- fill-column: 56 -*-
-AUTOMAKE_OPTIONS =		subdir-objects
-ACLOCAL_AMFLAGS =		-I build-aux/m4
+############## Mandatory Copyright Troll ######################
+AUTOMAKE_OPTIONS=	subdir-objects
+ACLOCAL_AMFLAGS	=	-I build-aux/m4
 
-nmc_source_dir =		$(top_srcdir)/src
-nmc_include_dir =		$(top_srcdir)/src
+nmc_source_dir	=	$(top_srcdir)/src
+nmc_include_dir	=	$(top_srcdir)/src
 
-common_includes =		-I$(nmc_include_dir)		\
-				$(DEPS_CFLAGS)
+common_includes	=	-I$(nmc_include_dir)	\
+			$(DEPS_CFLAGS)
 
 ## COMMON FLAGS ###
 
-AM_CXXFLAGS = 			$(common_includes)		\
-				-O2 				\
-				-Wno-invalid-offsetof		\
-				-Wformat			\
-				-DNOPCH -DFOURWAYSSE2 -DUSE_SSL	\
-				-DUSE_UPNP=0
+AM_CXXFLAGS	=	$(common_includes)	\
+			-O2 -O3			\
+			-Wno-invalid-offsetof	\
+			-Wformat		\
+			-DNOPCH			\
+			-DFOURWAYSSE2		\
+			-DUSE_SSL
 
-AM_LDFLAGS = 			$(DEPS_LDFLAGS)
+AM_LIBS		=	$(DEPS_LIBS) -lz
 
-DEPS_LIBS= 	-lminiupnpc	\
-		-lboost_system \
-		-lboost_filesystem \
-		-lboost_program_options \
-		-lboost_thread \
-		-ldb_cxx \
-		-lssl \
-		-lcrypto \
-		-lgthread-2.0 \
-		-lz \
-		-ldl \
-		-lpthread
+AM_LDFLAGS	= 	$(DEPS_LDFLAGS)
+
+
+## Build Options ###
+
+if WANT_UPNP
+AM_CXXFLAGS	+=	-DUSE_UPNP=1
+endif
 
 ## WARNING FLAGS ###
 
 if WARNINGS
-AM_CXXFLAGS +=			-Waddress			\
-				-Woverloaded-virtual		\
-				-Wshadow			\
-				-Wconversion			\
-				-g
+AM_CXXFLAGS	+=	-Waddress		\
+			-Woverloaded-virtual	\
+			-Wshadow		\
+			-Wconversion		\
+			-g
 endif
 
 ## RELEASE FLAGS ###
 
 if RELEASE
-AM_CXXFLAGS +=			-Wall				\
-				-D_FORTIFY_SOURCE=2		\
-				-fstack-protector-all		\
-				-fstack-check			\
-				-Wstack-protector
+AM_CXXFLAGS	+=	-Wall			\
+			-D_FORTIFY_SOURCE=2	\
+			-fstack-protector-all	\
+			-fstack-check		\
+			-Wstack-protector
 endif
 
-####################################################################
+########################################################
 
 namecoind_sources=	src/auxpow.cpp		\
 			src/util.cpp		\
@@ -96,12 +93,12 @@ namecoind_headers=	src/headers.h		\
 bin_PROGRAMS		=	namecoind
 
 namecoind_SOURCES	=	$(namecoind_sources) $(namecoind_headers)
-namecoind_CPPFLAGS	=	-I$(nmc_include_dir) -I$(nmc_include_dir)/cryptopp $(AM_CXXFLAGS)
-namecoind_LDADD		=	-L/usr/lib $(DEPS_LIBS)
-#namecoind_LDFLAGS	=	-Wl, -Bdynamic
+namecoind_CXXFLAGS	=	-I$(nmc_include_dir) -I$(nmc_include_dir)/cryptopp $(AM_CXXFLAGS)
+namecoind_LDADD		=	$(AM_LIBS)
+namecoind_LDFLAGS	=	$(AM_LDFLAGS)
 #namecoind_DEPENDENCIES	=	
 
 #####################
 
-# for boost 1.37, add -mt to the boost libraries
+
 
