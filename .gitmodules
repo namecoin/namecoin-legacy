@@ -1,0 +1,3 @@
+[submodule "bitcoin-qt"]
+	path = bitcoin-qt
+	url = https://github.com/bitcoin/bitcoin.git
