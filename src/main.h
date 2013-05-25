@@ -8,10 +8,16 @@
 #include "net.h"
 #include "key.h"
 #include "script.h"
-#include "db.h"
+#include "walletdb.h"
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+
+#ifdef __WXMSW__
+#include <io.h> /* for _commit */
+#else
+#include <sys/prctl.h>
+#endif
 
 class CBlock;
 class CBlockIndex;
@@ -174,7 +180,7 @@ public:
     std::string ToString() const
     {
         if (IsNull())
-            return strprintf("null");
+            return "null";
         else
             return strprintf("(nFile=%d, nBlockPos=%d, nTxPos=%d)", nFile, nBlockPos, nTxPos);
     }
@@ -328,7 +334,7 @@ public:
     std::string ToString() const
     {
         std::string str;
-        str += strprintf("CTxIn(");
+        str += "CTxIn(";
         str += prevout.ToString();
         if (prevout.IsNull())
             str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());

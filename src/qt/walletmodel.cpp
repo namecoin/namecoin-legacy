@@ -4,10 +4,11 @@
 #include "addresstablemodel.h"
 #include "transactiontablemodel.h"
 
+#include "../headers.h"
+#include "../wallet.h"
+#include "../base58.h"
 #include "ui_interface.h"
-#include "wallet.h"
-#include "walletdb.h" // for BackupWallet
-#include "base58.h"
+//#include "walletdb.h" // for BackupWallet
 
 #include <QSet>
 #include <QTimer>
@@ -56,8 +57,6 @@ int WalletModel::getNumTransactions() const
     int numTransactions = 0;
     {
         LOCK(wallet->cs_wallet);
-        // the size of mapWallet contains the number of unique transaction IDs
-        // (e.g. payments to yourself generate 2 transactions, but both share the same transaction ID)
         numTransactions = wallet->mapWallet.size();
     }
     return numTransactions;
@@ -181,8 +180,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
         CWalletTx wtx;
         CReserveKey keyChange(wallet);
         int64 nFeeRequired = 0;
-        std::string strFailReason;
-        bool fCreated = wallet->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, strFailReason);
+        bool fCreated = wallet->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired);
 
         if(!fCreated)
         {
@@ -190,8 +188,6 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
             {
                 return SendCoinsReturn(AmountWithFeeExceedsBalance, nFeeRequired);
             }
-            emit message(tr("Send Coins"), QString::fromStdString(strFailReason),
-                         CClientUIInterface::MSG_ERROR);
             return TransactionCreationFailed;
         }
         if(!uiInterface.ThreadSafeAskFee(nFeeRequired))
@@ -303,7 +299,7 @@ bool WalletModel::backupWallet(const QString &filename)
 }
 
 // Handlers for core signals
-static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel, CCryptoKeyStore *wallet)
+static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel, CKeyStore *wallet)
 {
     OutputDebugStringF("NotifyKeyStoreStatusChanged\n");
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);

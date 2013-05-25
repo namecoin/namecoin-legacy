@@ -1,7 +1,9 @@
 #include "transactionrecord.h"
 
-#include "wallet.h"
-#include "base58.h"
+#include "../headers.h"
+#include "../wallet.h"
+#include "../base58.h"
+#include "ui_interface.h"
 
 /* Return positive answer if transaction should be shown in list.
  */

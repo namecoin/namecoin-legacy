@@ -5,6 +5,8 @@
 #include <QObject>
 #include <QMessageBox>
 
+#include <boost/filesystem.hpp>
+
 class SendCoinsRecipient;
 
 QT_BEGIN_NAMESPACE
@@ -117,5 +119,9 @@ namespace GUIUtil
     };
 
 } // namespace GUIUtil
+
+#ifdef WIN32
+boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
+#endif
 
 #endif // GUIUTIL_H

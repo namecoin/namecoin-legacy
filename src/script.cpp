@@ -94,7 +94,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
             //
             if (!script.GetOp(pc, opcode, vchPushValue))
                 return false;
-            if (vchPushValue.size() > 1023)
+            if (vchPushValue.size() > 520)
                 return false;
             if (opcode > OP_16 && ++nOpCount > 201)
                 return false;
@@ -1037,6 +1037,8 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
             {
                 // Sign
                 const valtype& vchPubKey = item.second;
+                if (hash == 0)
+                    return keystore.HaveKey(vchPubKey);
                 CPrivKey privkey;
                 if (!keystore.GetPrivKey(vchPubKey, privkey))
                     return false;
@@ -1056,6 +1058,8 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
                 if (mi == mapPubKeys.end())
                     return false;
                 const vector<unsigned char>& vchPubKey = (*mi).second;
+                if (hash == 0)
+                    return keystore.HaveKey(vchPubKey);
                 CPrivKey privkey;
                 if (!keystore.GetPrivKey(vchPubKey, privkey))
                     return false;
@@ -1092,6 +1096,19 @@ bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
 {
     CScript scriptSig;
     return Solver(keystore, scriptPubKey, 0, 0, scriptSig);
+}
+
+bool IsMine(const CKeyStore& keystore, const std::string& address)
+{
+    CRITICAL_BLOCK(keystore.cs_mapKeys)
+    {
+        uint160 hash160;
+        AddressToHash160(address, hash160);
+        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
+        if (mi == mapPubKeys.end())
+            return false;
+        return keystore.HaveKey(mi->second);
+    }
 }
 
 
@@ -1202,5 +1219,14 @@ bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsig
     if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, nHashType))
         return false;
 
+    return true;
+}
+
+bool ExtractDestination(const CScript& scriptPubKey, std::string& addressRet)
+{
+    uint160 h;
+    if (!ExtractHash160(scriptPubKey, h))
+        return false;
+    addressRet = Hash160ToAddress(h);
     return true;
 }

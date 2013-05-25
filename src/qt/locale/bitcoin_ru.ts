@@ -4,16 +4,21 @@
     <name>AboutDialog</name>
     <message>
         <location filename="../forms/aboutdialog.ui" line="+14"/>
-        <source>About Bitcoin</source>
-        <translation>&amp;О Bitcoin</translation>
+        <source>About Namecoin</source>
+        <translation>О Namecoin</translation>
     </message>
     <message>
         <location line="+39"/>
-        <source>&lt;b&gt;Bitcoin&lt;/b&gt; version</source>
-        <translation>&lt;b&gt;Bitcoin&lt;/b&gt; версия</translation>
+        <source>&lt;b&gt;Namecoin&lt;/b&gt; version</source>
+        <translation>&lt;b&gt;Namecoin&lt;/b&gt; версия</translation>
     </message>
     <message>
-        <location line="+57"/>
+        <location line="+41"/>
+        <source>Copyright © 2009-2013 The Bitcoin and Namecoin developers</source>
+        <translation>Все права защищены © 2009-2013 Разработчики Bitcoin и Namecoin</translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <source>
 This is experimental software.
 
@@ -27,28 +32,18 @@ This product includes software developed by the OpenSSL Project for use in the O
 
 Этот продукт включает ПО, разработанное OpenSSL Project для использования в OpenSSL Toolkit (http://www.openssl.org/) и криптографическое ПО, написанное Eric Young (eay@cryptsoft.com) и ПО для работы с UPnP, написанное Thomas Bernard.</translation>
     </message>
-    <message>
-        <location filename="../aboutdialog.cpp" line="+14"/>
-        <source>Copyright</source>
-        <translation>Все права защищены</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>The Bitcoin developers</source>
-        <translation>Разработчики Bitcoin</translation>
-    </message>
 </context>
 <context>
     <name>AddressBookPage</name>
     <message>
         <location filename="../forms/addressbookpage.ui" line="+14"/>
         <source>Address Book</source>
-        <translation>&amp;Адресная книга</translation>
+        <translation>Адресная книга</translation>
     </message>
     <message>
-        <location line="+19"/>
+        <location line="+22"/>
         <source>Double-click to edit address or label</source>
-        <translation>Для того, чтобы изменить адрес или метку, дважды кликните по изменяемому объекту</translation>
+        <translation>Для того, чтобы изменить адрес или метку давжды кликните по изменяемому объекту</translation>
     </message>
     <message>
         <location line="+27"/>
@@ -66,12 +61,12 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>&amp;Новый адрес</translation>
     </message>
     <message>
-        <location filename="../addressbookpage.cpp" line="+63"/>
-        <source>These are your Bitcoin addresses for receiving payments. You may want to give a different one to each sender so you can keep track of who is paying you.</source>
+        <location line="-46"/>
+        <source>These are your Namecoin addresses for receiving payments. You may want to give a different one to each sender so you can keep track of who is paying you.</source>
         <translation>Это Ваши адреса для получения платежей. Вы можете дать разные адреса отправителям, чтобы отслеживать, кто именно вам платит.</translation>
     </message>
     <message>
-        <location filename="../forms/addressbookpage.ui" line="+14"/>
+        <location line="+60"/>
         <source>&amp;Copy Address</source>
         <translation>&amp;Копировать адрес</translation>
     </message>
@@ -82,8 +77,8 @@ This product includes software developed by the OpenSSL Project for use in the O
     </message>
     <message>
         <location line="+11"/>
-        <source>Sign a message to prove you own a Bitcoin address</source>
-        <translation>Подписать сообщение, чтобы доказать владение адресом Bitcoin</translation>
+        <source>Sign a message to prove you own a Namecoin address</source>
+        <translation>Подписать сообщение, чтобы доказать владение адресом Namecoin</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -96,19 +91,9 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Удалить выбранный адрес из списка</translation>
     </message>
     <message>
-        <location line="+27"/>
-        <source>Export the data in the current tab to a file</source>
-        <translation>Экспортировать данные из вкладки в файл</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>&amp;Export</source>
-        <translation>&amp;Экспорт</translation>
-    </message>
-    <message>
-        <location line="-44"/>
-        <source>Verify a message to ensure it was signed with a specified Bitcoin address</source>
-        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Bitcoin</translation>
+        <location line="-14"/>
+        <source>Verify a message to ensure it was signed with a specified Namecoin address</source>
+        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Namecoin</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -121,27 +106,17 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>&amp;Удалить</translation>
     </message>
     <message>
-        <location filename="../addressbookpage.cpp" line="-5"/>
-        <source>These are your Bitcoin addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
-        <translation>Ваши адреса для получения средств. Совет: проверьте сумму и адрес назначения перед переводом.</translation>
-    </message>
-    <message>
-        <location line="+13"/>
+        <location filename="../addressbookpage.cpp" line="+65"/>
         <source>Copy &amp;Label</source>
         <translation>Копировать &amp;метку</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>&amp;Edit</source>
         <translation>&amp;Правка</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Send &amp;Coins</source>
-        <translation>&amp;Отправить монеты</translation>
-    </message>
-    <message>
-        <location line="+260"/>
+        <location line="+250"/>
         <source>Export Address Book Data</source>
         <translation>Экспортировать адресную книгу</translation>
     </message>
@@ -164,7 +139,7 @@ This product includes software developed by the OpenSSL Project for use in the O
 <context>
     <name>AddressTableModel</name>
     <message>
-        <location filename="../addresstablemodel.cpp" line="+144"/>
+        <location filename="../addresstablemodel.cpp" line="+142"/>
         <source>Label</source>
         <translation>Метка</translation>
     </message>
@@ -248,8 +223,8 @@ This product includes software developed by the OpenSSL Project for use in the O
     </message>
     <message>
         <location line="+1"/>
-        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR BITCOINS&lt;/b&gt;!</source>
-        <translation>Внимание: если вы зашифруете бумажник и потеряете пароль, вы &lt;b&gt;ПОТЕРЯЕТЕ ВСЕ ВАШИ БИТКОИНЫ&lt;/b&gt;!</translation>
+        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR NAMECOINS&lt;/b&gt;!</source>
+        <translation>Внимание: если вы зашифруете бумажник и потеряете пароль, вы &lt;b&gt;ПОТЕРЯЕТЕ ВСЕ ВАШИ НЕЙМКОИНЫ&lt;/b&gt;!</translation>
     </message>
     <message>
         <location line="+0"/>
@@ -275,8 +250,8 @@ This product includes software developed by the OpenSSL Project for use in the O
     </message>
     <message>
         <location line="-56"/>
-        <source>Bitcoin will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your bitcoins from being stolen by malware infecting your computer.</source>
-        <translation>Сейчас программа закроется для завершения процесса шифрования. Помните, что шифрование вашего бумажника не может полностью защитить ваши биткоины от кражи с помощью инфицирования вашего компьютера вредоносным ПО.</translation>
+        <source>Namecoin will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your Namecoins from being stolen by malware infecting your computer.</source>
+        <translation>Сейчас программа закроется для завершения процесса шифрования. Помните, что шифрование вашего бумажника не может полностью защитить ваши неймкоины от кражи с помощью инфицирования вашего компьютера вредоносным ПО.</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -321,19 +296,19 @@ This product includes software developed by the OpenSSL Project for use in the O
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>NamecoinGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+233"/>
+        <location filename="../bitcoingui.cpp" line="+267"/>
         <source>Sign &amp;message...</source>
-        <translation>&amp;Подписать сообщение...</translation>
+        <translation>&amp;Подписать сообщение</translation>
     </message>
     <message>
-        <location line="+280"/>
+        <location line="+254"/>
         <source>Synchronizing with network...</source>
         <translation>Синхронизация с сетью...</translation>
     </message>
     <message>
-        <location line="-349"/>
+        <location line="-322"/>
         <source>&amp;Overview</source>
         <translation>О&amp;бзор</translation>
     </message>
@@ -353,17 +328,32 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Показать историю транзакций</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+6"/>
+        <source>&amp;Address Book</source>
+        <translation>&amp;Адресная книга</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Edit the list of stored addresses and labels</source>
         <translation>Изменить список сохранённых адресов и меток к ним</translation>
     </message>
     <message>
-        <location line="-14"/>
+        <location line="-15"/>
+        <source>&amp;Receive coins</source>
+        <translation>&amp;Получение монет</translation>
+    </message>
+    <message>
+        <location line="+1"/>
         <source>Show the list of addresses for receiving payments</source>
         <translation>Показать список адресов для получения платежей</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="-8"/>
+        <source>&amp;Send coins</source>
+        <translation>Отп&amp;равка монет</translation>
+    </message>
+    <message>
+        <location line="+39"/>
         <source>E&amp;xit</source>
         <translation>В&amp;ыход</translation>
     </message>
@@ -374,8 +364,8 @@ This product includes software developed by the OpenSSL Project for use in the O
     </message>
     <message>
         <location line="+4"/>
-        <source>Show information about Bitcoin</source>
-        <translation>Показать информацию о Bitcoin&apos;е</translation>
+        <source>Show information about Namecoin</source>
+        <translation>Показать информацию о Namecoin&apos;е</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -393,22 +383,22 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Оп&amp;ции...</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+5"/>
         <source>&amp;Encrypt Wallet...</source>
-        <translation>&amp;Зашифровать бумажник...</translation>
+        <translation>&amp;Зашифровать бумажник</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;Backup Wallet...</source>
-        <translation>&amp;Сделать резервную копию бумажника...</translation>
+        <translation>&amp;Сделать резервную копию бумажника</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Change Passphrase...</source>
-        <translation>&amp;Изменить пароль...</translation>
+        <translation>&amp;Изменить пароль</translation>
     </message>
     <message>
-        <location line="+285"/>
+        <location line="+259"/>
         <source>Importing blocks from disk...</source>
         <translation>Импортируются блоки с диска...</translation>
     </message>
@@ -417,18 +407,33 @@ This product includes software developed by the OpenSSL Project for use in the O
         <source>Reindexing blocks on disk...</source>
         <translation>Идёт переиндексация блоков на диске...</translation>
     </message>
+    <message numerus="yes">
+        <location line="+10"/>
+        <source>~%n block(s) remaining</source>
+        <translation><numerusform>остался ~%n блок</numerusform><numerusform>осталось ~%n блоков</numerusform><numerusform>осталось ~%n блоков</numerusform></translation>
+    </message>
     <message>
-        <location line="-347"/>
-        <source>Send coins to a Bitcoin address</source>
-        <translation>Отправить монеты на указанный адрес Bitcoin</translation>
+        <location line="-265"/>
+        <source>&amp;Export...</source>
+        <translation>&amp;Экспорт...</translation>
+    </message>
+    <message>
+        <location line="-65"/>
+        <source>Send coins to a Namecoin address</source>
+        <translation>Отправить монеты на указанный адрес Namecoin</translation>
     </message>
     <message>
         <location line="+49"/>
-        <source>Modify configuration options for Bitcoin</source>
-        <translation>Изменить параметры конфигурации Bitcoin</translation>
+        <source>Modify configuration options for Namecoin</source>
+        <translation>Изменить параметры конфигурации Namecoin</translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+17"/>
+        <source>Export the data in the current tab to a file</source>
+        <translation>Экспортировать данные из вкладки в файл</translation>
+    </message>
+    <message>
+        <location line="-9"/>
         <source>Backup wallet to another location</source>
         <translation>Сделать резервную копию бумажника в другом месте</translation>
     </message>
@@ -438,7 +443,7 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Изменить пароль шифрования бумажника</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+9"/>
         <source>&amp;Debug window</source>
         <translation>&amp;Окно отладки</translation>
     </message>
@@ -448,40 +453,25 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Открыть консоль отладки и диагностики</translation>
     </message>
     <message>
-        <location line="-4"/>
+        <location line="-7"/>
         <source>&amp;Verify message...</source>
         <translation>&amp;Проверить сообщение...</translation>
     </message>
     <message>
-        <location line="-165"/>
-        <location line="+530"/>
-        <source>Bitcoin</source>
-        <translation>Биткоин</translation>
+        <location line="-196"/>
+        <location line="+538"/>
+        <source>Namecoin</source>
+        <translation>Неймкоин</translation>
     </message>
     <message>
-        <location line="-530"/>
+        <location line="-538"/>
         <source>Wallet</source>
         <translation>Бумажник</translation>
     </message>
     <message>
-        <location line="+101"/>
-        <source>&amp;Send</source>
-        <translation>&amp;Отправить</translation>
-    </message>
-    <message>
-        <location line="+7"/>
-        <source>&amp;Receive</source>
-        <translation>&amp;Получить</translation>
-    </message>
-    <message>
-        <location line="+14"/>
-        <source>&amp;Addresses</source>
-        <translation>&amp;Адреса</translation>
-    </message>
-    <message>
-        <location line="+22"/>
-        <source>&amp;About Bitcoin</source>
-        <translation>&amp;О Bitcoin</translation>
+        <location line="+176"/>
+        <source>&amp;About Namecoin</source>
+        <translation>&amp;О Namecoin</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -494,27 +484,27 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Показать или скрыть главное окно</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+2"/>
         <source>Encrypt the private keys that belong to your wallet</source>
         <translation>Зашифровать приватные ключи, принадлежащие вашему бумажнику</translation>
     </message>
     <message>
         <location line="+7"/>
-        <source>Sign messages with your Bitcoin addresses to prove you own them</source>
-        <translation>Подписать сообщения вашим адресом Bitcoin, чтобы доказать, что вы им владеете</translation>
+        <source>Sign messages with your Namecoin addresses to prove you own them</source>
+        <translation>Подписать сообщения вашим адресом Namecoin, чтобы доказать, что вы им владеете</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Verify messages to ensure they were signed with specified Bitcoin addresses</source>
-        <translation>Проверить сообщения, чтобы удостовериться, что они были подписаны определённым адресом Bitcoin</translation>
+        <source>Verify messages to ensure they were signed with specified Namecoin addresses</source>
+        <translation>Проверить сообщения, чтобы удостовериться, что они были подписаны определённым адресом Namecoin</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+31"/>
         <source>&amp;File</source>
         <translation>&amp;Файл</translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+8"/>
         <source>&amp;Settings</source>
         <translation>&amp;Настройки</translation>
     </message>
@@ -529,68 +519,38 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Панель вкладок</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+8"/>
+        <source>Actions toolbar</source>
+        <translation>Панель действий</translation>
+    </message>
+    <message>
+        <location line="+13"/>
         <location line="+10"/>
         <source>[testnet]</source>
         <translation>[тестовая сеть]</translation>
     </message>
     <message>
-        <location line="+47"/>
-        <source>Bitcoin client</source>
-        <translation>Bitcoin клиент</translation>
+        <location line="+63"/>
+        <source>Namecoin client</source>
+        <translation>Namecoin клиент</translation>
     </message>
     <message numerus="yes">
-        <location line="+141"/>
-        <source>%n active connection(s) to Bitcoin network</source>
+        <location line="+79"/>
+        <source>%n active connection(s) to Namecoin network</source>
         <translation><numerusform>%n активное соединение с сетью</numerusform><numerusform>%n активных соединений с сетью</numerusform><numerusform>%n активных соединений с сетью</numerusform></translation>
     </message>
     <message>
-        <location line="+22"/>
-        <source>No block source available...</source>
-        <translation>Источник блоков недоступен...</translation>
+        <location line="+45"/>
+        <source>Processed %1 of %2 blocks of transaction history (%3% done).</source>
+        <translation>Обработано %1 из %2 блоков истории транзакций (%3% выполнено).</translation>
     </message>
     <message>
-        <location line="+12"/>
-        <source>Processed %1 of %2 (estimated) blocks of transaction history.</source>
-        <translation>Обработано %1 из %2 (примерно) блоков истории транзакций.</translation>
-    </message>
-    <message>
-        <location line="+4"/>
+        <location line="+7"/>
         <source>Processed %1 blocks of transaction history.</source>
         <translation>Обработано %1 блоков истории транзакций.</translation>
     </message>
-    <message numerus="yes">
-        <location line="+20"/>
-        <source>%n hour(s)</source>
-        <translation><numerusform>%n час</numerusform><numerusform>%n часа</numerusform><numerusform>%n часов</numerusform></translation>
-    </message>
-    <message numerus="yes">
-        <location line="+4"/>
-        <source>%n day(s)</source>
-        <translation><numerusform>%n день</numerusform><numerusform>%n дня</numerusform><numerusform>%n дней</numerusform></translation>
-    </message>
-    <message numerus="yes">
-        <location line="+4"/>
-        <source>%n week(s)</source>
-        <translation><numerusform>%n неделя</numerusform><numerusform>%n недели</numerusform><numerusform>%n недель</numerusform></translation>
-    </message>
     <message>
-        <location line="+4"/>
-        <source>%1 behind</source>
-        <translation>%1 позади</translation>
-    </message>
-    <message>
-        <location line="+14"/>
-        <source>Last received block was generated %1 ago.</source>
-        <translation>Последний полученный блок был сгенерирован %1 назад.</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Transactions after this will not yet be visible.</source>
-        <translation>Транзакции после этой пока не будут видны.</translation>
-    </message>
-    <message>
-        <location line="+22"/>
+        <location line="+70"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
@@ -605,27 +565,62 @@ This product includes software developed by the OpenSSL Project for use in the O
         <translation>Информация</translation>
     </message>
     <message>
-        <location line="+70"/>
+        <location line="+66"/>
         <source>This transaction is over the size limit. You can still send it for a fee of %1, which goes to the nodes that process your transaction and helps to support the network. Do you want to pay the fee?</source>
         <translation>Транзакция превышает максимальный размер. Вы можете провести её, заплатив комиссию %1, которая достанется узлам, обрабатывающим эту транзакцию, и поможет работе сети. Вы действительно хотите заплатить комиссию?</translation>
     </message>
     <message>
-        <location line="-140"/>
-        <source>Up to date</source>
-        <translation>Синхронизировано</translation>
+        <location line="+210"/>
+        <source>Backup Successful</source>
+        <translation>Резервное копирование успешно завершено</translation>
     </message>
     <message>
-        <location line="+31"/>
+        <location line="+0"/>
+        <source>The wallet data was successfully saved to the new location.</source>
+        <translation>Данные бумажника успешно сохранены в новое местоположение</translation>
+    </message>
+    <message numerus="yes">
+        <location line="-338"/>
+        <source>%n second(s) ago</source>
+        <translation><numerusform>%n секунду назад</numerusform><numerusform>%n секунды назад</numerusform><numerusform>%n секунд назад</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location line="+4"/>
+        <source>%n minute(s) ago</source>
+        <translation><numerusform>%n минуту назад</numerusform><numerusform>%n минуты назад</numerusform><numerusform>%n минут назад</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location line="+4"/>
+        <source>%n hour(s) ago</source>
+        <translation><numerusform>%n час назад</numerusform><numerusform>%n часа назад</numerusform><numerusform>%n часов назад</numerusform></translation>
+    </message>
+    <message numerus="yes">
+        <location line="+4"/>
+        <source>%n day(s) ago</source>
+        <translation><numerusform>%n день назад</numerusform><numerusform>%n дня назад</numerusform><numerusform>%n дней назад</numerusform></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Up to date</source>
+        <translation>Синхронизированно</translation>
+    </message>
+    <message>
+        <location line="+7"/>
         <source>Catching up...</source>
         <translation>Синхронизируется...</translation>
     </message>
     <message>
-        <location line="+113"/>
+        <location line="+10"/>
+        <source>Last received block was generated %1.</source>
+        <translation>Последний полученный блок был сгенерирован %1.</translation>
+    </message>
+    <message>
+        <location line="+97"/>
         <source>Confirm transaction fee</source>
         <translation>Подтвердите комиссию</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+23"/>
         <source>Sent transaction</source>
         <translation>Исходящая транзакция</translation>
     </message>
@@ -648,16 +643,16 @@ Address: %4
 </translation>
     </message>
     <message>
-        <location line="+33"/>
-        <location line="+23"/>
+        <location line="+99"/>
+        <location line="+28"/>
         <source>URI handling</source>
         <translation>Обработка URI</translation>
     </message>
     <message>
-        <location line="-23"/>
-        <location line="+23"/>
-        <source>URI can not be parsed! This can be caused by an invalid Bitcoin address or malformed URI parameters.</source>
-        <translation>Не удалось обработать URI! Это может быть связано с неверным адресом Bitcoin или неправильными параметрами URI.</translation>
+        <location line="-28"/>
+        <location line="+28"/>
+        <source>URI can not be parsed! This can be caused by an invalid Namecoin address or malformed URI parameters.</source>
+        <translation>Не удалось обработать URI! Это может быть связано с неверным адресом Namecoin или неправильными параметрами URI.</translation>
     </message>
     <message>
         <location line="+17"/>
@@ -670,15 +665,35 @@ Address: %4
         <translation>Бумажник &lt;b&gt;зашифрован&lt;/b&gt; и в настоящее время &lt;b&gt;заблокирован&lt;/b&gt;</translation>
     </message>
     <message>
-        <location filename="../bitcoin.cpp" line="+111"/>
-        <source>A fatal error occurred. Bitcoin can no longer continue safely and will quit.</source>
-        <translation>Произошла неисправимая ошибка. Bitcoin не может безопасно продолжать работу и будет закрыт.</translation>
+        <location line="+23"/>
+        <source>Backup Wallet</source>
+        <translation>Сделать резервную копию бумажника</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Wallet Data (*.dat)</source>
+        <translation>Данные бумажника (*.dat)</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Backup Failed</source>
+        <translation>Резервное копирование не удалось</translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>There was an error trying to save the wallet data to the new location.</source>
+        <translation>При попытке сохранения данных бумажника в новое место произошла ошибка.</translation>
+    </message>
+    <message>
+        <location filename="../Namecoin.cpp" line="+109"/>
+        <source>A fatal error occurred. Namecoin can no longer continue safely and will quit.</source>
+        <translation>Произошла неисправимая ошибка. Namecoin не может безопасно продолжать работу и будет закрыт.</translation>
     </message>
 </context>
 <context>
     <name>ClientModel</name>
     <message>
-        <location filename="../clientmodel.cpp" line="+104"/>
+        <location filename="../clientmodel.cpp" line="+86"/>
         <source>Network Alert</source>
         <translation>Сетевая Тревога</translation>
     </message>
@@ -711,7 +726,7 @@ Address: %4
         <translation>Адрес, связанный с данной записью.</translation>
     </message>
     <message>
-        <location filename="../editaddressdialog.cpp" line="+21"/>
+        <location filename="../editaddressdialog.cpp" line="+20"/>
         <source>New receiving address</source>
         <translation>Новый адрес для получения</translation>
     </message>
@@ -731,17 +746,17 @@ Address: %4
         <translation>Изменение адреса для отправки</translation>
     </message>
     <message>
-        <location line="+76"/>
+        <location line="+60"/>
         <source>The entered address &quot;%1&quot; is already in the address book.</source>
         <translation>Введённый адрес «%1» уже находится в адресной книге.</translation>
     </message>
     <message>
-        <location line="-5"/>
-        <source>The entered address &quot;%1&quot; is not a valid Bitcoin address.</source>
-        <translation>Введённый адрес &quot;%1&quot; не является правильным Bitcoin-адресом.</translation>
+        <location line="+5"/>
+        <source>The entered address &quot;%1&quot; is not a valid Namecoin address.</source>
+        <translation>Введённый адрес &quot;%1&quot; не является правильным Namecoin-адресом.</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+5"/>
         <source>Could not unlock wallet.</source>
         <translation>Не удается разблокировать бумажник.</translation>
     </message>
@@ -754,10 +769,10 @@ Address: %4
 <context>
     <name>GUIUtil::HelpMessageBox</name>
     <message>
-        <location filename="../guiutil.cpp" line="+424"/>
+        <location filename="../guiutil.cpp" line="+419"/>
         <location line="+12"/>
-        <source>Bitcoin-Qt</source>
-        <translation>Bitcoin-Qt</translation>
+        <source>Namecoin-Qt</source>
+        <translation>Namecoin-Qt</translation>
     </message>
     <message>
         <location line="-12"/>
@@ -809,8 +824,8 @@ Address: %4
     </message>
     <message>
         <location line="+6"/>
-        <source>Optional transaction fee per kB that helps make sure your transactions are processed quickly. Most transactions are 1 kB.</source>
-        <translation>Необязательная комиссия за каждый КБ транзакции, которая ускоряет обработку Ваших транзакций.  Большинство транзакций занимают 1КБ.</translation>
+        <source>Optional transaction fee per kB that helps make sure your transactions are processed quickly. Most transactions are 1 kB. Fee 0.01 recommended.</source>
+        <translation>Опциональная комиссия за каждый КБ транзакции, которая позволяет быть уверенным, что Ваша транзакция будет обработана быстро.  Большинство транзакций занимают 1КБ.  Рекомендуется комиссия 0.01.</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -819,13 +834,13 @@ Address: %4
     </message>
     <message>
         <location line="+31"/>
-        <source>Automatically start Bitcoin after logging in to the system.</source>
-        <translation>Автоматически запускать Bitcoin после входа в систему</translation>
+        <source>Automatically start Namecoin after logging in to the system.</source>
+        <translation>Автоматически запускать Namecoin после входа в систему</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>&amp;Start Bitcoin on system login</source>
-        <translation>&amp;Запускать Bitcoin при входе в систему</translation>
+        <source>&amp;Start Namecoin on system login</source>
+        <translation>&amp;Запускать Namecoin при входе в систему</translation>
     </message>
     <message>
         <location line="+35"/>
@@ -844,8 +859,8 @@ Address: %4
     </message>
     <message>
         <location line="+6"/>
-        <source>Automatically open the Bitcoin client port on the router. This only works when your router supports UPnP and it is enabled.</source>
-        <translation>Автоматически открыть порт для Bitcoin-клиента на роутере. Работает только если Ваш роутер поддерживает UPnP, и данная функция включена.</translation>
+        <source>Automatically open the Namecoin client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <translation>Автоматически открыть порт для Namecoin-клиента на роутере. Работает только если Ваш роутер поддерживает UPnP, и данная функция включена.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -854,8 +869,8 @@ Address: %4
     </message>
     <message>
         <location line="+7"/>
-        <source>Connect to the Bitcoin network through a SOCKS proxy (e.g. when connecting through Tor).</source>
-        <translation>Подключаться к сети Bitcoin через прокси SOCKS (например, при подключении через Tor).</translation>
+        <source>Connect to the Namecoin network through a SOCKS proxy (e.g. when connecting through Tor).</source>
+        <translation>Подключаться к сети Namecoin через прокси SOCKS (например, при подключении через Tor).</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -929,8 +944,8 @@ Address: %4
     </message>
     <message>
         <location line="+13"/>
-        <source>The user interface language can be set here. This setting will take effect after restarting Bitcoin.</source>
-        <translation>Здесь можно выбрать язык интерфейса. Настройки вступят в силу после перезапуска Bitcoin.</translation>
+        <source>The user interface language can be set here. This setting will take effect after restarting Namecoin.</source>
+        <translation>Здесь можно выбрать язык интерфейса. Настройки вступят в силу после перезапуска Namecoin.</translation>
     </message>
     <message>
         <location line="+11"/>
@@ -944,8 +959,8 @@ Address: %4
     </message>
     <message>
         <location line="+9"/>
-        <source>Whether to show Bitcoin addresses in the transaction list or not.</source>
-        <translation>Показывать ли адреса Bitcoin в списке транзакций.</translation>
+        <source>Whether to show Namecoin addresses in the transaction list or not.</source>
+        <translation>Показывать ли адреса Namecoin в списке транзакций.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -968,7 +983,7 @@ Address: %4
         <translation>&amp;Применить</translation>
     </message>
     <message>
-        <location filename="../optionsdialog.cpp" line="+53"/>
+        <location filename="../optionsdialog.cpp" line="+55"/>
         <source>default</source>
         <translation>по умолчанию</translation>
     </message>
@@ -996,8 +1011,8 @@ Address: %4
     <message>
         <location line="-9"/>
         <location line="+9"/>
-        <source>This setting will take effect after restarting Bitcoin.</source>
-        <translation>Эта настройка вступит в силу после перезапуска Bitcoin</translation>
+        <source>This setting will take effect after restarting Namecoin.</source>
+        <translation>Эта настройка вступит в силу после перезапуска Namecoin</translation>
     </message>
     <message>
         <location line="+29"/>
@@ -1013,18 +1028,23 @@ Address: %4
         <translation>Форма</translation>
     </message>
     <message>
-        <location line="+50"/>
-        <location line="+166"/>
-        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Bitcoin network after a connection is established, but this process has not completed yet.</source>
-        <translation>Отображаемая информация может быть устаревшей. Ваш бумажник автоматически синхронизируется с сетью Bitcoin после подключения, но этот процесс пока не завершён.</translation>
+        <location line="+51"/>
+        <location line="+183"/>
+        <source>The displayed information may be out of date. Your wallet automatically synchronizes with the Namecoin network after a connection is established, but this process has not completed yet.</source>
+        <translation>Отображаемая информация может быть устаревшей. Ваш бумажник автоматически синхронизируется с сетью Namecoin после подключения, но этот процесс пока не завершён.</translation>
     </message>
     <message>
-        <location line="-124"/>
+        <location line="-141"/>
         <source>Balance:</source>
         <translation>Баланс:</translation>
     </message>
     <message>
-        <location line="+29"/>
+        <location line="+58"/>
+        <source>Number of transactions:</source>
+        <translation>Количество транзакций:</translation>
+    </message>
+    <message>
+        <location line="-29"/>
         <source>Unconfirmed:</source>
         <translation>Не подтверждено:</translation>
     </message>
@@ -1034,7 +1054,7 @@ Address: %4
         <translation>Бумажник</translation>
     </message>
     <message>
-        <location line="+107"/>
+        <location line="+124"/>
         <source>Immature:</source>
         <translation>Незрелые:</translation>
     </message>
@@ -1049,7 +1069,7 @@ Address: %4
         <translation>&lt;b&gt;Последние транзакции&lt;/b&gt;</translation>
     </message>
     <message>
-        <location line="-101"/>
+        <location line="-118"/>
         <source>Your current balance</source>
         <translation>Ваш текущий баланс</translation>
     </message>
@@ -1059,18 +1079,15 @@ Address: %4
         <translation>Общая сумма всех транзакций, которые до сих пор не подтверждены, и до сих пор не учитываются в текущем балансе</translation>
     </message>
     <message>
-        <location filename="../overviewpage.cpp" line="+116"/>
+        <location line="+20"/>
+        <source>Total number of transactions in wallet</source>
+        <translation>Общее количество транзакций в Вашем бумажнике</translation>
+    </message>
+    <message>
+        <location filename="../overviewpage.cpp" line="+115"/>
         <location line="+1"/>
         <source>out of sync</source>
         <translation>не синхронизировано</translation>
-    </message>
-</context>
-<context>
-    <name>PaymentServer</name>
-    <message>
-        <location filename="../paymentserver.cpp" line="+107"/>
-        <source>Cannot start bitcoin: click-to-pay handler</source>
-        <translation>Не удаётся запустить bitcoin: обработчик click-to-pay</translation>
     </message>
 </context>
 <context>
@@ -1148,7 +1165,7 @@ Address: %4
         <location line="+53"/>
         <location line="+23"/>
         <location line="+23"/>
-        <location filename="../rpcconsole.cpp" line="+339"/>
+        <location filename="../rpcconsole.cpp" line="+344"/>
         <source>N/A</source>
         <translation>Н/Д</translation>
     </message>
@@ -1219,8 +1236,8 @@ Address: %4
     </message>
     <message>
         <location line="+7"/>
-        <source>Show the Bitcoin-Qt help message to get a list with possible Bitcoin command-line options.</source>
-        <translation>Показать помощь по Bitcoin-Qt, чтобы получить список доступных параметров командной строки.</translation>
+        <source>Show the Namecoin-Qt help message to get a list with possible Namecoin command-line options.</source>
+        <translation>Показать помощь по Namecoin-Qt, чтобы получить список доступных параметров командной строки.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -1239,13 +1256,13 @@ Address: %4
     </message>
     <message>
         <location line="-104"/>
-        <source>Bitcoin - Debug window</source>
-        <translation>Bitcoin - Окно отладки</translation>
+        <source>Namecoin - Debug window</source>
+        <translation>Namecoin - Окно отладки</translation>
     </message>
     <message>
         <location line="+25"/>
-        <source>Bitcoin Core</source>
-        <translation>Ядро Bitcoin</translation>
+        <source>Namecoin Core</source>
+        <translation>Ядро Namecoin</translation>
     </message>
     <message>
         <location line="+279"/>
@@ -1254,8 +1271,8 @@ Address: %4
     </message>
     <message>
         <location line="+7"/>
-        <source>Open the Bitcoin debug log file from the current data directory. This can take a few seconds for large log files.</source>
-        <translation>Открыть отладочный лог-файл Bitcoin из текущего каталога данных. Это может занять несколько секунд для больших лог-файлов.</translation>
+        <source>Open the Namecoin debug log file from the current data directory. This can take a few seconds for large log files.</source>
+        <translation>Открыть отладочный лог-файл Namecoin из текущего каталога данных. Это может занять несколько секунд для больших лог-файлов.</translation>
     </message>
     <message>
         <location line="+102"/>
@@ -1264,8 +1281,8 @@ Address: %4
     </message>
     <message>
         <location filename="../rpcconsole.cpp" line="-30"/>
-        <source>Welcome to the Bitcoin RPC console.</source>
-        <translation>Добро пожаловать в RPC-консоль Bitcoin.</translation>
+        <source>Welcome to the Namecoin RPC console.</source>
+        <translation>Добро пожаловать в RPC-консоль Namecoin.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -1319,8 +1336,8 @@ Address: %4
     </message>
     <message>
         <location line="+10"/>
-        <source>123.456 BTC</source>
-        <translation>123.456 BTC</translation>
+        <source>... NMC</source>
+        <translation>... NMC</translation>
     </message>
     <message>
         <location line="+31"/>
@@ -1407,12 +1424,12 @@ Address: %4
     </message>
     <message>
         <location line="+34"/>
-        <source>The address to send the payment to (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</source>
-        <translation>Адрес, на который будет выслан платёж (например 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</translation>
+        <source>The address to send the payment to (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
+        <translation>Адрес, на который будет выслан платёж (например N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</translation>
     </message>
     <message>
         <location line="+60"/>
-        <location filename="../sendcoinsentry.cpp" line="+26"/>
+        <location filename="../sendcoinsentry.cpp" line="+25"/>
         <source>Enter a label for this address to add it to your address book</source>
         <translation>Введите метку для данного адреса (для добавления в адресную книгу)</translation>
     </message>
@@ -1448,8 +1465,8 @@ Address: %4
     </message>
     <message>
         <location filename="../sendcoinsentry.cpp" line="+1"/>
-        <source>Enter a Bitcoin address (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</source>
-        <translation>Введите Bitcoin-адрес (например 1LA5FtQhnnWnkK6zjFfutR7Stiit4wKd63)</translation>
+        <source>Enter a Namecoin address (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
+        <translation>Введите Namecoin-адрес (например 1LA5FtQhnnWnkK6zjFfutR7Stiit4wKd63)</translation>
     </message>
 </context>
 <context>
@@ -1471,8 +1488,8 @@ Address: %4
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to sign the message with (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</source>
-        <translation>Адрес, которым вы хотите подписать сообщение  (напр. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</translation>
+        <source>The address to sign the message with (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
+        <translation>Адрес, которым вы хотите подписать сообщение  (напр. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -1513,8 +1530,8 @@ Address: %4
     </message>
     <message>
         <location line="+21"/>
-        <source>Sign the message to prove you own this Bitcoin address</source>
-        <translation>Подписать сообщение, чтобы доказать владение адресом Bitcoin</translation>
+        <source>Sign the message to prove you own this Namecoin address</source>
+        <translation>Подписать сообщение, чтобы доказать владение адресом Namecoin</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -1544,13 +1561,13 @@ Address: %4
     </message>
     <message>
         <location line="+21"/>
-        <source>The address the message was signed with (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</source>
-        <translation>Адрес, которым было подписано сообщение (напр. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</translation>
+        <source>The address the message was signed with (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
+        <translation>Адрес, которым было подписано сообщение (напр. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</translation>
     </message>
     <message>
         <location line="+40"/>
-        <source>Verify the message to ensure it was signed with the specified Bitcoin address</source>
-        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Bitcoin</translation>
+        <source>Verify the message to ensure it was signed with the specified Namecoin address</source>
+        <translation>Проверить сообщение, чтобы убедиться, что оно было подписано указанным адресом Namecoin</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -1565,8 +1582,8 @@ Address: %4
     <message>
         <location filename="../signverifymessagedialog.cpp" line="+27"/>
         <location line="+3"/>
-        <source>Enter a Bitcoin address (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</source>
-        <translation>Введите адрес Bitcoin (напр. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</translation>
+        <source>Enter a Namecoin address (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
+        <translation>Введите адрес Namecoin (напр. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</translation>
     </message>
     <message>
         <location line="-2"/>
@@ -1575,8 +1592,8 @@ Address: %4
     </message>
     <message>
         <location line="+3"/>
-        <source>Enter Bitcoin signature</source>
-        <translation>Введите подпись Bitcoin</translation>
+        <source>Enter Namecoin signature</source>
+        <translation>Введите подпись Namecoin</translation>
     </message>
     <message>
         <location line="+82"/>
@@ -1646,22 +1663,9 @@ Address: %4
     </message>
 </context>
 <context>
-    <name>SplashScreen</name>
-    <message>
-        <location filename="../splashscreen.cpp" line="+22"/>
-        <source>The Bitcoin developers</source>
-        <translation>Разработчики Bitcoin</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>[testnet]</source>
-        <translation>[тестовая сеть]</translation>
-    </message>
-</context>
-<context>
     <name>TransactionDesc</name>
     <message>
-        <location filename="../transactiondesc.cpp" line="+20"/>
+        <location filename="../transactiondesc.cpp" line="+19"/>
         <source>Open until %1</source>
         <translation>Открыто до %1</translation>
     </message>
@@ -1848,7 +1852,7 @@ Address: %4
 <context>
     <name>TransactionTableModel</name>
     <message>
-        <location filename="../transactiontablemodel.cpp" line="+225"/>
+        <location filename="../transactiontablemodel.cpp" line="+226"/>
         <source>Date</source>
         <translation>Дата</translation>
     </message>
@@ -1966,7 +1970,7 @@ Address: %4
 <context>
     <name>TransactionView</name>
     <message>
-        <location filename="../transactionview.cpp" line="+52"/>
+        <location filename="../transactionview.cpp" line="+55"/>
         <location line="+16"/>
         <source>All</source>
         <translation>Все</translation>
@@ -2053,11 +2057,6 @@ Address: %4
     </message>
     <message>
         <location line="+1"/>
-        <source>Copy transaction ID</source>
-        <translation>Скопировать ID транзакции</translation>
-    </message>
-    <message>
-        <location line="+1"/>
         <source>Edit label</source>
         <translation>Изменить метку</translation>
     </message>
@@ -2067,7 +2066,7 @@ Address: %4
         <translation>Показать подробности транзакции</translation>
     </message>
     <message>
-        <location line="+139"/>
+        <location line="+142"/>
         <source>Export Transaction Data</source>
         <translation>Экспортировать данные транзакций</translation>
     </message>
@@ -2122,7 +2121,7 @@ Address: %4
         <translation>Невозможно записать в файл %1.</translation>
     </message>
     <message>
-        <location line="+100"/>
+        <location line="+95"/>
         <source>Range:</source>
         <translation>Промежуток от:</translation>
     </message>
@@ -2133,196 +2132,150 @@ Address: %4
     </message>
 </context>
 <context>
-    <name>WalletModel</name>
+    <name>Namecoin-core</name>
     <message>
-        <location filename="../walletmodel.cpp" line="+193"/>
-        <source>Send Coins</source>
-        <translation>Отправка</translation>
-    </message>
-</context>
-<context>
-    <name>WalletView</name>
-    <message>
-        <location filename="../walletview.cpp" line="+42"/>
-        <source>&amp;Export</source>
-        <translation>&amp;Экспорт</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Export the data in the current tab to a file</source>
-        <translation>Экспортировать данные из вкладки в файл</translation>
-    </message>
-    <message>
-        <location line="+193"/>
-        <source>Backup Wallet</source>
-        <translation>Сделать резервную копию бумажника</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>Wallet Data (*.dat)</source>
-        <translation>Данные бумажника (*.dat)</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Backup Failed</source>
-        <translation>Резервное копирование не удалось</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>There was an error trying to save the wallet data to the new location.</source>
-        <translation>При попытке сохранения данных бумажника в новое место произошла ошибка.</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Backup Successful</source>
-        <translation>Резервное копирование успешно завершено</translation>
-    </message>
-    <message>
-        <location line="+0"/>
-        <source>The wallet data was successfully saved to the new location.</source>
-        <translation>Данные бумажника успешно сохранены в новое место.</translation>
-    </message>
-</context>
-<context>
-    <name>bitcoin-core</name>
-    <message>
-        <location filename="../bitcoinstrings.cpp" line="+94"/>
-        <source>Bitcoin version</source>
+        <location filename="../bitcoinstrings.cpp" line="+88"/>
+        <source>Namecoin version</source>
         <translation>Версия</translation>
     </message>
     <message>
-        <location line="+102"/>
+        <location line="+82"/>
         <source>Usage:</source>
         <translation>Использование:</translation>
     </message>
     <message>
-        <location line="-29"/>
-        <source>Send command to -server or bitcoind</source>
-        <translation>Отправить команду на -server или bitcoind</translation>
+        <location line="-23"/>
+        <source>Send command to -server or namecoind</source>
+        <translation>Отправить команду на -server или namecoind</translation>
     </message>
     <message>
-        <location line="-23"/>
+        <location line="-21"/>
         <source>List commands</source>
         <translation>Список команд
 </translation>
     </message>
     <message>
-        <location line="-12"/>
+        <location line="-11"/>
         <source>Get help for a command</source>
         <translation>Получить помощь по команде</translation>
     </message>
     <message>
-        <location line="+24"/>
+        <location line="+21"/>
         <source>Options:</source>
         <translation>Опции:</translation>
     </message>
     <message>
-        <location line="+24"/>
-        <source>Specify configuration file (default: bitcoin.conf)</source>
-        <translation>Указать конфигурационный файл (по умолчанию: bitcoin.conf)</translation>
+        <location line="+22"/>
+        <source>Specify configuration file (default: namecoin.conf)</source>
+        <translation>Указать конфигурационный файл (по умолчанию: namecoin.conf)</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Specify pid file (default: bitcoind.pid)</source>
-        <translation>Задать pid-файл (по умолчанию: bitcoin.pid)</translation>
+        <source>Specify pid file (default: namecoind.pid)</source>
+        <translation>Указать pid-файл (по умолчанию: Namecoin.pid)</translation>
     </message>
     <message>
-        <location line="-1"/>
+        <location line="-47"/>
+        <source>Generate coins</source>
+        <translation>Генерировать монеты</translation>
+    </message>
+    <message>
+        <location line="-15"/>
+        <source>Don&apos;t generate coins</source>
+        <translation>Не генерировать монеты</translation>
+    </message>
+    <message>
+        <location line="+61"/>
         <source>Specify data directory</source>
-        <translation>Задать каталог данных</translation>
+        <translation>Укажите каталог данных</translation>
     </message>
     <message>
-        <location line="-9"/>
+        <location line="-7"/>
         <source>Set database cache size in megabytes (default: 25)</source>
         <translation>Установить размер кэша базы данных в мегабайтах (по умолчанию: 25)</translation>
     </message>
     <message>
-        <location line="-28"/>
-        <source>Listen for connections on &lt;port&gt; (default: 8333 or testnet: 18333)</source>
-        <translation>Принимать входящие подключения на &lt;port&gt; (по умолчанию: 8333 или 18333 в тестовой сети)</translation>
+        <location line="-26"/>
+        <source>Listen for connections on &lt;port&gt; (default: 8334 or testnet: 18334)</source>
+        <translation>Принимать входящие подключения на &lt;port&gt; (по умолчанию: 8334 или 18334 в тестовой сети)</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+4"/>
         <source>Maintain at most &lt;n&gt; connections to peers (default: 125)</source>
         <translation>Поддерживать не более &lt;n&gt; подключений к узлам (по умолчанию: 125)</translation>
     </message>
     <message>
-        <location line="-48"/>
+        <location line="-34"/>
         <source>Connect to a node to retrieve peer addresses, and disconnect</source>
         <translation>Подключиться к узлу, чтобы получить список адресов других участников и отключиться</translation>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+65"/>
         <source>Specify your own public address</source>
         <translation>Укажите ваш собственный публичный адрес</translation>
     </message>
     <message>
-        <location line="+3"/>
+        <location line="+2"/>
         <source>Threshold for disconnecting misbehaving peers (default: 100)</source>
         <translation>Порог для отключения неправильно ведущих себя узлов (по умолчанию: 100)</translation>
     </message>
     <message>
-        <location line="-134"/>
+        <location line="-114"/>
         <source>Number of seconds to keep misbehaving peers from reconnecting (default: 86400)</source>
         <translation>Число секунд блокирования неправильно ведущих себя узлов (по умолчанию: 86400)</translation>
     </message>
     <message>
-        <location line="-29"/>
+        <location line="-28"/>
         <source>An error occurred while setting up the RPC port %u for listening on IPv4: %s</source>
         <translation>Произошла ошибка при открытии RPC-порта %u для прослушивания на IPv4: %s</translation>
     </message>
     <message>
-        <location line="+27"/>
-        <source>Listen for JSON-RPC connections on &lt;port&gt; (default: 8332 or testnet: 18332)</source>
-        <translation>Прослушивать подключения JSON-RPC на &lt;порту&gt; (по умолчанию: 8332 или для testnet: 18332)</translation>
+        <location line="+26"/>
+        <source>Listen for JSON-RPC connections on &lt;port&gt; (default: 8336 or testnet: 18336)</source>
+        <translation>Прослушивать подключения JSON-RPC на &lt;порту&gt; (по умолчанию: 8336 или для testnet: 18336)</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+34"/>
         <source>Accept command line and JSON-RPC commands</source>
         <translation>Принимать командную строку и команды JSON-RPC</translation>
     </message>
     <message>
-        <location line="+76"/>
+        <location line="+62"/>
         <source>Run in the background as a daemon and accept commands</source>
         <translation>Запускаться в фоне как демон и принимать команды</translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+31"/>
         <source>Use the test network</source>
         <translation>Использовать тестовую сеть</translation>
     </message>
     <message>
-        <location line="-112"/>
+        <location line="-92"/>
         <source>Accept connections from outside (default: 1 if no -proxy or -connect)</source>
         <translation>Принимать подключения извне (по умолчанию: 1, если не используется -proxy или -connect)</translation>
     </message>
     <message>
-        <location line="-80"/>
+        <location line="-74"/>
         <source>%s, you must set a rpcpassword in the configuration file:
-%s
+ %s
 It is recommended you use the following random password:
-rpcuser=bitcoinrpc
+rpcuser=namecoinrpc
 rpcpassword=%s
 (you do not need to remember this password)
 The username and password MUST NOT be the same.
 If the file does not exist, create it with owner-readable-only file permissions.
-It is also recommended to set alertnotify so you are notified of problems;
-for example: alertnotify=echo %%s | mail -s &quot;Bitcoin Alert&quot; admin@foo.com
 </source>
         <translation>%s, вы должны установить опцию rpcpassword в конфигурационном файле:
  %s
 Рекомендуется использовать следующий случайный пароль:
-rpcuser=bitcoinrpc
+rpcuser=namecoinrpc
 rpcpassword=%s
 (вам не нужно запоминать этот пароль)
-Имя и пароль ДОЛЖНЫ различаться.
-Если файл не существует, создайте его и установите права доступа только для владельца, только для чтения.
-Также рекомендуется включить alertnotify для оповещения о проблемах;
-Например: alertnotify=echo %%s | mail -s &quot;Bitcoin Alert&quot; admin@foo.com
-</translation>
+Имя и пароль ДОЛЖНЫ отличаться.
+Если файл не существует, создайте его и установите права доступа только для владельца, только для чтения.</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+15"/>
         <source>An error occurred while setting up the RPC port %u for listening on IPv6, falling back to IPv4: %s</source>
         <translation>Произошла ошибка при открытии на прослушивание IPv6 RCP-порта %u, возвращаемся к IPv4: %s</translation>
     </message>
@@ -2333,8 +2286,18 @@ rpcpassword=%s
     </message>
     <message>
         <location line="+3"/>
-        <source>Cannot obtain a lock on data directory %s. Bitcoin is probably already running.</source>
-        <translation>Не удаётся установить блокировку на каталог данных %s.  Возможно, Bitcoin уже работает.</translation>
+        <source>Cannot obtain a lock on data directory %s. Namecoin is probably already running.</source>
+        <translation>Не удаётся установить блокировку на каталог данных %s.  Возможно, Namecoin уже работает.</translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>Corrupted block database detected. Please restart the client with -reindex.</source>
+        <translation>Обнаружено повреждение базы данных блоков. Пожалуйста, перезапустите клиент с параметром -reindex.</translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Error initializing database environment %s! To recover, BACKUP THAT DIRECTORY, then remove everything from it except for wallet.dat.</source>
+        <translation>Ошибка инициализации окружения базы данных %s! Чтобы восстановить работоспособность, СДЕЛАЙТЕ РЕЗЕРВНУЮ КОПИЮ ЭТОГО КАТАЛОГА, после чего удалите из него всё, кроме wallet.dat.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -2347,22 +2310,12 @@ rpcpassword=%s
         <translation>Ошибка: эта транзакция требует комиссию как минимум %s из-за суммы, сложности или использования недавно полученных средств!</translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>Execute command when a relevant alert is received (%s in cmd is replaced by message)</source>
-        <translation>Выполнить команду, когда приходит сообщение о тревоге (%s в команде заменяется на сообщение)</translation>
-    </message>
-    <message>
-        <location line="+3"/>
-        <source>Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)</source>
-        <translation>Выполнить команду, когда меняется транзакция в бумажнике (%s в команде заменяется на TxID)</translation>
-    </message>
-    <message>
         <location line="+11"/>
         <source>Set maximum size of high-priority/low-fee transactions in bytes (default: 27000)</source>
         <translation>Максимальный размер высокоприоритетных/низкокомиссионных транзакций в байтах (по умолчанию: 27000)</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+3"/>
         <source>This is a pre-release test build - use at your own risk - do not use for mining or merchant applications</source>
         <translation>Это пре-релизная тестовая сборка - используйте на свой страх и риск - не используйте для добычи или торговых приложений</translation>
     </message>
@@ -2378,8 +2331,8 @@ rpcpassword=%s
     </message>
     <message>
         <location line="+3"/>
-        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong Bitcoin will not work properly.</source>
-        <translation>Внимание: убедитесь, что дата и время на Вашем компьютере выставлены верно. Если Ваши часы идут неправильно, Bitcoin будет работать некорректно.</translation>
+        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong Namecoin will not work properly.</source>
+        <translation>Внимание: убедитесь, что дата и время на Вашем компьютере выставлены верно. Если Ваши часы идут неправильно, Namecoin будет работать некорректно.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -2394,7 +2347,7 @@ rpcpassword=%s
     <message>
         <location line="+14"/>
         <source>Attempt to recover private keys from a corrupt wallet.dat</source>
-        <translation>Попытаться восстановить приватные ключи из повреждённого wallet.dat</translation>
+        <translation>Попытка восстановления приватных ключей из повреждённого wallet.dat</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -2402,49 +2355,29 @@ rpcpassword=%s
         <translation>Параметры создания блоков:</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+6"/>
         <source>Connect only to the specified node(s)</source>
         <translation>Подключаться только к указанному узлу(ам)</translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Corrupted block database detected</source>
-        <translation>БД блоков повреждена</translation>
-    </message>
-    <message>
-        <location line="+1"/>
         <source>Discover own IP address (default: 1 when listening and no -externalip)</source>
         <translation>Определить свой IP (по умолчанию: 1 при прослушивании и если не используется -externalip)</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Do you want to rebuild the block database now?</source>
-        <translation>Пересобрать БД блоков прямо сейчас?</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>Error initializing block database</source>
-        <translation>Ошибка инициализации БД блоков</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Error initializing wallet database environment %s!</source>
-        <translation>Ошибка инициализации окружения БД бумажника %s!</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+3"/>
         <source>Error loading block database</source>
         <translation>Ошибка чтения базы данных блоков</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <source>Error opening block database</source>
-        <translation>Не удалось открыть БД блоков</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="+5"/>
         <source>Error: Disk space is low!</source>
         <translation>Ошибка: мало места на диске!</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Error: Transaction creation failed!</source>
+        <translation>Ошибка: не удалось создать транзакцию!</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2452,64 +2385,9 @@ rpcpassword=%s
         <translation>Ошибка: бумажник заблокирован, невозможно создать транзакцию!</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Error: system error: </source>
-        <translation>Ошибка: системная ошибка:</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+2"/>
         <source>Failed to listen on any port. Use -listen=0 if you want this.</source>
         <translation>Не удалось начать прослушивание на порту. Используйте -listen=0 если вас это устраивает.</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to read block info</source>
-        <translation>Не удалось прочитать информацию блока</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to read block</source>
-        <translation>Не удалось прочитать блок</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to sync block index</source>
-        <translation>Не удалось синхронизировать индекс блоков</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write block index</source>
-        <translation>Не удалось записать индекс блоков</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write block info</source>
-        <translation>Не удалось записать информацию блока</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write block</source>
-        <translation>Не удалось записать блок</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write file info</source>
-        <translation>Не удалось записать информацию файла</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write to coin database</source>
-        <translation>Не удалось записать БД монет</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write transaction index</source>
-        <translation>Не удалось записать индекс транзакций</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Failed to write undo data</source>
-        <translation>Не удалось записать данные для отмены</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -2517,57 +2395,22 @@ rpcpassword=%s
         <translation>Искать узлы с помощью DNS (по умолчанию: 1, если не указан -connect)</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Generate coins (default: 0)</source>
-        <translation>Включить добычу монет (по умолчанию: 0)</translation>
-    </message>
-    <message>
-        <location line="+2"/>
-        <source>How many blocks to check at startup (default: 288, 0 = all)</source>
-        <translation>Сколько блоков проверять при запуске (по умолчанию: 288, 0 = все)</translation>
-    </message>
-    <message>
-        <location line="+1"/>
+        <location line="+5"/>
         <source>How thorough the block verification is (0-4, default: 3)</source>
         <translation>Насколько тщательно проверять блок (0-4, по умолчанию: 3)</translation>
     </message>
     <message>
-        <location line="+19"/>
-        <source>Not enough file descriptors available.</source>
-        <translation>Недостаточно файловых дескрипторов.</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Rebuild block chain index from current blk000??.dat files</source>
-        <translation>Перестроить индекс цепи блоков из текущих файлов blk000??.dat</translation>
-    </message>
-    <message>
-        <location line="+16"/>
-        <source>Set the number of threads to service RPC calls (default: 4)</source>
-        <translation>Задать число потоков выполнения(по умолчанию: 4)</translation>
-    </message>
-    <message>
-        <location line="+26"/>
-        <source>Verifying blocks...</source>
-        <translation>Проверка блоков...</translation>
+        <location line="+1"/>
+        <source>Importing blocks from block database...</source>
+        <translation>Импортируются блоки из базы данных блоков...</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Verifying wallet...</source>
-        <translation>Проверка бумажника...</translation>
-    </message>
-    <message>
-        <location line="-69"/>
         <source>Imports blocks from external blk000??.dat file</source>
         <translation>Импортировать блоки из внешнего файла blk000??.dat</translation>
     </message>
     <message>
-        <location line="-76"/>
-        <source>Set the number of script verification threads (up to 16, 0 = auto, &lt;0 = leave that many cores free, default: 0)</source>
-        <translation>Задать число потоков проверки скрипта (вплоть до 16, 0=авто, &lt;0 = оставить столько ядер свободными, по умолчанию: 0)</translation>
-    </message>
-    <message>
-        <location line="+77"/>
+        <location line="+1"/>
         <source>Information</source>
         <translation>Информация</translation>
     </message>
@@ -2577,22 +2420,7 @@ rpcpassword=%s
         <translation>Неверный адрес -tor: &apos;%s&apos;</translation>
     </message>
     <message>
-        <location line="+1"/>
-        <source>Invalid amount for -minrelaytxfee=&lt;amount&gt;: &apos;%s&apos;</source>
-        <translation>Неверное количество в параметре -minrelaytxfee=&lt;кол-во&gt;: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Invalid amount for -mintxfee=&lt;amount&gt;: &apos;%s&apos;</source>
-        <translation>Неверное количество в параметре -mintxfee=&lt;кол-во&gt;: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <location line="+8"/>
-        <source>Maintain a full transaction index (default: 0)</source>
-        <translation>Держать полный индекс транзакций (по умолчанию: 0)</translation>
-    </message>
-    <message>
-        <location line="+2"/>
+        <location line="+9"/>
         <source>Maximum per-connection receive buffer, &lt;n&gt;*1000 bytes (default: 5000)</source>
         <translation>Максимальный размер буфера приёма на соединение, &lt;n&gt;*1000 байт (по умолчанию: 5000)</translation>
     </message>
@@ -2602,7 +2430,7 @@ rpcpassword=%s
         <translation>Максимальный размер буфера отправки на соединение, &lt;n&gt;*1000 байт (по умолчанию: 1000)</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+1"/>
         <source>Only accept block chain matching built-in checkpoints (default: 1)</source>
         <translation>Принимать цепь блоков, только если она соответствует встроенным контрольным точкам (по умолчанию: 1)</translation>
     </message>
@@ -2627,7 +2455,12 @@ rpcpassword=%s
         <translation>Дописывать отметки времени к отладочному выводу</translation>
     </message>
     <message>
-        <location line="+5"/>
+        <location line="+1"/>
+        <source>Rebuild blockchain index from current blk000??.dat files</source>
+        <translation>Перестроить индекс цепи блоков из текущих файлов blk000??.dat</translation>
+    </message>
+    <message>
+        <location line="+4"/>
         <source>SSL options: (see the Bitcoin Wiki for SSL setup instructions)</source>
         <translation>
 Параметры SSL: (см. Bitcoin Wiki для инструкций по настройке SSL)</translation>
@@ -2635,7 +2468,7 @@ rpcpassword=%s
     <message>
         <location line="+1"/>
         <source>Select the version of socks proxy to use (4-5, default: 5)</source>
-        <translation>Выбрать версию SOCKS-прокси (4-5, по умолчанию: 5)</translation>
+        <translation>Выберите версию SOCKS-прокси (4-5, по умолчанию: 5)</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -2658,14 +2491,9 @@ rpcpassword=%s
         <translation>Минимальный размер блока в байтах (по умолчанию: 0)</translation>
     </message>
     <message>
-        <location line="+2"/>
+        <location line="+1"/>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
         <translation>Сжимать файл debug.log при запуске клиента (по умолчанию: 1, если нет -debug)</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Signing transaction failed</source>
-        <translation>Не удалось подписать транзакцию</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -2673,27 +2501,7 @@ rpcpassword=%s
         <translation>Таймаут соединения в миллисекундах (по умолчанию: 5000)</translation>
     </message>
     <message>
-        <location line="+4"/>
-        <source>System error: </source>
-        <translation>Системная ошибка:</translation>
-    </message>
-    <message>
-        <location line="+4"/>
-        <source>Transaction amount too small</source>
-        <translation>Объём транзакции слишком мал</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Transaction amounts must be positive</source>
-        <translation>Объём транзакции должен быть положителен</translation>
-    </message>
-    <message>
-        <location line="+1"/>
-        <source>Transaction too large</source>
-        <translation>Транзакция слишком большая</translation>
-    </message>
-    <message>
-        <location line="+7"/>
+        <location line="+13"/>
         <source>Use UPnP to map the listening port (default: 0)</source>
         <translation>Использовать UPnP для проброса порта (по умолчанию: 0)</translation>
     </message>
@@ -2724,41 +2532,36 @@ rpcpassword=%s
     </message>
     <message>
         <location line="+1"/>
-        <source>You need to rebuild the databases using -reindex to change -txindex</source>
-        <translation>Вам необходимо пересобрать базы данных с помощью -reindex, чтобы изменить -txindex</translation>
-    </message>
-    <message>
-        <location line="+1"/>
         <source>wallet.dat corrupt, salvage failed</source>
         <translation>wallet.dat повреждён, спасение данных не удалось</translation>
     </message>
     <message>
-        <location line="-50"/>
+        <location line="-43"/>
         <source>Password for JSON-RPC connections</source>
         <translation>Пароль для подключений JSON-RPC</translation>
     </message>
     <message>
-        <location line="-67"/>
+        <location line="-53"/>
         <source>Allow JSON-RPC connections from specified IP address</source>
         <translation>Разрешить подключения JSON-RPC с указанного IP</translation>
     </message>
     <message>
-        <location line="+76"/>
+        <location line="+62"/>
         <source>Send commands to node running on &lt;ip&gt; (default: 127.0.0.1)</source>
         <translation>Посылать команды узлу, запущенному на &lt;ip&gt; (по умолчанию: 127.0.0.1)</translation>
     </message>
     <message>
-        <location line="-120"/>
+        <location line="-103"/>
         <source>Execute command when the best block changes (%s in cmd is replaced by block hash)</source>
         <translation>Выполнить команду, когда появляется новый блок (%s в команде заменяется на хэш блока)</translation>
     </message>
     <message>
-        <location line="+147"/>
+        <location line="+124"/>
         <source>Upgrade wallet to latest format</source>
         <translation>Обновить бумажник до последнего формата</translation>
     </message>
     <message>
-        <location line="-21"/>
+        <location line="-15"/>
         <source>Set key pool size to &lt;n&gt; (default: 100)</source>
         <translation>Установить размер запаса ключей в &lt;n&gt; (по умолчанию: 100)</translation>
     </message>
@@ -2768,12 +2571,17 @@ rpcpassword=%s
         <translation>Перепроверить цепь блоков на предмет отсутствующих в бумажнике транзакций</translation>
     </message>
     <message>
-        <location line="+35"/>
+        <location line="-26"/>
+        <source>How many blocks to check at startup (default: 2500, 0 = all)</source>
+        <translation>Сколько блоков проверять при запуске (по умолчанию: 2500, 0 = все)</translation>
+    </message>
+    <message>
+        <location line="+55"/>
         <source>Use OpenSSL (https) for JSON-RPC connections</source>
         <translation>Использовать OpenSSL (https) для подключений JSON-RPC</translation>
     </message>
     <message>
-        <location line="-26"/>
+        <location line="-20"/>
         <source>Server certificate file (default: server.cert)</source>
         <translation>Файл серверного сертификата (по умолчанию: server.cert)</translation>
     </message>
@@ -2783,62 +2591,72 @@ rpcpassword=%s
         <translation>Приватный ключ сервера (по умолчанию: server.pem)</translation>
     </message>
     <message>
-        <location line="-151"/>
+        <location line="-133"/>
         <source>Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</source>
         <translation>Разрешённые алгоритмы (по умолчанию: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</translation>
     </message>
     <message>
-        <location line="+165"/>
+        <location line="+144"/>
         <source>This help message</source>
         <translation>Эта справка</translation>
     </message>
     <message>
-        <location line="+6"/>
+        <location line="+3"/>
         <source>Unable to bind to %s on this computer (bind returned error %d, %s)</source>
         <translation>Невозможно привязаться к %s на этом компьютере (bind вернул ошибку %d, %s)</translation>
     </message>
     <message>
-        <location line="-91"/>
+        <location line="-70"/>
         <source>Connect through socks proxy</source>
         <translation>Подключаться через socks прокси</translation>
     </message>
     <message>
-        <location line="-10"/>
+        <location line="-11"/>
         <source>Allow DNS lookups for -addnode, -seednode and -connect</source>
         <translation>Разрешить поиск в DNS для -addnode, -seednode и -connect</translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+43"/>
         <source>Loading addresses...</source>
         <translation>Загрузка адресов...</translation>
     </message>
     <message>
-        <location line="-35"/>
+        <location line="-25"/>
         <source>Error loading wallet.dat: Wallet corrupted</source>
         <translation>Ошибка загрузки wallet.dat: Бумажник поврежден</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Error loading wallet.dat: Wallet requires newer version of Bitcoin</source>
-        <translation>Ошибка загрузки wallet.dat: бумажник требует более новую версию Bitcoin</translation>
+        <source>Error loading wallet.dat: Wallet requires newer version of Namecoin</source>
+        <translation>Ошибка загрузки wallet.dat: бумажник требует более новую версию Namecoin</translation>
     </message>
     <message>
-        <location line="+93"/>
-        <source>Wallet needed to be rewritten: restart Bitcoin to complete</source>
-        <translation>Необходимо перезаписать бумажник, перезапустите Bitcoin для завершения операции.</translation>
+        <location line="+73"/>
+        <source>Verifying block database integrity...</source>
+        <translation>Проверка целостности базы данных блоков...</translation>
     </message>
     <message>
-        <location line="-95"/>
+        <location line="+1"/>
+        <source>Verifying wallet integrity...</source>
+        <translation>Проверка целостности бумажника...</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Wallet needed to be rewritten: restart Namecoin to complete</source>
+        <translation>Необходимо перезаписать бумажник, перезапустите Namecoin для завершения операции.</translation>
+    </message>
+    <message>
+        <location line="-77"/>
         <source>Error loading wallet.dat</source>
         <translation>Ошибка при загрузке wallet.dat</translation>
     </message>
     <message>
-        <location line="+28"/>
+        <location line="+20"/>
         <source>Invalid -proxy address: &apos;%s&apos;</source>
         <translation>Неверный адрес -proxy: &apos;%s&apos;</translation>
     </message>
     <message>
-        <location line="+56"/>
+        <location line="+46"/>
         <source>Unknown network specified in -onlynet: &apos;%s&apos;</source>
         <translation>В параметре -onlynet указана неизвестная сеть: &apos;%s&apos;</translation>
     </message>
@@ -2848,7 +2666,7 @@ rpcpassword=%s
         <translation>В параметре -socks запрошена неизвестная версия: %i</translation>
     </message>
     <message>
-        <location line="-96"/>
+        <location line="-75"/>
         <source>Cannot resolve -bind address: &apos;%s&apos;</source>
         <translation>Не удаётся разрешить адрес в параметре -bind: &apos;%s&apos;</translation>
     </message>
@@ -2858,37 +2676,47 @@ rpcpassword=%s
         <translation>Не удаётся разрешить адрес в параметре -externalip: &apos;%s&apos;</translation>
     </message>
     <message>
-        <location line="+44"/>
+        <location line="+31"/>
         <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos;</source>
         <translation>Неверное количество в параметре -paytxfee=&lt;кол-во&gt;: &apos;%s&apos;</translation>
     </message>
     <message>
-        <location line="+1"/>
+        <location line="-15"/>
+        <source>Error: could not start node</source>
+        <translation>Ошибка: не удалось запустить узел</translation>
+    </message>
+    <message>
+        <location line="+16"/>
         <source>Invalid amount</source>
         <translation>Неверное количество</translation>
     </message>
     <message>
-        <location line="-6"/>
+        <location line="-4"/>
         <source>Insufficient funds</source>
         <translation>Недостаточно монет</translation>
     </message>
     <message>
-        <location line="+10"/>
+        <location line="+8"/>
         <source>Loading block index...</source>
         <translation>Загрузка индекса блоков...</translation>
     </message>
     <message>
-        <location line="-57"/>
+        <location line="-45"/>
         <source>Add a node to connect to and attempt to keep the connection open</source>
         <translation>Добавить узел для подключения и пытаться поддерживать соединение открытым</translation>
     </message>
     <message>
         <location line="-25"/>
-        <source>Unable to bind to %s on this computer. Bitcoin is probably already running.</source>
-        <translation>Невозможно привязаться к %s на этом компьютере.  Возможно, Bitcoin уже работает.</translation>
+        <source>Unable to bind to %s on this computer. Namecoin is probably already running.</source>
+        <translation>Невозможно привязаться к %s на этом компьютере.  Возможно, Namecoin уже работает.</translation>
     </message>
     <message>
-        <location line="+64"/>
+        <location line="+54"/>
+        <source>Find peers using internet relay chat (default: 0)</source>
+        <translation>Найти участников через IRC (по умолчанию: 0)</translation>
+    </message>
+    <message>
+        <location line="-2"/>
         <source>Fee per KB to add to transactions you send</source>
         <translation>Комиссия на килобайт, добавляемая к вашим транзакциям</translation>
     </message>
@@ -2898,9 +2726,14 @@ rpcpassword=%s
         <translation>Загрузка бумажника...</translation>
     </message>
     <message>
-        <location line="-52"/>
+        <location line="-40"/>
         <source>Cannot downgrade wallet</source>
         <translation>Не удаётся понизить версию бумажника</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Cannot initialize keypool</source>
+        <translation>Не удаётся инициализировать массив ключей</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -2908,27 +2741,27 @@ rpcpassword=%s
         <translation>Не удаётся записать адрес по умолчанию</translation>
     </message>
     <message>
-        <location line="+64"/>
+        <location line="+49"/>
         <source>Rescanning...</source>
         <translation>Сканирование...</translation>
     </message>
     <message>
-        <location line="-57"/>
+        <location line="-43"/>
         <source>Done loading</source>
         <translation>Загрузка завершена</translation>
     </message>
     <message>
-        <location line="+82"/>
+        <location line="+65"/>
         <source>To use the %s option</source>
         <translation>Чтобы использовать опцию %s</translation>
     </message>
     <message>
-        <location line="-74"/>
+        <location line="-60"/>
         <source>Error</source>
         <translation>Ошибка</translation>
     </message>
     <message>
-        <location line="-31"/>
+        <location line="-28"/>
         <source>You must set rpcpassword=&lt;password&gt; in the configuration file:
 %s
 If the file does not exist, create it with owner-readable-only file permissions.</source>

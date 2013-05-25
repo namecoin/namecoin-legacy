@@ -343,7 +343,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
                     // Reserve a new key pair from key pool
                     vector<unsigned char> vchPubKey = reservekey.GetReservedKey();
-                    assert(pwalletMain->mapKeys.count(vchPubKey));
+                    assert(pwalletMain->HaveKey(vchPubKey));
 
                     // Fill a vout to ourself, using same address type as the payment
                     CScript scriptChange;
@@ -434,8 +434,13 @@ string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, C
         return strError;
     }
 
-    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, _("Sending..."), NULL))
+#ifdef GUI
+    if (fAskFee && !uiInterface.ThreadSafeAskFee(nFeeRequired))
         return "ABORTED";
+#else
+    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, "Namecoin", NULL))
+        return "ABORTED";
+#endif
 
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey))
         return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
@@ -670,19 +675,19 @@ Value name_debug(const Array& params, bool fHelp)
     pair<vector<unsigned char>, set<uint256> > pairPending;
 
     CRITICAL_BLOCK(cs_main)
-    BOOST_FOREACH(pairPending, mapNamePending)
-    {
-        string name = stringFromVch(pairPending.first);
-        printf("%s :\n", name.c_str());
-        uint256 hash;
-        BOOST_FOREACH(hash, pairPending.second)
+        BOOST_FOREACH(pairPending, mapNamePending)
         {
-            printf("    ");
-            if (!pwalletMain->mapWallet.count(hash))
-                printf("foreign ");
-            printf("    %s\n", hash.GetHex().c_str());
+            string name = stringFromVch(pairPending.first);
+            printf("%s :\n", name.c_str());
+            uint256 hash;
+            BOOST_FOREACH(hash, pairPending.second)
+            {
+                printf("    ");
+                if (!pwalletMain->mapWallet.count(hash))
+                    printf("foreign ");
+                printf("    %s\n", hash.GetHex().c_str());
+            }
         }
-    }
     printf("----------------------------\n");
     return true;
 }
@@ -1204,10 +1209,7 @@ Value name_new(const Array& params, bool fHelp)
     wtx.nVersion = NAMECOIN_TX_VERSION;
 
     uint64 rand = GetRand((uint64)-1);
-    vector<unsigned char> seedRand = CBigNum(rand).getvch();
-    string strRand = Hash(seedRand.begin(), seedRand.end()).ToString();
-    strRand.resize(16);
-    vector<unsigned char> vchRand = ParseHex(strRand);
+    vector<unsigned char> vchRand = CBigNum(rand).getvch();
     vector<unsigned char> vchToHash(vchRand);
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
     uint160 hash =  Hash160(vchToHash);
@@ -1257,7 +1259,11 @@ void UnspendInputs(CWalletTx& wtx)
             prev.fAvailableCreditCached = false;
             prev.WriteToDisk();
         }
-        pwalletMain->vWalletUpdated.push_back(prev.GetHash());
+#ifdef GUI
+        //pwalletMain->vWalletUpdated.push_back(prev.GetHash());
+        pwalletMain->NotifyTransactionChanged(pwalletMain, prev.GetHash(), CT_DELETED);
+
+#endif
     }
 }
 
@@ -1376,74 +1382,6 @@ Value name_clean(const Array& params, bool fHelp)
     }
 
     return true;
-}
-
-Value sendtoalias(const Array& params, bool fHelp)
-{
-    if (fHelp || params.size() < 2 || params.size() > 4)
-        throw runtime_error(
-            "sendtoalias <namecoinalias> <amount> [comment] [comment-to]\n"
-            "<amount> is a real and is rounded to the nearest 0.01");
-    
-    vector<unsigned char> vchName = vchFromString("id/" + params[0].get_str());
-
-    CNameDB dbName("r");
-    if (!dbName.ExistsName(vchName))
-        throw JSONRPCError(-5, "Alias not found");
-
-    vector<CNameIndex> vtxPos;
-    if (!dbName.ReadName(vchName, vtxPos))
-        throw JSONRPCError(-5, "Name history not found");
-
-    CNameIndex txPos = vtxPos.back();
-    Value valJson;
-    if (!read_string(stringFromVch(txPos.vValue), valJson))
-        throw JSONRPCError(-5, "couldn't parse json from name");
-    const Object& json = valJson.get_obj();
-    if (json.empty())
-        throw JSONRPCError(-5, "expected json to contain data");
-    
-    string strAddress;
-    const Value& namecoin = find_value(json, "namecoin");
-    if (namecoin.type() == null_type)
-        throw JSONRPCError(-5, "Namecoin data should be a string or a json object");
-	
-    if (namecoin.type() == obj_type)
-	{
-    	const Value& ndefault = find_value(namecoin.get_obj(), "default");
-    	if (ndefault.type() == null_type)
-        	throw JSONRPCError(-5, "A namecoin object should have a 'default' address");
-		else if (ndefault.type() == str_type)
-        	strAddress = ndefault.get_str();
-		else
-        	throw JSONRPCError(-5, "Namecoin default address should be a string");
-	} else if (namecoin.type() == str_type) {
-        strAddress = namecoin.get_str();
-	} else
-        throw JSONRPCError(-5, "Namecoin data should be a string or a json object");
-    
-    uint160 hash160;
-    if (!AddressToHash160(strAddress, hash160))
-        throw JSONRPCError(-5, "No valid namecoin address");
-
-    // Amount
-    int64 nAmount = AmountFromValue(params[1]);
-
-    // Wallet comments
-    CWalletTx wtx;
-    if (params.size() > 2 && params[2].type() != null_type && !params[2].get_str().empty())
-        wtx.mapValue["comment"] = params[2].get_str();
-    if (params.size() > 3 && params[3].type() != null_type && !params[3].get_str().empty())
-        wtx.mapValue["to"]      = params[3].get_str();
-
-    CRITICAL_BLOCK(cs_main)
-    {  
-        string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
-        if (strError != "")
-            throw JSONRPCError(-4, strError);
-    }
-
-    return wtx.GetHash().GetHex();
 }
 
 bool CNameDB::test()
@@ -1612,7 +1550,6 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
     mapCallTable.insert(make_pair("sendtoname", &sendtoname));
-    mapCallTable.insert(make_pair("sendtoalias", &sendtoalias));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
     printf("Setup namecoin genesis block %s\n", hashGenesisBlock.GetHex().c_str());

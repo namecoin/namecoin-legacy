@@ -209,16 +209,16 @@ unsigned int pnSeed[] =
 string GetDefaultDataDirSuffix() {
 #ifdef __WXMSW__
     // Windows
-    return string("Bitcoin");
+    return string("Namecoin");
 #else
 #ifdef __WXMAC_OSX__
-    return string("Bitcoin");
+    return string("Namecoin");
 #else
-    return string(".bitcoin");
+    return string(".namecoin");
 #endif
 #endif
 }
 
 unsigned char GetAddressVersion() {
-    return ((unsigned char)(fTestNet ? 111 : 0));
+    return ((unsigned char)(fTestNet ? 111 : 52));
 }

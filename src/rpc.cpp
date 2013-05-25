@@ -29,6 +29,8 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 // a certain size around 145MB.  If we need access to json_spirit outside this
 // file, we could use the compiled json_spirit option.
 
+#include "rpc.h"
+
 using namespace std;
 using namespace boost;
 using namespace boost::asio;
@@ -64,7 +66,7 @@ void PrintConsole(const char* format, ...)
     }
     printf("%s", buffer);
 #if defined(__WXMSW__) && defined(GUI)
-    MyMessageBox(buffer, "Bitcoin", wxOK | wxICON_EXCLAMATION);
+    MyMessageBox(buffer, "Namecoin", wxOK | wxICON_EXCLAMATION);
 #else
     fprintf(stdout, "%s", buffer);
 #endif
@@ -166,7 +168,7 @@ Value stop(const Array& params, bool fHelp)
             "Stop namecoin server.");
 
     // Shutdown will take long enough that the response should get back
-    CreateThread(Shutdown, NULL);
+    StartShutdown();
     return "namecoin server stopping";
 }
 
@@ -2393,9 +2395,9 @@ void ThreadRPCServer2(void* parg)
             strWhatAmI = strprintf(_("To use the %s option"), "\"-server\"");
         else if (mapArgs.count("-daemon"))
             strWhatAmI = strprintf(_("To use the %s option"), "\"-daemon\"");
-        PrintConsole(
-            _("Warning: %s, you must set rpcpassword=<password>\nin the configuration file: %s\n"
-              "If the file does not exist, create it with owner-readable-only file permissions.\n"),
+        std::string format_str = _("Warning: %s, you must set rpcpassword=<password>\nin the configuration file: %s\n"
+              "If the file does not exist, create it with owner-readable-only file permissions.\n");
+        PrintConsole(format_str.c_str(),
                 strWhatAmI.c_str(),
                 GetConfigFile().c_str());
         CreateThread(Shutdown, NULL);
@@ -2644,6 +2646,66 @@ void ConvertTo(Value& value)
     }
 }
 
+// Convert strings to command-specific RPC representation
+Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
+{
+    Array params;
+    BOOST_FOREACH(const std::string &param, strParams)
+        params.push_back(param);
+    RPCConvertValues(strMethod, params);
+    return params;   
+}
+
+void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
+{
+    int n = params.size();
+
+    //
+    // Special case non-string parameter types
+    //
+    if (strMethod == "name_filter"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "name_filter"            && n > 2) ConvertTo<boost::int64_t>(params[2]);
+    if (strMethod == "name_filter"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
+    if (strMethod == "sendtoname"             && n > 1) ConvertTo<double>(params[1]);
+
+    if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
+    if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
+    if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
+    if (strMethod == "getamountreceived"      && n > 1) ConvertTo<boost::int64_t>(params[1]); // deprecated
+    if (strMethod == "setmininput"            && n > 0) ConvertTo<double>(params[0]);
+    if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "getreceivedbylabel"     && n > 1) ConvertTo<boost::int64_t>(params[1]); // deprecated
+    if (strMethod == "getallreceived"         && n > 0) ConvertTo<boost::int64_t>(params[0]); // deprecated
+    if (strMethod == "getallreceived"         && n > 1) ConvertTo<bool>(params[1]);
+    if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
+    if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
+    if (strMethod == "listreceivedbylabel"    && n > 0) ConvertTo<boost::int64_t>(params[0]); // deprecated
+    if (strMethod == "listreceivedbylabel"    && n > 1) ConvertTo<bool>(params[1]); // deprecated
+    if (strMethod == "getbalance"             && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
+    if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
+    if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
+    if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
+    if (strMethod == "listtransactions"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
+    if (strMethod == "getworkaux"             && n > 2) ConvertTo<boost::int64_t>(params[2]);
+    if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "getblockbycount"        && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "sendmany"               && n > 1)
+    {
+        string s = params[1].get_str();
+        Value v;
+        if (!read_string(s, v) || v.type() != obj_type)
+            throw runtime_error("type mismatch");
+        params[1] = v.get_obj();
+    }
+    if (strMethod == "sendmany"                && n > 2) ConvertTo<boost::int64_t>(params[2]);
+}
+
 int CommandLineRPC(int argc, char *argv[])
 {
     string strPrint;
@@ -2663,56 +2725,8 @@ int CommandLineRPC(int argc, char *argv[])
         string strMethod = argv[1];
 
         // Parameters default to strings
-        Array params;
-        for (int i = 2; i < argc; i++)
-            params.push_back(argv[i]);
-        int n = params.size();
-
-        //
-        // Special case non-string parameter types
-        //
-        if (strMethod == "name_filter"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "name_filter"            && n > 2) ConvertTo<boost::int64_t>(params[2]);
-        if (strMethod == "name_filter"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
-        if (strMethod == "sendtoname"             && n > 1) ConvertTo<double>(params[1]);
-        if (strMethod == "sendtoalias"            && n > 1) ConvertTo<double>(params[1]);
-
-        if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
-        if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
-        if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
-        if (strMethod == "getamountreceived"      && n > 1) ConvertTo<boost::int64_t>(params[1]); // deprecated
-        if (strMethod == "setmininput"            && n > 0) ConvertTo<double>(params[0]);
-        if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "getreceivedbylabel"     && n > 1) ConvertTo<boost::int64_t>(params[1]); // deprecated
-        if (strMethod == "getallreceived"         && n > 0) ConvertTo<boost::int64_t>(params[0]); // deprecated
-        if (strMethod == "getallreceived"         && n > 1) ConvertTo<bool>(params[1]);
-        if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
-        if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
-        if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<boost::int64_t>(params[0]);
-        if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
-        if (strMethod == "listreceivedbylabel"    && n > 0) ConvertTo<boost::int64_t>(params[0]); // deprecated
-        if (strMethod == "listreceivedbylabel"    && n > 1) ConvertTo<bool>(params[1]); // deprecated
-        if (strMethod == "getbalance"             && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
-        if (strMethod == "move"                   && n > 3) ConvertTo<boost::int64_t>(params[3]);
-        if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
-        if (strMethod == "sendfrom"               && n > 3) ConvertTo<boost::int64_t>(params[3]);
-        if (strMethod == "listtransactions"       && n > 1) ConvertTo<boost::int64_t>(params[1]);
-        if (strMethod == "listtransactions"       && n > 2) ConvertTo<boost::int64_t>(params[2]);
-        if (strMethod == "getworkaux"             && n > 2) ConvertTo<boost::int64_t>(params[2]);
-        if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
-	if (strMethod == "getblockbycount"        && n > 0) ConvertTo<boost::int64_t>(params[0]);
-        if (strMethod == "sendmany"               && n > 1)
-        {
-            string s = params[1].get_str();
-            Value v;
-            if (!read_string(s, v) || v.type() != obj_type)
-                throw runtime_error("type mismatch");
-            params[1] = v.get_obj();
-        }
-        if (strMethod == "sendmany"                && n > 2) ConvertTo<boost::int64_t>(params[2]);
+        std::vector<std::string> strParams(&argv[2], &argv[argc]);
+        Array params = RPCConvertValues(strMethod, strParams);
 
         // Execute
         Object reply = CallRPC(strMethod, params);
@@ -2763,7 +2777,28 @@ int CommandLineRPC(int argc, char *argv[])
     return nRet;
 }
 
+json_spirit::Value ExecuteRPC(const std::string &strMethod, const std::vector<std::string> &vParams)
+{
+    Array params = RPCConvertValues(strMethod, vParams);
+    return ExecuteRPC(strMethod, params);
+}
 
+json_spirit::Value ExecuteRPC(const std::string &strMethod, const Array &params)
+{
+    // Find method
+    map<string, rpcfn_type>::iterator mi = mapCallTable.find(strMethod);
+    if (mi == mapCallTable.end())
+        throw JSONRPCError(-32601, "Method not found");
+
+    // Observe safe mode
+    string strWarning = GetWarnings("rpc");
+    if (strWarning != "" && !GetBoolArg("-disablesafemode") && !setAllowInSafeMode.count(strMethod))
+        throw JSONRPCError(-2, string("Safe mode: ") + strWarning);
+
+    // Execute
+    Value result = (*(*mi).second)(params, false);
+    return result;
+}
 
 
 #ifdef TEST

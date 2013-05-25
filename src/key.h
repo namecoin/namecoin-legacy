@@ -41,7 +41,12 @@ public:
 
 
 // secure_allocator is defined in serialize.h
+// CPrivKey is a serialized private key, with all parameters included (279 bytes)
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
+// Currently CSecret is encrypted privkey. In Bitcoin it is just 32-byte secret (not the whole key)
+typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
+
+enum { CSECRET_SIZE = 279 };
 
 
 
@@ -50,6 +55,7 @@ class CKey
 protected:
     EC_KEY* pkey;
     bool fSet;
+    bool fCompressedPubKey;
 
 public:
     CKey()
@@ -58,6 +64,7 @@ public:
         if (pkey == NULL)
             throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
         fSet = false;
+        fCompressedPubKey = false;
     }
 
     CKey(const CKey& b)
@@ -66,6 +73,7 @@ public:
         if (pkey == NULL)
             throw key_error("CKey::CKey(const CKey&) : EC_KEY_dup failed");
         fSet = b.fSet;
+        fCompressedPubKey = b.fCompressedPubKey;
     }
 
     CKey& operator=(const CKey& b)
@@ -73,6 +81,7 @@ public:
         if (!EC_KEY_copy(pkey, b.pkey))
             throw key_error("CKey::operator=(const CKey&) : EC_KEY_copy failed");
         fSet = b.fSet;
+        fCompressedPubKey = b.fCompressedPubKey;
         return (*this);
     }
 
@@ -170,6 +179,23 @@ public:
             return false;
         return key.Verify(hash, vchSig);
     }
+    
+    void SetCompressedPubKey(bool fCompressed = true);
+
+    // create a compact signature (65 bytes), which allows reconstructing the used public key
+    // The format is one header byte, followed by two times 32 bytes for the serialized r and s values.
+    // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
+    //                  0x1D = second key with even y, 0x1E = second key with odd y
+    bool SignCompact(uint256 hash, std::vector<unsigned char>& vchSig);
+    
+    // reconstruct public key from a compact signature
+    // This is only slightly more CPU intensive than just verifying it.
+    // If this function succeeds, the recovered public key is guaranteed to be valid
+    // (the signature is a valid signature of the given data for that key)
+    bool SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig);
+
+    // Verify a compact signature
+    bool VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig); 
 };
 
 #endif

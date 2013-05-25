@@ -43,6 +43,7 @@ public:
 
 public slots:
     void done(int retval);
+    void exportClicked();
 
 private:
     Ui::AddressBookPage *ui;
@@ -58,25 +59,23 @@ private:
 
 private slots:
     /** Delete currently selected address entry */
-    void on_deleteAddress_clicked();
+    void on_deleteButton_clicked();
     /** Create a new address for receiving coins and / or add a new address book entry */
-    void on_newAddress_clicked();
+    void on_newAddressButton_clicked();
     /** Copy address of currently selected address entry to clipboard */
-    void on_copyAddress_clicked();
+    void on_copyToClipboard_clicked();
     /** Open the sign message tab in the Sign/Verify Message dialog with currently selected address */
     void on_signMessage_clicked();
     /** Open the verify message tab in the Sign/Verify Message dialog with currently selected address */
     void on_verifyMessage_clicked();
     /** Open send coins dialog for currently selected address (no button) */
-    void onSendCoinsAction();
+    void onSendCoins_clicked();
     /** Generate a QR Code from the currently selected address */
     void on_showQRCode_clicked();
     /** Copy label of currently selected address entry to clipboard (no button) */
     void onCopyLabelAction();
     /** Edit currently selected address entry (no button) */
     void onEditAction();
-    /** Export button clicked */
-    void on_exportButton_clicked();
 
     /** Set button states based on selected tab and selection */
     void selectionChanged();

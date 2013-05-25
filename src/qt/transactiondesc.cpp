@@ -2,11 +2,12 @@
 
 #include "guiutil.h"
 #include "bitcoinunits.h"
-#include "main.h"
-#include "wallet.h"
-#include "db.h"
+#include "../headers.h"
+#include "../main.h"
+#include "../wallet.h"
+#include "../db.h"
 #include "ui_interface.h"
-#include "base58.h"
+#include "../base58.h"
 
 #include <string>
 
@@ -236,7 +237,9 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
             strHTML += GUIUtil::HtmlEscape(wtx.ToString(), true);
 
             strHTML += "<br><b>" + tr("Inputs") + ":</b>";
-            strHTML += "<ul>";
+            
+            strHTML += "<i>Not implemented...</i>";
+            /*strHTML += "<ul>";
 
             {
                 LOCK(wallet->cs_wallet);
@@ -263,7 +266,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
                         }
                     }
                 }
-            }
+            }*/
 
             strHTML += "</ul>";
         }

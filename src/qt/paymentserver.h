@@ -37,7 +37,6 @@ class QLocalServer;
 class PaymentServer : public QObject
 {
     Q_OBJECT
-
 private:
     bool saveURIs;
     QLocalServer* uriServer;

@@ -64,7 +64,7 @@ typedef unsigned long long  uint64;
 #endif
 
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
-#define PAIRTYPE(t1, t2)    pair<t1, t2>
+#define PAIRTYPE(t1, t2)    std::pair<t1, t2>
 
 // Used to bypass the rule against non-const reference to temporary
 // where it makes sense with wrappers such as CFlatData or CTxDB
@@ -89,6 +89,10 @@ T* alignup(T* p)
 }
 
 #ifdef __WXMSW__
+#include <windows.h>
+#include <winsock2.h>
+#include <mswsock.h> 
+
 #define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
 #ifndef UINT64_MAX
@@ -176,7 +180,16 @@ void RandAddSeed();
 void RandAddSeedPerfmon();
 int OutputDebugStringF(const char* pszFormat, ...);
 int my_snprintf(char* buffer, size_t limit, const char* format, ...);
-std::string strprintf(const char* format, ...);
+
+/** Overload strprintf for char*, so that GCC format type warnings can be given */
+std::string real_strprintf(const char *format, int dummy, ...);
+/** Overload strprintf for std::string, to be able to use it with _ (translation).
+ * This will not support GCC format type warnings (-Wformat) so be careful.
+ */
+std::string real_strprintf(const std::string &format, int dummy, ...);
+#define strprintf(format, ...) real_strprintf(format, 0, __VA_ARGS__)
+std::string vstrprintf(const char *format, va_list ap);
+
 bool error(const char* format, ...);
 void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
@@ -445,7 +458,7 @@ inline int64 GetArg(const std::string& strArg, int64 nDefault)
     return nDefault;
 }
 
-inline bool GetBoolArg(const std::string& strArg)
+inline bool GetBoolArg(const std::string& strArg, bool fDefault=false)
 {
     if (mapArgs.count(strArg))
     {
@@ -453,7 +466,7 @@ inline bool GetBoolArg(const std::string& strArg)
             return true;
         return (atoi(mapArgs[strArg]) != 0);
     }
-    return false;
+    return fDefault;
 }
 
 
@@ -569,9 +582,8 @@ inline uint160 Hash160(const std::vector<unsigned char>& vch)
     return hash2;
 }
 
-
-
-
+std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid = NULL);
+std::string EncodeBase64(const unsigned char* pch, size_t len);
 
 
 
@@ -677,5 +689,8 @@ inline bool AffinityBugWorkaround(void(*pfn)(void*))
 #endif
     return false;
 }
+
+bool SoftSetArg(const std::string& strArg, const std::string& strValue);
+bool SoftSetBoolArg(const std::string& strArg, bool fValue);
 
 #endif

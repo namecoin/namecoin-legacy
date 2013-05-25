@@ -31,7 +31,7 @@ extern DbEnv dbenv;
 extern void DBFlush(bool fShutdown);
 void ThreadFlushWalletDB(void* parg);
 bool BackupWallet(const CWallet& wallet, const std::string& strDest);
-
+void PrintSettingsToLog();
 
 
 
@@ -256,6 +256,8 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
+    
+    bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
 };
 
 
@@ -337,120 +339,6 @@ public:
         READWRITE(nTime);
         READWRITE(vchPubKey);
     )
-};
-
-
-
-
-class CWalletDB : public CDB
-{
-public:
-    CWalletDB(std::string strFilename, const char* pszMode="r+") : CDB(strFilename.c_str(), pszMode)
-    {
-    }
-private:
-    CWalletDB(const CWalletDB&);
-    void operator=(const CWalletDB&);
-public:
-    bool ReadName(const std::string& strAddress, std::string& strName)
-    {
-        strName = "";
-        return Read(std::make_pair(std::string("name"), strAddress), strName);
-    }
-
-    bool WriteName(const std::string& strAddress, const std::string& strName);
-
-    bool EraseName(const std::string& strAddress);
-
-    bool ReadTx(uint256 hash, CWalletTx& wtx)
-    {
-        return Read(std::make_pair(std::string("tx"), hash), wtx);
-    }
-
-    bool WriteTx(uint256 hash, const CWalletTx& wtx)
-    {
-        nWalletDBUpdated++;
-        return Write(std::make_pair(std::string("tx"), hash), wtx);
-    }
-
-    bool EraseTx(uint256 hash)
-    {
-        nWalletDBUpdated++;
-        return Erase(std::make_pair(std::string("tx"), hash));
-    }
-
-    bool ReadKey(const std::vector<unsigned char>& vchPubKey, CPrivKey& vchPrivKey)
-    {
-        vchPrivKey.clear();
-        return Read(std::make_pair(std::string("key"), vchPubKey), vchPrivKey);
-    }
-
-    bool WriteKey(const std::vector<unsigned char>& vchPubKey, const CPrivKey& vchPrivKey)
-    {
-        nWalletDBUpdated++;
-        return Write(std::make_pair(std::string("key"), vchPubKey), vchPrivKey, false);
-    }
-
-    bool WriteBestBlock(const CBlockLocator& locator)
-    {
-        nWalletDBUpdated++;
-        return Write(std::string("bestblock"), locator);
-    }
-
-    bool ReadBestBlock(CBlockLocator& locator)
-    {
-        return Read(std::string("bestblock"), locator);
-    }
-
-    bool ReadDefaultKey(std::vector<unsigned char>& vchPubKey)
-    {
-        vchPubKey.clear();
-        return Read(std::string("defaultkey"), vchPubKey);
-    }
-
-    bool WriteDefaultKey(const std::vector<unsigned char>& vchPubKey)
-    {
-        nWalletDBUpdated++;
-        return Write(std::string("defaultkey"), vchPubKey);
-    }
-
-    bool ReadPool(int64 nPool, CKeyPool& keypool)
-    {
-        return Read(std::make_pair(std::string("pool"), nPool), keypool);
-    }
-
-    bool WritePool(int64 nPool, const CKeyPool& keypool)
-    {
-        nWalletDBUpdated++;
-        return Write(std::make_pair(std::string("pool"), nPool), keypool);
-    }
-
-    bool ErasePool(int64 nPool)
-    {
-        nWalletDBUpdated++;
-        return Erase(std::make_pair(std::string("pool"), nPool));
-    }
-
-    template<typename T>
-    bool ReadSetting(const std::string& strKey, T& value)
-    {
-        return Read(std::make_pair(std::string("setting"), strKey), value);
-    }
-
-    template<typename T>
-    bool WriteSetting(const std::string& strKey, const T& value)
-    {
-        nWalletDBUpdated++;
-        return Write(std::make_pair(std::string("setting"), strKey), value);
-    }
-
-    bool ReadAccount(const std::string& strAccount, CAccount& account);
-    bool WriteAccount(const std::string& strAccount, const CAccount& account);
-    bool WriteAccountingEntry(const CAccountingEntry& acentry);
-    int64 GetAccountCreditDebit(const std::string& strAccount);
-    void ListAccountCreditDebit(const std::string& strAccount, std::list<CAccountingEntry>& acentries);
-
-    bool LoadWallet(CWallet* pwallet);
 };
 
 #endif

@@ -3,8 +3,10 @@
 #include "guiutil.h"
 #include "walletmodel.h"
 
-#include "wallet.h"
-#include "base58.h"
+#include "../headers.h"
+#include "../wallet.h"
+#include "../base58.h"
+#include "ui_interface.h"
 
 #include <QFont>
 
@@ -233,7 +235,8 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
             break;
         case Address:
             // Do nothing, if old address == new address
-            if(CBitcoinAddress(rec->address.toStdString()) == CBitcoinAddress(value.toString().toStdString()))
+            //if(CBitcoinAddress(rec->address.toStdString()) == CBitcoinAddress(value.toString().toStdString()))
+            if(rec->address == value.toString())
             {
                 editStatus = NO_CHANGES;
                 return false;
@@ -352,13 +355,14 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
             editStatus = WALLET_UNLOCK_FAILURE;
             return QString();
         }
-        CPubKey newKey;
+        /*CPubKey newKey;
         if(!wallet->GetKeyFromPool(newKey, true))
         {
             editStatus = KEY_GENERATION_FAILURE;
             return QString();
         }
-        strAddress = CBitcoinAddress(newKey.GetID()).ToString();
+        strAddress = CBitcoinAddress(newKey.GetID()).ToString();*/
+        strAddress = PubKeyToAddress(wallet->GetKeyFromKeyPool());
     }
     else
     {

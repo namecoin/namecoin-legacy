@@ -805,7 +805,10 @@ void ThreadSocketHandler2(void* parg)
         if (vNodes.size() != nPrevNodeCount)
         {
             nPrevNodeCount = vNodes.size();
-            MainFrameRepaint();
+#ifdef GUI
+            uiInterface.NotifyNumConnectionsChanged(vNodes.size());
+#endif
+            //MainFrameRepaint();
         }
 
 
@@ -1073,7 +1076,14 @@ void ThreadMapPort2(void* parg)
     struct UPNPDev * devlist = 0;
     char lanaddr[64];
 
+#ifndef UPNPDISCOVER_SUCCESS
+    /* miniupnpc 1.5 */
     devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0);
+#else
+    /* miniupnpc 1.6 */
+    int error = 0;
+    devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, 0, &error);
+#endif
 
     struct UPNPUrls urls;
     struct IGDdatas data;
@@ -1483,7 +1493,7 @@ void ThreadMessageHandler2(void* parg)
         vnThreadsRunning[2]--;
         Sleep(100);
         if (fRequestShutdown)
-            Shutdown(NULL);
+            StartShutdown();
         vnThreadsRunning[2]++;
         if (fShutdown)
             return;
@@ -1556,7 +1566,7 @@ bool BindListenPort(string& strError)
     {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to port %d on this computer.  Bitcoin is probably already running."), ntohs(sockaddr.sin_port));
+            strError = strprintf(_("Unable to bind to port %d on this computer.  Namecoin is probably already running."), ntohs(sockaddr.sin_port));
         else
             strError = strprintf("Error: Unable to bind to port %d on this computer (bind returned error %d)", ntohs(sockaddr.sin_port), nErr);
         printf("%s\n", strError.c_str());
@@ -1647,9 +1657,11 @@ void StartNode(void* parg)
     // Start threads
     //
 
+#ifdef USE_UPNP
     // Map ports with UPnP
     if (fHaveUPnP)
         MapPort(fUseUPnP);
+#endif
 
     // Get addresses from IRC and advertise ours
     if (!CreateThread(ThreadIRCSeed, NULL))

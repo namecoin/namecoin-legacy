@@ -73,7 +73,7 @@
      <item>
       <widget class="QValidatedLineEdit" name="payTo">
        <property name="toolTip">
-        <string>The address to send the payment to (e.g. 1NS17iag9jJgTHD1VXjvLCEnZuQ3rJDE9L)</string>
+        <string>The address to send the payment to (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</string>
        </property>
        <property name="maxLength">
         <number>34</number>
@@ -143,13 +143,13 @@
   <customwidget>
    <class>BitcoinAmountField</class>
    <extends>QLineEdit</extends>
-   <header>bitcoinamountfield.h</header>
+   <header>../../src/qt/bitcoinamountfield.h</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>QValidatedLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>qvalidatedlineedit.h</header>
+   <header>../../src/qt/qvalidatedlineedit.h</header>
   </customwidget>
  </customwidgets>
  <resources>

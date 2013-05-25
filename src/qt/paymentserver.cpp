@@ -8,7 +8,8 @@
 
 #include "guiconstants.h"
 #include "ui_interface.h"
-#include "util.h"
+#include "../headers.h"
+#include "../util.h"
 
 #include <QByteArray>
 #include <QDataStream>
@@ -23,7 +24,7 @@
 using namespace boost;
 
 const int BITCOIN_IPC_CONNECT_TIMEOUT = 1000; // milliseconds
-const QString BITCOIN_IPC_PREFIX("bitcoin:");
+const QString BITCOIN_IPC_PREFIX("namecoin:");
 
 //
 // Create a name that is unique for:
@@ -32,12 +33,12 @@ const QString BITCOIN_IPC_PREFIX("bitcoin:");
 //
 static QString ipcServerName()
 {
-    QString name("BitcoinQt");
+    QString name("NamecoinQt");
 
     // Append a simple hash of the datadir
     // Note that GetDataDir(true) returns a different path
     // for -testnet versus main net
-    QString ddir(GetDataDir(true).string().c_str());
+    QString ddir(GetDataDir(/*true*/)./*string().*/c_str());
     name.append(QString::number(qHash(ddir)));
 
     return name;
@@ -104,7 +105,7 @@ PaymentServer::PaymentServer(QApplication* parent) : QObject(parent), saveURIs(t
     uriServer = new QLocalServer(this);
 
     if (!uriServer->listen(name))
-        qDebug() << tr("Cannot start bitcoin: click-to-pay handler");
+        qDebug() << tr("Cannot start namecoin: click-to-pay handler");
     else
         connect(uriServer, SIGNAL(newConnection()), this, SLOT(handleURIConnection()));
 }

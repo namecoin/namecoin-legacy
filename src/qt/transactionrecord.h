@@ -1,7 +1,7 @@
 #ifndef TRANSACTIONRECORD_H
 #define TRANSACTIONRECORD_H
 
-#include "uint256.h"
+#include "../bignum.h"
 
 #include <QList>
 

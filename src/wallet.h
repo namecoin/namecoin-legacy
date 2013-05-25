@@ -8,6 +8,10 @@
 #include "key.h"
 #include "script.h"
 
+#ifdef GUI
+#include "qt/ui_interface.h"  // For ChangeType
+#endif
+
 class CWalletTx;
 class CReserveKey;
 class CWalletDB;
@@ -16,6 +20,7 @@ class CWallet : public CKeyStore
 {
 private:
     bool SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
+    CWalletDB *pwalletdbEncryption;
 
 public:
     // visible for NAMECOIN
@@ -27,31 +32,55 @@ public:
     std::string strWalletFile;
 
     std::set<int64> setKeyPool;
-    CCriticalSection cs_setKeyPool;
+    
+    typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
+    MasterKeyMap mapMasterKeys;
+    unsigned int nMasterKeyMaxID;
 
-    CWallet()
+    mutable CCriticalSection cs_wallet;
+
+    // Synonyms for cs_wallet
+    CCriticalSection &cs_setKeyPool;
+    CCriticalSection &cs_mapWallet;
+    CCriticalSection &cs_mapRequestCount;
+    CCriticalSection &cs_mapAddressBook;
+
+    CWallet() :
+        cs_setKeyPool(cs_wallet),
+        cs_mapWallet(cs_wallet),
+        cs_mapRequestCount(cs_wallet),
+        cs_mapAddressBook(cs_wallet)
     {
         fFileBacked = false;
+        nMasterKeyMaxID = 0;
+        pwalletdbEncryption = NULL;
     }
-    CWallet(std::string strWalletFileIn)
+
+    CWallet(std::string strWalletFileIn) :
+        cs_setKeyPool(cs_wallet),
+        cs_mapWallet(cs_wallet),
+        cs_mapRequestCount(cs_wallet),
+        cs_mapAddressBook(cs_wallet)
     {
         strWalletFile = strWalletFileIn;
         fFileBacked = true;
+        nMasterKeyMaxID = 0;
+        pwalletdbEncryption = NULL;
     }
 
-    mutable CCriticalSection cs_mapWallet;
     std::map<uint256, CWalletTx> mapWallet;
-    std::vector<uint256> vWalletUpdated;
+    //std::vector<uint256> vWalletUpdated;
 
     std::map<uint256, int> mapRequestCount;
-    mutable CCriticalSection cs_mapRequestCount;
 
     std::map<std::string, std::string> mapAddressBook;
-    mutable CCriticalSection cs_mapAddressBook;
 
     std::vector<unsigned char> vchDefaultKey;
 
+    // Adds a key to the store, and saves it to disk.
     bool AddKey(const CKey& key);
+    // Adds a key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadKey(const CKey& key) { return CKeyStore::AddKey(key); }
     bool AddToWallet(const CWalletTx& wtxIn);
     bool AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
@@ -60,12 +89,16 @@ public:
     void ReacceptWalletTransactions();
     void ResendWalletTransactions();
     int64 GetBalance() const;
+    int64 GetUnconfirmedBalance() const;
+    int64 GetImmatureBalance() const { return 0; }
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
     bool BroadcastTransaction(CWalletTx& wtxNew);
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
     std::string SendMoneyToBitcoinAddress(std::string strAddress, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+
+    bool NewKeyPool();
 
     void ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool);
     void KeepKey(int64 nIndex);
@@ -165,8 +198,13 @@ public:
 
     void UpdatedTransaction(const uint256 &hashTx)
     {
+#ifdef GUI
         CRITICAL_BLOCK(cs_mapWallet)
-            vWalletUpdated.push_back(hashTx);
+        {
+            //vWalletUpdated.push_back(hashTx);
+            NotifyTransactionChanged(this, hashTx, CT_UPDATED);
+        }
+#endif
     }
 
     void PrintWallet(const CBlock& block);
@@ -182,7 +220,21 @@ public:
     }
 
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
+    
+    bool Unlock(const SecureString& strWalletPassphrase);
+    bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
+    bool EncryptWallet(const SecureString& strWalletPassphrase);
+    
+    // Adds an encrypted key to the store, and saves it to disk.
+    bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    // Adds an encrypted key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) { /*SetMinVersion(FEATURE_WALLETCRYPT);*/ return CKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret); }
 
+#ifdef GUI    
+    //boost::signals2::signal<void (CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
+    boost::signals2::signal<void (CWallet *wallet, const std::string &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
+    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx, ChangeType status)> NotifyTransactionChanged;
+#endif
 };
 
 
