@@ -10,6 +10,8 @@
 #include "auxpow.h"
 #include "namecoin.h"
 
+#include "rpc.h"
+
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
@@ -126,7 +128,7 @@ int64 getAmount(Value value)
     double dAmount = value.get_real();
     int64 nAmount = roundint64(dAmount * COIN);
     if (!MoneyRange(nAmount))
-        throw JSONRPCError(-3, "Invalid amount");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
     return nAmount;
 }
 
@@ -538,12 +540,13 @@ Value sendtoname(const Array& params, bool fHelp)
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendtoname <namecoinname> <amount> [comment] [comment-to]\n"
-            "<amount> is a real and is rounded to the nearest 0.01");
+            "<amount> is a real and is rounded to the nearest 0.01"
+            + HelpRequiringPassphrase());
     
     vector<unsigned char> vchName = vchFromValue(params[0]);
     CNameDB dbName("r");
     if (!dbName.ExistsName(vchName))
-        throw JSONRPCError(-5, "Name not found");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Name not found");
     
     string strAddress;
     CTransaction tx;
@@ -552,7 +555,7 @@ Value sendtoname(const Array& params, bool fHelp)
     
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
-        throw JSONRPCError(-5, "No valid namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No valid namecoin address");
 
     // Amount
     int64 nAmount = AmountFromValue(params[1]);
@@ -566,9 +569,11 @@ Value sendtoname(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {  
+        EnsureWalletIsUnlocked();
+
         string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
 
     return wtx.GetHash().GetHex();
@@ -745,15 +750,15 @@ Value name_show(const Array& params, bool fHelp)
         vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
-            throw JSONRPCError(-4, "failed to read from name DB");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
        
         if (vtxPos.size() < 1)
-            throw JSONRPCError(-4, "no result returned");
+            throw JSONRPCError(RPC_WALLET_ERROR, "no result returned");
 
         CDiskTxPos txPos = vtxPos[vtxPos.size() - 1].txPos;
         CTransaction tx;
         if (!tx.ReadFromDisk(txPos))
-            throw JSONRPCError(-4, "failed to read from from disk");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from from disk");
 
         Object oName;
         vector<unsigned char> vchValue;
@@ -795,7 +800,7 @@ Value name_history(const Array& params, bool fHelp)
         vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
-            throw JSONRPCError(-4, "failed to read from name DB");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
         
         CNameIndex txPos2;
         CDiskTxPos txPos;
@@ -873,7 +878,7 @@ Value name_filter(const Array& params, bool fHelp)
     vector<unsigned char> vchName;
     vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
     if (!dbName.ScanNames(vchName, 100000000, nameScan))
-        throw JSONRPCError(-4, "scan failed");
+        throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
     pair<vector<unsigned char>, CNameIndex> pairScan;
     BOOST_FOREACH(pairScan, nameScan)
@@ -969,7 +974,7 @@ Value name_scan(const Array& params, bool fHelp)
     //vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
     vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
     if (!dbName.ScanNames(vchName, nMax, nameScan))
-        throw JSONRPCError(-4, "scan failed");
+        throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
     //pair<vector<unsigned char>, CDiskTxPos> pairScan;
     pair<vector<unsigned char>, CNameIndex> pairScan;
@@ -1019,7 +1024,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
                 "name_firstupdate <name> <rand> [<tx>] <value>\n"
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
-                );
+                + HelpRequiringPassphrase());
     vector<unsigned char> vchName = vchFromValue(params[0]);
     vector<unsigned char> vchRand = ParseHex(params[1].get_str());
     vector<unsigned char> vchValue;
@@ -1033,10 +1038,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
         vchValue = vchFromValue(params[3]);
     }
 
-
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-
+    
     CRITICAL_BLOCK(cs_main)
     {
         if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
@@ -1061,6 +1065,8 @@ Value name_firstupdate(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {
+        EnsureWalletIsUnlocked();
+
         // Make sure there is a previous NAME_NEW tx on this name
         // and that the random value matches
         uint256 wtxInHash;
@@ -1123,7 +1129,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
         nNetFee = (nNetFee / CENT) * CENT;
         string strError = SendMoneyWithInputTx(scriptPubKey, MIN_AMOUNT, nNetFee, wtxIn, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     return wtx.GetHash().GetHex();
 }
@@ -1133,7 +1139,7 @@ Value name_update(const Array& params, bool fHelp)
     if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
                 "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name\n"
-                );
+                + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
     vector<unsigned char> vchValue = vchFromValue(params[1]);
@@ -1149,7 +1155,7 @@ Value name_update(const Array& params, bool fHelp)
         uint160 hash160;
         bool isValid = AddressToHash160(strAddress, hash160);
         if (!isValid)
-            throw JSONRPCError(-5, "Invalid namecoin address");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid namecoin address");
         scriptPubKeyOrig.SetBitcoinAddress(strAddress);
     }
     else
@@ -1171,6 +1177,8 @@ Value name_update(const Array& params, bool fHelp)
                     mapNamePending[vchName].begin()->GetHex().c_str());
             throw runtime_error("there are pending operations on that name");
         }
+        
+        EnsureWalletIsUnlocked();
 
         CNameDB dbName("r");
         CTransaction tx;
@@ -1191,7 +1199,7 @@ Value name_update(const Array& params, bool fHelp)
         CWalletTx& wtxIn = pwalletMain->mapWallet[wtxInHash];
         string strError = SendMoneyWithInputTx(scriptPubKey, MIN_AMOUNT, 0, wtxIn, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     return wtx.GetHash().GetHex();
 }
@@ -1201,7 +1209,7 @@ Value name_new(const Array& params, bool fHelp)
     if (fHelp || params.size() != 1)
         throw runtime_error(
                 "name_new <name>\n"
-                );
+                + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
 
@@ -1223,9 +1231,11 @@ Value name_new(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {
+        EnsureWalletIsUnlocked();
+
         string strError = pwalletMain->SendMoney(scriptPubKey, MIN_AMOUNT, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
         mapMyNames[vchName] = wtx.GetHash();
     }
 

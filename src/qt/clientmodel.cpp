@@ -54,13 +54,22 @@ QDateTime ClientModel::getLastBlockDate() const
     if (pindexBest)
         return QDateTime::fromTime_t(pindexBest->GetBlockTime());
     else
-        return QDateTime::fromTime_t(1231006505); // Genesis block's time
+    {
+        // Genesis block's time
+        if (fTestNet)
+            return QDateTime::fromTime_t(1296688602);
+        else
+            return QDateTime::fromTime_t(1303000001);
+    }
 }
 
 double ClientModel::getVerificationProgress() const
 {
     //return Checkpoints::GuessVerificationProgress(pindexBest);
-    return 0.0;
+
+    // Rough estimate using number of blocks
+    // (Bitcoin uses a better estimate based on check points and number of transactions)
+    return double(pindexBest->nHeight) / double(getNumBlocksOfPeers());
 }
 
 void ClientModel::updateTimer()
@@ -123,8 +132,7 @@ enum BlockSource ClientModel::getBlockSource() const
 
 int ClientModel::getNumBlocksOfPeers() const
 {
-    return getNumBlocks();
-    //return GetNumBlocksOfPeers();
+    return GetNumBlocksOfPeers();
 }
 
 QString ClientModel::getStatusBarWarnings() const

@@ -172,7 +172,7 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return QVariant(fMinimizeToTray);
         case MapPortUPnP:
 #ifdef USE_UPNP
-            return settings.value("fUseUPnP", GetBoolArg("-upnp", true));
+            return settings.value("fUseUPnP", GetBoolArg("-upnp", true) && !GetBoolArg("-noupnp", false));
 #else
             return QVariant(false);
 #endif

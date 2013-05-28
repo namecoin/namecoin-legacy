@@ -67,7 +67,10 @@ void Shutdown(void* parg)
         Sleep(50);
         printf("namecoin exiting\n\n");
         fExit = true;
+#ifndef GUI
+        // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
         exit(0);
+#endif
     }
     else
     {
@@ -169,7 +172,14 @@ bool AppInit2(int argc, char* argv[])
         }
     }
 
+    // Set testnet flag first to determine the default datadir correctly
+    fTestNet = GetBoolArg("-testnet");
+
     ReadConfigFile(mapArgs, mapMultiArgs); // Must be done after processing datadir
+
+    // Note: at this point the default datadir may change, so the user either must not provide -testnet in the .conf file
+    // or provide -datadir explicitly on the command line
+    fTestNet = GetBoolArg("-testnet");
 
     if (mapArgs.count("-?") || mapArgs.count("--help"))
     {
@@ -216,7 +226,6 @@ bool AppInit2(int argc, char* argv[])
     fPrintToConsole = GetBoolArg("-printtoconsole");
     fPrintToDebugger = GetBoolArg("-printtodebugger");
 
-    fTestNet = GetBoolArg("-testnet");
     fNoListen = GetBoolArg("-nolisten");
     fLogTimestamps = GetBoolArg("-logtimestamps");
 

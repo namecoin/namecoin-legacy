@@ -888,7 +888,9 @@ string GetConfigFile()
     string confFile = GetConfigFile("namecoin.conf");
     if (!boost::filesystem::exists(confFile))
     {
-        confFile = GetConfigFile("bitcoin.conf");
+        string altConfFile = GetConfigFile("bitcoin.conf");
+        if (boost::filesystem::exists(altConfFile))
+            confFile = altConfFile;
     }
     return confFile;
 }
@@ -986,6 +988,11 @@ int64 GetTime()
 
 static int64 nTimeOffset = 0;
 
+int64 GetTimeOffset()
+{
+    return nTimeOffset;
+}
+
 int64 GetAdjustedTime()
 {
     return GetTime() + nTimeOffset;
@@ -1031,7 +1038,7 @@ void AddTimeData(unsigned int ip, int64 nTime)
                 if (!fMatch)
                 {
                     fDone = true;
-                    string strMessage = _("Warning: Please check that your computer's date and time are correct.  If your clock is wrong Bitcoin will not work properly.");
+                    string strMessage = _("Warning: Please check that your computer's date and time are correct.  If your clock is wrong Namecoin will not work properly.");
                     strMiscWarning = strMessage;
                     printf("*** %s\n", strMessage.c_str());
                     boost::thread(boost::bind(MyMessageBox, strMessage+" ", string("Namecoin"), wxOK | wxICON_EXCLAMATION, (wxWindow*)NULL, -1, -1));

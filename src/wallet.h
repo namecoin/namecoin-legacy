@@ -81,6 +81,7 @@ public:
     bool AddKey(const CKey& key);
     // Adds a key to the store, without saving it to disk (used by LoadWallet)
     bool LoadKey(const CKey& key) { return CKeyStore::AddKey(key); }
+    void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn);
     bool AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
@@ -217,6 +218,11 @@ public:
             if (mi != mapRequestCount.end())
                 (*mi).second++;
         }
+    }
+
+    int GetKeyPoolSize()
+    {
+        return setKeyPool.size();
     }
 
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);

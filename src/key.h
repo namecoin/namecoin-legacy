@@ -8,6 +8,8 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
+#include "base58.h" // For CSecret32
+
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;
 // const unsigned int PUBLIC_KEY_SIZE  = 41;
@@ -43,11 +45,13 @@ public:
 // secure_allocator is defined in serialize.h
 // CPrivKey is a serialized private key, with all parameters included (279 bytes)
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
-// Currently CSecret is encrypted privkey. In Bitcoin it is just 32-byte secret (not the whole key)
+
+// Currently CSecret is encrypted privkey. In Bitcoin it is just 32-byte secret (not the whole key).
+// In current Namecoin implementation the whole privkey is encrypted, rather than the secret,
+// when encrypting the wallet.
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
 enum { CSECRET_SIZE = 279 };
-
 
 
 class CKey
@@ -110,6 +114,9 @@ public:
         fSet = true;
         return true;
     }
+
+    bool SetSecret(const CSecret& vchSecret, bool fCompressed = false);
+    CSecret32 GetSecret(bool &fCompressed) const;
 
     CPrivKey GetPrivKey() const
     {
