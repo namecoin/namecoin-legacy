@@ -2675,7 +2675,6 @@ int CommandLineRPC(int argc, char *argv[])
         if (strMethod == "name_filter"            && n > 2) ConvertTo<boost::int64_t>(params[2]);
         if (strMethod == "name_filter"            && n > 3) ConvertTo<boost::int64_t>(params[3]);
         if (strMethod == "sendtoname"             && n > 1) ConvertTo<double>(params[1]);
-        if (strMethod == "sendtoalias"            && n > 1) ConvertTo<double>(params[1]);
 
         if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
         if (strMethod == "setgenerate"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
