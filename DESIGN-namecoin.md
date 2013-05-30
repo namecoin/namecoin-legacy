@@ -28,7 +28,7 @@ The name\_firstupdate transaction has a network fee.  The network fees represent
 * name is a byte array of max length 255
 * value is a byte array of max length 1023
 * The transaction can only be inserted into a block where the current network fee is less than the network fee output of the transaction
-* a name expires 12000 blocks from the last operation
+* a name expires 36000 blocks from the last operation
 
 ## Network fees
 

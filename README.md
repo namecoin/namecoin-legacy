@@ -3,7 +3,7 @@ Namecoin
 
 See https://dot-bit.org/ for more project information.
 
-Namecoin is a peer to peer naming system based on bitcoin.  It is a secure and cnesorship reistant replacement for DNS.
+Namecoin is a peer to peer naming system based on bitcoin.  It is a secure and censorship resistant replacement for DNS.
 
 Ownership of a name is based on ownership of a coin, which is in turn based on public key cryptography.  The namecoin network reaches consensus every few minutes as to which names have been reserved or updated.
 
@@ -43,7 +43,7 @@ Please read DESIGN-namecoind.md before proceeding.
 BUILDING
 ======================
 
-Building is only supported on Linux for now.  Follow the bitcoin build instructions.  Use "makefile.unix" - it will generate namecoind.  Usage is similar to bitcoind, plus new RPC calls for the new operations.  A GUI is on the roadmap.
+Building is supported on Linux, Windows and Mac.  Follow the bitcoin build instructions.  Use "makefile.unix" for linux - it will generate namecoind.  Usage is similar to bitcoind, plus new RPC calls for the new operations.  A GUI is on the roadmap.
 
 RUNNING
 ======================
@@ -79,7 +79,7 @@ VALUES
 
 Values for names in the d/ namespace are JSON encoded.  The simplest value is of this form:
 
-  {"map": {"": "10.0.0.1"}}
+  {"": "10.0.0.1", "map": {"www": "10.0.0.1"}}
 
 A [full specification](http://dot-bit.org/Domain_names) is in progress.
 
