@@ -608,8 +608,7 @@ public:
         }
         return n;
     }
-
-
+    
     bool IsPushOnly() const
     {
         if (size() > 200)

@@ -51,6 +51,7 @@ multimap<uint256, CBlock*> mapOrphanBlocksByPrev;
 map<uint256, CDataStream*> mapOrphanTransactions;
 multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
 
+const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 
 double dHashesPerSec;
 int64 nHPSTimerStart;

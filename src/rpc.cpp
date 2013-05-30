@@ -8,22 +8,29 @@
 #include "net.h"
 #include "init.h"
 #include "auxpow.h"
+
 #undef printf
+
 #include <boost/asio.hpp>
 #include <boost/iostreams/concepts.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/assign/list_of.hpp>
+
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp> 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #endif
+
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 #include "namecoin.h"
+
 #define printf OutputDebugStringF
+
 // MinGW 3.4.5 gets "fatal error: had to relocate PCH" if the json headers are
 // precompiled in headers.h.  The problem might be when the pch file goes over
 // a certain size around 145MB.  If we need access to json_spirit outside this
@@ -94,7 +101,45 @@ void EnsureWalletIsUnlocked()
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 }
   
+void RPCTypeCheck(const Array& params,
+                  const list<Value_type>& typesExpected,
+                  bool fAllowNull)
+{
+    unsigned int i = 0;
+    BOOST_FOREACH(Value_type t, typesExpected)
+    {
+        if (params.size() <= i)
+            break;
 
+        const Value& v = params[i];
+        if (!((v.type() == t) || (fAllowNull && (v.type() == null_type))))
+        {
+            string err = strprintf("Expected type %s, got %s",
+                                   Value_type_name[t], Value_type_name[v.type()]);
+            throw JSONRPCError(RPC_TYPE_ERROR, err);
+        }
+        i++;
+    }
+}
+
+void RPCTypeCheck(const Object& o,
+                  const map<string, Value_type>& typesExpected,
+                  bool fAllowNull)
+{
+    BOOST_FOREACH(const PAIRTYPE(string, Value_type)& t, typesExpected)
+    {
+        const Value& v = find_value(o, t.first);
+        if (!fAllowNull && v.type() == null_type)
+            throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing %s", t.first.c_str()));
+
+        if (!((v.type() == t.second) || (fAllowNull && (v.type() == null_type))))
+        {
+            string err = strprintf("Expected type %s for %s, got %s",
+                                   Value_type_name[t.second], t.first.c_str(), Value_type_name[v.type()]);
+            throw JSONRPCError(RPC_TYPE_ERROR, err);
+        }
+    }
+}
 
 int64 AmountFromValue(const Value& value)
 {
@@ -495,7 +540,7 @@ Value getnewaddress(const Array& params, bool fHelp)
     if (fHelp || params.size() > 1)
         throw runtime_error(
             "getnewaddress [account]\n"
-            "Returns a new namecoin address for receiving payments.  "
+            "Returns a new Namecoin address for receiving payments.  "
             "If [account] is specified (recommended), it is added to the address book "
             "so payments received with the address will be credited to [account]."
             + std::string(pwalletMain->IsCrypted() ? "\nmay require wallet passphrase to be set with walletpassphrase, if the key pool is empty" : ""));
@@ -563,7 +608,7 @@ Value getaccountaddress(const Array& params, bool fHelp)
     if (fHelp || params.size() != 1)
         throw runtime_error(
             "getaccountaddress <account>\n"
-            "Returns the current namecoin address for receiving payments to this account.");
+            "Returns the current Namecoin address for receiving payments to this account.");
 
     // Parse the account first so we don't generate a key if there's an error
     string strAccount = AccountFromValue(params[0]);
@@ -593,7 +638,7 @@ Value setaccount(const Array& params, bool fHelp)
     uint160 hash160;
     bool isValid = AddressToHash160(strAddress, hash160);
     if (!isValid)
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
 
 
     string strAccount;
@@ -732,6 +777,39 @@ Value sendtoaddress(const Array& params, bool fHelp)
     return wtx.GetHash().GetHex();
 }
 
+Value listaddressgroupings(const Array& params, bool fHelp)
+{
+    if (fHelp)
+        throw runtime_error(
+            "listaddressgroupings\n"
+            "Lists groups of addresses which have had their common ownership\n"
+            "made public by common use as inputs or as the resulting change\n"
+            "in past transactions");
+            
+    typedef std::string CTxDestination;
+
+    Array jsonGroupings;
+    map<CTxDestination, int64> balances = pwalletMain->GetAddressBalances();
+    BOOST_FOREACH(set<CTxDestination> grouping, pwalletMain->GetAddressGroupings())
+    {
+        Array jsonGrouping;
+        BOOST_FOREACH(CTxDestination address, grouping)
+        {
+            Array addressInfo;
+            addressInfo.push_back(address);
+            addressInfo.push_back(ValueFromAmount(balances[address]));
+            CRITICAL_BLOCK(pwalletMain->cs_wallet)
+            {
+                map<string, string>::iterator mi = pwalletMain->mapAddressBook.find(address);
+                if (mi != pwalletMain->mapAddressBook.end())
+                    addressInfo.push_back(mi->second);
+            }
+            jsonGrouping.push_back(addressInfo);
+        }
+        jsonGroupings.push_back(jsonGrouping);
+    }
+    return jsonGroupings;
+}
 
 Value getreceivedbyaddress(const Array& params, bool fHelp)
 {
@@ -744,7 +822,7 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
     string strAddress = params[0].get_str();
     CScript scriptPubKey;
     if (!scriptPubKey.SetBitcoinAddress(strAddress))
-        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
     if (!IsMine(*pwalletMain,scriptPubKey))
         return (double)0.0;
 
@@ -1042,7 +1120,7 @@ Value sendmany(const Array& params, bool fHelp)
 
         CScript scriptPubKey;
         if (!scriptPubKey.SetBitcoinAddress(strAddress))
-            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid namecoin address:")+strAddress);
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Namecoin address:")+strAddress);
         int64 nAmount = AmountFromValue(s.value_); 
         totalAmount += nAmount;
 
@@ -2184,7 +2262,7 @@ Value importprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
         throw runtime_error(
-            "importprivkey <bitcoinprivkey> [label] [rescan=true]\n"
+            "importprivkey <namecoinprivkey> [label] [rescan=true]\n"
             "Adds a private key (as returned by dumpprivkey) to your wallet."
             + HelpRequiringPassphrase());
 
@@ -2233,8 +2311,8 @@ Value dumpprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-            "dumpprivkey <bitcoinaddress>\n"
-            "Reveals the private key corresponding to <bitcoinaddress>."
+            "dumpprivkey <namecoinaddress>\n"
+            "Reveals the private key corresponding to <namecoinaddress>."
             + HelpRequiringPassphrase());
 
     string strAddress = params[0].get_str();
@@ -2262,6 +2340,158 @@ Value dumpprivkey(const Array& params, bool fHelp)
     bool fCompressed;
     CSecret32 secret = key.GetSecret(fCompressed);
     return CBitcoinSecret(secret, fCompressed).ToString();
+}
+
+Value signmessage(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 2)
+        throw runtime_error(
+            "signmessage <namecoinaddress> <message>\n"
+            "Sign a message with the private key of an address"
+            + HelpRequiringPassphrase());
+
+    EnsureWalletIsUnlocked();
+
+    string strAddress = params[0].get_str();
+    string strMessage = params[1].get_str();
+    
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+
+    CPrivKey privKey;
+    CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
+    {
+        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
+        if (mi == mapPubKeys.end())
+            throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
+
+        if (!pwalletMain->GetPrivKey(mi->second, privKey))
+            throw JSONRPCError(RPC_WALLET_ERROR, "Private key not available");
+    }
+
+    CDataStream ss(SER_GETHASH, 0);
+    ss << strMessageMagic;
+    ss << strMessage;
+
+    std::vector<unsigned char> vchSig;
+    CKey key;
+    key.SetPrivKey(privKey);
+    if (!key.SignCompact(Hash(ss.begin(), ss.end()), vchSig)) 
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
+    
+    return EncodeBase64(&vchSig[0], vchSig.size());
+}
+
+Value verifymessage(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 3)
+        throw runtime_error(
+            "verifymessage <namecoinaddress> <signature> <message>\n"
+            "Verify a signed message");
+
+    string strAddress  = params[0].get_str();
+    string strSign     = params[1].get_str();
+    string strMessage  = params[2].get_str();
+
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
+
+    bool fInvalid = false;
+    vector<unsigned char> vchSig = DecodeBase64(strSign.c_str(), &fInvalid);
+
+    if (fInvalid)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Malformed base64 encoding");
+
+    CDataStream ss(SER_GETHASH, 0);
+    ss << strMessageMagic;
+    ss << strMessage;
+
+    CKey key;
+    if (!key.SetCompactSignature(Hash(ss.begin(), ss.end()), vchSig)) 
+        return false;
+
+    return Hash160(key.GetPubKey()) == hash160;
+}
+
+Value listunspent(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() > 3)
+        throw runtime_error(
+            "listunspent [minconf=1] [maxconf=9999999]  [\"address\",...]\n"
+            "Returns array of unspent transaction outputs\n"
+            "with between minconf and maxconf (inclusive) confirmations.\n"
+            "Optionally filtered to only include txouts paid to specified addresses.\n"
+            "Results are an array of Objects, each of which has:\n"
+            "{txid, vout, scriptPubKey, amount, confirmations}");
+
+    RPCTypeCheck(params, boost::assign::list_of(int_type)(int_type)(array_type));
+
+    int nMinDepth = 1;
+    if (params.size() > 0)
+        nMinDepth = params[0].get_int();
+
+    int nMaxDepth = 9999999;
+    if (params.size() > 1)
+        nMaxDepth = params[1].get_int();
+
+    set<string> setAddress;
+    if (params.size() > 2)
+    {
+        Array inputs = params[2].get_array();
+        BOOST_FOREACH(Value& input, inputs)
+        {
+            string address = input.get_str();
+            if (!IsValidBitcoinAddress(address))
+                throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Namecoin address: ")+input.get_str());
+            if (setAddress.count(address))
+                throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, duplicated address: ")+input.get_str());
+           setAddress.insert(address);
+        }
+    }
+
+    Array results;
+    vector<COutput> vecOutputs;
+    pwalletMain->AvailableCoins(vecOutputs, false);
+    BOOST_FOREACH(const COutput& out, vecOutputs)
+    {
+        if (out.nDepth < nMinDepth || out.nDepth > nMaxDepth)
+            continue;
+
+        if (setAddress.size())
+        {
+            string address;
+            if (!ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
+                continue;
+
+            if (!setAddress.count(address))
+                continue;
+        }
+
+        int64 nValue = out.tx->vout[out.i].nValue;
+        const CScript& pk = out.tx->vout[out.i].scriptPubKey;
+        Object entry;
+        entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
+        entry.push_back(Pair("vout", out.i));
+        entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
+        /*if (pk.IsPayToScriptHash())
+        {
+            string address;
+            if (ExtractDestination(pk, address))
+            {
+                const CScriptID& hash = boost::get<const CScriptID&>(address);
+                CScript redeemScript;
+                if (pwalletMain->GetCScript(hash, redeemScript))
+                    entry.push_back(Pair("redeemScript", HexStr(redeemScript.begin(), redeemScript.end())));
+            }
+        }*/
+        entry.push_back(Pair("amount",ValueFromAmount(nValue)));
+        entry.push_back(Pair("confirmations",out.nDepth));
+        results.push_back(entry);
+    }
+
+    return results;
 }
 
 
@@ -2327,6 +2557,10 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("setmininput",           &setmininput),
     make_pair("dumpprivkey",           &dumpprivkey),
     make_pair("importprivkey",         &importprivkey),
+    make_pair("signmessage",           &signmessage),
+    make_pair("verifymessage",         &verifymessage),
+    make_pair("listunspent",           &listunspent),
+    make_pair("listaddressgroupings",  &listaddressgroupings),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -3000,8 +3234,11 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
             throw runtime_error("type mismatch");
         params[1] = v.get_obj();
     }
-    if (strMethod == "sendmany"                && n > 2) ConvertTo<boost::int64_t>(params[2]);
-    if (strMethod == "importprivkey"          && n > 2) ConvertTo<bool>(params[2]); 
+    if (strMethod == "sendmany"               && n > 2) ConvertTo<boost::int64_t>(params[2]);
+    if (strMethod == "importprivkey"          && n > 2) ConvertTo<bool>(params[2]);
+    if (strMethod == "listunspent"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "listunspent"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "listunspent"            && n > 2) ConvertTo<Array>(params[2]);
 }
 
 int CommandLineRPC(int argc, char *argv[])

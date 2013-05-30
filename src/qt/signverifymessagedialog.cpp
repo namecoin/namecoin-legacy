@@ -14,8 +14,6 @@
 #include <string>
 #include <vector>
 
-const static std::string strMessageMagic = "Bitcoin Signed Message:\n";
-
 SignVerifyMessageDialog::SignVerifyMessageDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SignVerifyMessageDialog),
