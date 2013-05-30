@@ -2474,7 +2474,7 @@ Address: %4
         <translation>重置所有訊息驗證欄位</translation>
     </message>
     <message>
-        <location filename="../signverifymessagedialog.cpp" line="+28"/>
+        <location filename="../signverifymessagedialog.cpp" line="+26"/>
         <location line="+3"/>
         <source>Enter a Namecoin address (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
         <translation>輸入位元幣位址 (比如說 N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</translation>

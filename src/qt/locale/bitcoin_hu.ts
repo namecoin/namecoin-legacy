@@ -2053,7 +2053,7 @@ Cím: %4
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../signverifymessagedialog.cpp" line="+28"/>
+        <location filename="../signverifymessagedialog.cpp" line="+26"/>
         <location line="+3"/>
         <source>Enter a Namecoin address (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)</source>
         <translation>Adj meg egy Namecoin-címet (pl.: N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9 )</translation>
