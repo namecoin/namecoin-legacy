@@ -18,7 +18,7 @@ LIBPATHS= \
 	-L../libs/db-4.7.25.NC/build_unix \
 	-L../libs/boost_1_50_0/stage/lib
 
-LIBBOOST_SUFFIX=-mgw46-mt-1_50
+LIBBOOST_SUFFIX=
 
 LIBS= \
  -Wl,-Bstatic \
@@ -40,6 +40,7 @@ namecoin: USE_UPNP:=1
 		# MinGW-specific
 		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
 		LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
+		LIBBOOST_SUFFIX=-mgw46-mt-1_50
 	else
 		# Linux-specific
 		LIBS+= \
