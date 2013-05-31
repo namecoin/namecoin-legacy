@@ -1111,6 +1111,33 @@ bool IsMine(const CKeyStore& keystore, const std::string& address)
     }
 }
 
+// importaddress-friendly version of IsMine (ignores watch-only addresses)
+bool IsSpendable(const CKeyStore &keystore, const CScript& scriptPubKey)
+{
+    CRITICAL_BLOCK(keystore.cs_mapKeys)
+    {
+        if (!IsMine(keystore, scriptPubKey))
+            return false;
+        vector<unsigned char> vchPubKey;
+        if (!ExtractPubKey(scriptPubKey, &keystore, vchPubKey))
+            return false;
+        return !vchPubKey.empty();
+    }
+}
+
+// importaddress-friendly version of IsMine (ignores watch-only addresses)
+bool IsSpendable(const CKeyStore& keystore, const std::string& address)
+{
+    CRITICAL_BLOCK(keystore.cs_mapKeys)
+    {
+        uint160 hash160;
+        AddressToHash160(address, hash160);
+        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
+        if (mi == mapPubKeys.end())
+            return false;
+        return !mi->second.empty() && keystore.HaveKey(mi->second);
+    }
+}
 
 bool ExtractPubKey(const CScript& scriptPubKey, const CKeyStore* keystore, vector<unsigned char>& vchPubKeyRet)
 {

@@ -81,8 +81,12 @@ public:
 
     // Adds a key to the store, and saves it to disk.
     bool AddKey(const CKey& key);
+    // Adds a watching address to the store, saves it to disk. 
+    bool AddAddress(const uint160& hash160);
     // Adds a key to the store, without saving it to disk (used by LoadWallet)
     bool LoadKey(const CKey& key) { return CKeyStore::AddKey(key); }
+    // Adds a watching address to the store, without saving it to disk (used by LoadWallet) 
+    bool LoadAddress(const uint160& hash160) { return CKeyStore::AddAddress(hash160); }
     void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn);
     bool AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate = false);
@@ -118,6 +122,13 @@ public:
     {
         return ::IsMine(*this, txout.scriptPubKey);
     }
+
+    // importaddress-friendly version of IsMine (ignores watch-only addresses)
+    bool IsSpendable(const CTxOut& txout) const
+    {
+        return ::IsSpendable(*this, txout.scriptPubKey);
+    }
+
     int64 GetCredit(const CTxOut& txout) const
     {
         if (!MoneyRange(txout.nValue))

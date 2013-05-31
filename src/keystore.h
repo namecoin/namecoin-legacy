@@ -8,7 +8,7 @@
 #include <boost/signals2/last_value.hpp>
 #include "crypter.h"
 
-// Currently CPrivKey is just std::vector<unsigned char>
+// Currently CPrivKey is just std::vector<unsigned char> (with secure_allocator)
 typedef std::map<std::vector<unsigned char>, CPrivKey> KeyMap;
 typedef std::map<std::vector<unsigned char>, std::vector<unsigned char> > CryptedKeyMap;
 
@@ -42,9 +42,11 @@ public:
     }
 
     mutable CCriticalSection cs_mapKeys;
-    
+
     virtual bool AddKey(const CKey& key);
     virtual bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+
+    virtual bool AddAddress(const uint160& hash160);
 
     virtual bool HaveKey(const std::vector<unsigned char> &vchPubKey) const
     {

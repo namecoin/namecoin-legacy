@@ -2307,6 +2307,47 @@ Value importprivkey(const Array& params, bool fHelp)
     return Value::null;
 }
 
+// Based on Codeshark's pull reqeust: https://github.com/bitcoin/bitcoin/pull/2121/files
+Value importaddress(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 3)
+        throw runtime_error(
+            "importaddress <namecoinaddress> [label] [rescan=true]\n"
+            "Adds an address that can be watched as if it were in your wallet but cannot be used to spend.");
+
+    string strAddress = params[0].get_str();
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+
+    string strLabel = "";
+    if (params.size() > 1)
+        strLabel = params[1].get_str();
+
+    // Whether to perform rescan after import
+    bool fRescan = true;
+    if (params.size() > 2)
+        fRescan = params[2].get_bool();
+
+    CRITICAL_BLOCK(cs_main)
+    CRITICAL_BLOCK(pwalletMain->cs_wallet)
+    {
+        if (!pwalletMain->AddAddress(hash160))
+            throw JSONRPCError(RPC_WALLET_ERROR, "Error adding address to wallet");
+
+        pwalletMain->MarkDirty();
+        pwalletMain->SetAddressBookName(strAddress, strLabel);
+
+        if (fRescan)
+        {
+            pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
+            pwalletMain->ReacceptWalletTransactions();
+        }
+    }
+
+    return Value::null;
+}
+
 Value dumpprivkey(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -2557,6 +2598,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("setmininput",           &setmininput),
     make_pair("dumpprivkey",           &dumpprivkey),
     make_pair("importprivkey",         &importprivkey),
+    make_pair("importaddress",         &importaddress),
     make_pair("signmessage",           &signmessage),
     make_pair("verifymessage",         &verifymessage),
     make_pair("listunspent",           &listunspent),
@@ -3236,6 +3278,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     }
     if (strMethod == "sendmany"               && n > 2) ConvertTo<boost::int64_t>(params[2]);
     if (strMethod == "importprivkey"          && n > 2) ConvertTo<bool>(params[2]);
+    if (strMethod == "importaddress"          && n > 2) ConvertTo<bool>(params[2]);
     if (strMethod == "listunspent"            && n > 0) ConvertTo<boost::int64_t>(params[0]);
     if (strMethod == "listunspent"            && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "listunspent"            && n > 2) ConvertTo<Array>(params[2]);

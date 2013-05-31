@@ -57,6 +57,12 @@ public:
         return Write(std::make_pair(std::string("key"), vchPubKey), vchPrivKey, false);
     }
 
+    bool WriteAddress(const uint160& hash160)
+    {
+        nWalletDBUpdated++;
+        return Write(std::make_pair(std::string("address"), hash160), hash160, false);
+    }
+
     bool WriteCryptedKey(const std::vector<unsigned char>& vchPubKey, const std::vector<unsigned char>& vchCryptedSecret, bool fEraseUnencryptedKey = true)
     {
         nWalletDBUpdated++;

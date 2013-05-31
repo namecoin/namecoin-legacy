@@ -47,6 +47,23 @@ bool CKeyStore::AddKey(const CKey& key)
     return true;
 }
 
+// Based on Codeshark's pull reqeust: https://github.com/bitcoin/bitcoin/pull/2121/files
+bool CKeyStore::AddAddress(const uint160& hash160)
+{
+    std::vector<unsigned char> vchEmpty;
+
+    // The key is watch-only. We don't have the secret. 
+    CRITICAL_BLOCK(cs_mapKeys)
+    {
+        mapPubKeys[hash160] = vchEmpty;
+        if (!IsCrypted())
+            mapKeys[vchEmpty] = CPrivKey();
+        else
+            mapCryptedKeys[vchEmpty] = vchEmpty;
+    }
+    return true;
+}
+
 bool CKeyStore::AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret)
 {
     CRITICAL_BLOCK(cs_mapKeys)
@@ -66,8 +83,21 @@ bool CKeyStore::SetCrypted()
     {
         if (fUseCrypto)
             return true;
+
         if (!mapKeys.empty())
-            return false;
+        {
+            // importaddress: Imported (watch-only) addresses work equally for both encrypted and non-encrypted wallet,
+            // so if the only key is the dummy watch-only key, we just move it to the crypted storage
+            std::vector<unsigned char> vchEmpty;
+            if (mapKeys.size() == 1 && mapKeys.begin()->first == vchEmpty && mapKeys.begin()->second == CPrivKey())
+            {
+                mapKeys.erase(vchEmpty);
+                mapCryptedKeys[vchEmpty] = vchEmpty;
+            }
+            else
+                return false;
+        }
+
         fUseCrypto = true;
         return true;
     }
@@ -134,8 +164,13 @@ bool CKeyStore::EncryptKeys(CKeyingMaterial& vMasterKeyIn)
         {
             const std::vector<unsigned char> &vchPubKey = mKey.first;
             std::vector<unsigned char> vchCryptedSecret;
-            if (!EncryptSecret(vMasterKeyIn, mKey.second, Hash(vchPubKey.begin(), vchPubKey.end()), vchCryptedSecret))
-                return false;
+
+            // Skip encryption for watch-only addresses (importaddress)
+            if (!vchPubKey.empty())
+            {
+                if (!EncryptSecret(vMasterKeyIn, mKey.second, Hash(vchPubKey.begin(), vchPubKey.end()), vchCryptedSecret))
+                    return false;
+            }
             if (!AddCryptedKey(vchPubKey, vchCryptedSecret))
                 return false;
         }

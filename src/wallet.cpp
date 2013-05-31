@@ -27,6 +27,16 @@ bool CWallet::AddKey(const CKey& key)
     return true;
 }
 
+// Based on Codeshark's pull reqeust: https://github.com/bitcoin/bitcoin/pull/2121/files
+bool CWallet::AddAddress(const uint160& hash160)
+{
+    if (!CKeyStore::AddAddress(hash160))
+        return false;
+    if (!fFileBacked)
+        return true;
+    return CWalletDB(strWalletFile).WriteAddress(hash160);
+}
+
 bool CWallet::AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const vector<unsigned char> &vchCryptedSecret)
 {
     if (!CKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret))
@@ -700,7 +710,7 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
 
             for (int i = 0; i < pcoin->vout.size(); i++)
             {
-                if (pcoin->IsSpent(i) || !IsMine(pcoin->vout[i]))
+                if (pcoin->IsSpent(i) || !IsSpendable(pcoin->vout[i]))
                     continue;
 
                 int64 n = pcoin->vout[i].nValue;

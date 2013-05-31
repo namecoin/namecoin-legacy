@@ -262,6 +262,19 @@ bool CWalletDB::LoadWallet(CWallet* pwallet)
                 ssKey >> nIndex;
                 pwallet->setKeyPool.insert(nIndex);
             }
+            else if (strType == "address") 
+            { 
+                // Based on Codeshark's pull reqeust: https://github.com/bitcoin/bitcoin/pull/2121/files
+
+                uint160 hash160;
+                ssKey >> hash160;
+
+                if (!pwallet->LoadAddress(hash160))
+                {
+                    printf("Error reading wallet database: LoadAddress failed\n");
+                    return false;
+                }
+            }
             else if (strType == "version")
             {
                 ssValue >> nFileVersion;
