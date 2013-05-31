@@ -38,6 +38,9 @@ Q_IMPORT_PLUGIN(qkrcodecs)
 Q_IMPORT_PLUGIN(qtaccessiblewidgets)
 #endif
 
+// Declare meta types used for QMetaObject::invokeMethod
+Q_DECLARE_METATYPE(bool*)
+
 // Need a global reference for the notifications to find the GUI
 static BitcoinGUI *guiref;
 static QSplashScreen *splashref;
@@ -146,6 +149,8 @@ int main(int argc, char *argv[])
             return 0;
         }
     }
+    // Register meta types used for QMetaObject::invokeMethod
+    qRegisterMetaType< bool* >();
 
     // Do this early as we don't want to bother initializing if we are just calling IPC
     // ... but do it after creating app, so QCoreApplication::arguments is initialized:
