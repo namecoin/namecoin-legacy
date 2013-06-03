@@ -11,10 +11,9 @@
 #include <boost/signals2/signal.hpp>
 #include <boost/signals2/last_value.hpp>
 
-#define LOCK(x) CRITICAL_BLOCK(x)
+#define LOCK(cs) CCriticalBlock criticalblock(cs)
 #define LOCK2(cs1,cs2) CCriticalBlock criticalblock1(cs1),criticalblock2(cs2) 
 
-class CBasicKeyStore;
 class CWallet;
 class uint256;
 
@@ -141,8 +140,8 @@ public:
     {
         Set(pszAddress);
     }
-    
-    bool IsValid() const { return IsValidBitcoinAddress(addr.c_str()); }
+
+    bool IsValid() const { return IsValidBitcoinAddress(addr); }
     std::string Get() const { return addr; }
     std::string ToString() const  { return addr; }    
     bool IsScript() const { return false; }

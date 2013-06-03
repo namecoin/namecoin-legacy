@@ -25,7 +25,7 @@ typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
 extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
-template<typename T> void ConvertTo(Value& value);
+template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 
 static const int NAMECOIN_TX_VERSION = 0x7100;
 static const int64 MIN_AMOUNT = CENT;

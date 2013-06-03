@@ -1207,6 +1207,41 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 }
 
 
+bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransaction& txTo, unsigned int nIn, int nHashType)
+{
+    assert(nIn < txTo.vin.size());
+    CTxIn& txin = txTo.vin[nIn];
+
+    // Leave out the signature from the hash, since a signature can't sign itself.
+    // The checksig op will also drop the signatures from its hash.
+    uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
+
+    //txnouttype whichType;
+    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig /* , whichType */ ))
+        return false;
+
+    /*if (whichType == TX_SCRIPTHASH)
+    {
+        // Solver returns the subscript that need to be evaluated;
+        // the final scriptSig is the signatures from that
+        // and then the serialized subscript:
+        CScript subscript = txin.scriptSig;
+
+        // Recompute txn hash using subscript in place of scriptPubKey:
+        uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
+
+        txnouttype subType;
+        bool fSolved =
+            Solver(keystore, subscript, hash2, nHashType, txin.scriptSig, subType) && subType != TX_SCRIPTHASH;
+        // Append serialized subscript whether or not it is completely signed:
+        txin.scriptSig << static_cast<valtype>(subscript);
+        if (!fSolved) return false;
+    }*/
+
+    // Test solution
+    return VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn /* , true, true */ , 0);
+}
+
 bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
 {
     assert(nIn < txTo.vin.size());
@@ -1256,4 +1291,72 @@ bool ExtractDestination(const CScript& scriptPubKey, std::string& addressRet)
         return false;
     addressRet = Hash160ToAddress(h);
     return true;
+}
+
+static CScript PushAll(const vector<valtype>& values)
+{
+    CScript result;
+    BOOST_FOREACH(const valtype& v, values)
+        result << v;
+    return result;
+}
+
+static CScript CombineSignatures(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn,
+                                 /*const txnouttype txType, const vector<valtype>& vSolutions,*/
+                                 vector<valtype>& sigs1, vector<valtype>& sigs2)
+{
+    /*switch (txType)
+    {
+    case TX_NONSTANDARD:
+        // Don't know anything about this, assume bigger one is correct:
+        if (sigs1.size() >= sigs2.size())
+            return PushAll(sigs1);
+        return PushAll(sigs2);
+    case TX_PUBKEY:
+    case TX_PUBKEYHASH:
+    */
+        // Signatures are bigger than placeholders or empty scripts:
+        if (sigs1.empty() || sigs1[0].empty())
+            return PushAll(sigs2);
+        return PushAll(sigs1);
+    /*case TX_SCRIPTHASH:
+        if (sigs1.empty() || sigs1.back().empty())
+            return PushAll(sigs2);
+        else if (sigs2.empty() || sigs2.back().empty())
+            return PushAll(sigs1);
+        else
+        {
+            // Recur to combine:
+            valtype spk = sigs1.back();
+            CScript pubKey2(spk.begin(), spk.end());
+
+            txnouttype txType2;
+            vector<vector<unsigned char> > vSolutions2;
+            Solver(pubKey2, txType2, vSolutions2);
+            sigs1.pop_back();
+            sigs2.pop_back();
+            CScript result = CombineSignatures(pubKey2, txTo, nIn, txType2, vSolutions2, sigs1, sigs2);
+            result << spk;
+            return result;
+        }
+    case TX_MULTISIG:
+        return CombineMultisig(scriptPubKey, txTo, nIn, vSolutions, sigs1, sigs2);
+    }
+
+    return CScript();*/
+}
+
+CScript CombineSignatures(CScript scriptPubKey, const CTransaction& txTo, unsigned int nIn,
+                          const CScript& scriptSig1, const CScript& scriptSig2)
+{
+    //txnouttype txType;
+    //vector<vector<unsigned char> > vSolutions;
+    //Solver(scriptPubKey, txType, vSolutions);
+
+    vector<valtype> stack1;
+    EvalScript(stack1, scriptSig1, CTransaction(), 0 /*, SCRIPT_VERIFY_STRICTENC */ , 0);
+    vector<valtype> stack2;
+    EvalScript(stack2, scriptSig2, CTransaction(), 0 /* , SCRIPT_VERIFY_STRICTENC */ , 0);
+
+    return CombineSignatures(scriptPubKey, txTo, nIn /*, txType, vSolutions */ , stack1, stack2);
 }
