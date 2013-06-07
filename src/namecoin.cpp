@@ -1239,6 +1239,8 @@ Value name_new(const Array& params, bool fHelp)
         mapMyNames[vchName] = wtx.GetHash();
     }
 
+    printf("name_new : name=%s, rand=%s, tx=%s\n", stringFromVch(vchName).c_str(), HexStr(vchRand).c_str(), wtx.GetHash().GetHex().c_str());
+
     vector<Value> res;
     res.push_back(wtx.GetHash().GetHex());
     res.push_back(HexStr(vchRand));
