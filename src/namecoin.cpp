@@ -91,7 +91,7 @@ public:
         pchMessageStart[3] = 0xfe;
     }
     virtual bool IsMine(const CTransaction& tx);
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout);
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false);
     virtual int GetOurChainID()
     {
         return 0x0001;
@@ -1720,7 +1720,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     return false;
 }
 
-bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
+bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new /*= false*/)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return false;
@@ -1731,6 +1731,9 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
     int nOut;
  
     if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
+        return false;
+
+    if (ignore_name_new && op == OP_NAME_NEW)
         return false;
 
     if (IsMyName(tx, txout))

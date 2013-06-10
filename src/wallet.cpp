@@ -68,7 +68,7 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx)
                 CWalletTx& wtx = (*mi).second;
                 if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
                 {
-                    printf("WalletUpdateSpent found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+                    printf("WalletUpdateSpent found spent coin %s nmc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
                     wtx.MarkSpent(txin.prevout.n);
                     wtx.WriteToDisk();
                     //vWalletUpdated.push_back(txin.prevout.hash);
@@ -231,6 +231,25 @@ int64 CWallet::GetDebit(const CTxIn &txin) const
     return 0;
 }
 
+int64 CWallet::GetDebitInclName(const CTxIn &txin) const
+{
+    CRITICAL_BLOCK(cs_mapWallet)
+    {
+        map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+        if (mi != mapWallet.end())
+        {
+            const CWalletTx& prev = (*mi).second;
+            if (txin.prevout.n < prev.vout.size())
+            {
+                const CTxOut &txout = prev.vout[txin.prevout.n];
+                if (IsMine(txout) || hooks->IsMine(prev, txout))
+                    return txout.nValue;
+            }
+        }
+    }
+    return 0;
+}
+
 int64 CWalletTx::GetTxTime() const
 {
     if (!fTimeReceivedIsTxTime && hashBlock != 0)
@@ -306,7 +325,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     }
 
     // Compute fee:
-    int64 nDebit = GetDebit();
+    int64 nDebit = GetDebitInclName();
     if (nDebit > 0) // debit>0 means we signed/sent this transaction
     {
         int64 nValueOut = GetValueOut();
@@ -340,10 +359,9 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         if (nDebit > 0)
             listSent.push_back(make_pair(address, txout.nValue));
 
-        if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout))
+        if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout, true))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
-
 }
 
 void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, 
@@ -506,7 +524,7 @@ void CWallet::ReacceptWalletTransactions()
                 }
                 if (fUpdated)
                 {
-                    printf("ReacceptWalletTransactions found spent coin %sbc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+                    printf("ReacceptWalletTransactions found spent coin %s nmc %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
                     wtx.MarkDirty();
                     wtx.WriteToDisk();
                 }
@@ -617,7 +635,7 @@ int64 CWallet::GetBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsConfirmed())
                 continue;
             nTotal += pcoin->GetAvailableCredit();
         }
@@ -637,7 +655,7 @@ int64 CWallet::GetUnconfirmedBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsConfirmed())
                 nTotal += pcoin->GetAvailableCredit();
         }
     }
@@ -698,7 +716,7 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
 
        BOOST_FOREACH(const CWalletTx* pcoin, vCoins)
        {
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsConfirmed())
                 continue;
 
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
@@ -1272,7 +1290,7 @@ std::map<std::string, int64> CWallet::GetAddressBalances()
         {
             CWalletTx *pcoin = &walletEntry.second;
 
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsConfirmed())
                 continue;
 
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)

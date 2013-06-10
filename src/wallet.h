@@ -118,6 +118,7 @@ public:
 
     bool IsMine(const CTxIn& txin) const;
     int64 GetDebit(const CTxIn& txin) const;
+    int64 GetDebitInclName(const CTxIn& txin) const;
     bool IsMine(const CTxOut& txout) const
     {
         return ::IsMine(*this, txout.scriptPubKey);
@@ -173,6 +174,17 @@ public:
             nDebit += GetDebit(txin);
             if (!MoneyRange(nDebit))
                 throw std::runtime_error("CWallet::GetDebit() : value out of range");
+        }
+        return nDebit;
+    }
+    int64 GetDebitInclName(const CTransaction& tx) const
+    {
+        int64 nDebit = 0;
+        BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        {
+            nDebit += GetDebitInclName(txin);
+            if (!MoneyRange(nDebit))
+                throw std::runtime_error("CWallet::GetDebitInclName() : value out of range");
         }
         return nDebit;
     }
@@ -305,11 +317,11 @@ public:
     std::vector<char> vfSpent;
 
     // memory only
-    mutable char fDebitCached;
+    mutable char fDebitCached, fDebitInclNameCached;
     mutable char fCreditCached;
     mutable char fAvailableCreditCached;
     mutable char fChangeCached;
-    mutable int64 nDebitCached;
+    mutable int64 nDebitCached, nDebitInclNameCached;
     mutable int64 nCreditCached;
     mutable int64 nAvailableCreditCached;
     mutable int64 nChangeCached;
@@ -351,10 +363,12 @@ public:
         strFromAccount.clear();
         vfSpent.clear();
         fDebitCached = false;
+        fDebitInclNameCached = false;
         fCreditCached = false;
         fAvailableCreditCached = false;
         fChangeCached = false;
         nDebitCached = 0;
+        nDebitInclNameCached = 0;
         nCreditCached = 0;
         nAvailableCreditCached = 0;
         nChangeCached = 0;
@@ -434,6 +448,7 @@ public:
         fCreditCached = false;
         fAvailableCreditCached = false;
         fDebitCached = false;
+        fDebitInclNameCached = false;
         fChangeCached = false;
     }
 
@@ -467,6 +482,17 @@ public:
         nDebitCached = pwallet->GetDebit(*this);
         fDebitCached = true;
         return nDebitCached;
+    }
+
+    int64 GetDebitInclName() const
+    {
+        if (vin.empty())
+            return 0;
+        if (fDebitInclNameCached)
+            return nDebitInclNameCached;
+        nDebitInclNameCached = pwallet->GetDebitInclName(*this);
+        fDebitInclNameCached = true;
+        return nDebitInclNameCached;
     }
 
     int64 GetCredit(bool fUseCache=true) const
