@@ -1095,7 +1095,7 @@ void ThreadMapPort2(void* parg)
         char intClient[16];
         char intPort[6];
 
-#ifndef __WXMSW__
+#if !defined(__WXMSW__) && !defined(MAC_OSX)
         r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
 	                        port, port, lanaddr, 0, "TCP", 0);
 #else

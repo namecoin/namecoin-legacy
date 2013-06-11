@@ -36,7 +36,7 @@ public:
     /* These are for display and wallet management purposes.  Not for use to decide
      * whether to spend a coin. */
     virtual bool IsMine(const CTransaction& tx) = 0;
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout) = 0;
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false) = 0;
     virtual int GetOurChainID() = 0;
 
     virtual int GetAuxPowStartBlock() = 0;

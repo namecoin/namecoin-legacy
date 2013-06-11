@@ -15,7 +15,7 @@
 
 #ifdef __WXMSW__
 #include <io.h> /* for _commit */
-#else
+#elif !defined(MAC_OSX)
 #include <sys/prctl.h>
 #endif
 

@@ -91,7 +91,7 @@ public:
         pchMessageStart[3] = 0xfe;
     }
     virtual bool IsMine(const CTransaction& tx);
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout);
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false);
     virtual int GetOurChainID()
     {
         return 0x0001;
@@ -1722,7 +1722,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     return false;
 }
 
-bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
+bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new /*= false*/)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return false;
@@ -1733,6 +1733,9 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
     int nOut;
  
     if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
+        return false;
+
+    if (ignore_name_new && op == OP_NAME_NEW)
         return false;
 
     if (IsMyName(tx, txout))
@@ -1910,7 +1913,12 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
                 // Check that no other pending txs on this name are already in the block to be mined
                 set<uint256>& setPending = mapNamePending[vvchArgs[0]];
+#ifdef MAC_OSX
+                // The STL implementation that ships with the Mac llvm compiler doesn't like reference types in pairs.
+                BOOST_FOREACH(const PAIRTYPE(uint256, const CTxIndex)& s, mapTestPool)
+#else
                 BOOST_FOREACH(const PAIRTYPE(uint256, const CTxIndex&)& s, mapTestPool)
+#endif
                 {
                     if (setPending.count(s.first))
                     {

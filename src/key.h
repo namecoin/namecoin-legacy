@@ -51,8 +51,6 @@ typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 // when encrypting the wallet.
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
-enum { CSECRET_SIZE = 279 };
-
 
 class CKey
 {

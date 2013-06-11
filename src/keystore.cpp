@@ -77,6 +77,36 @@ bool CKeyStore::AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const
     return true;
 }
 
+bool CKeyStore::GetPrivKey(const std::vector<unsigned char> &vchPubKey, CPrivKey& keyOut) const
+{
+    CRITICAL_BLOCK(cs_mapKeys)
+    {
+        if (!IsCrypted())
+        {
+            std::map<std::vector<unsigned char>, CPrivKey>::const_iterator mi = mapKeys.find(vchPubKey);
+            if (mi != mapKeys.end())
+            {
+                keyOut = (*mi).second;
+                return true;
+            }
+        }
+        else
+        {
+            CryptedKeyMap::const_iterator mi = mapCryptedKeys.find(vchPubKey);
+            if (mi != mapCryptedKeys.end())
+            {
+                const std::vector<unsigned char> &vchCryptedSecret = (*mi).second;
+                if (!DecryptSecret(vMasterKey, vchCryptedSecret, Hash(vchPubKey.begin(), vchPubKey.end()), keyOut))
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 bool CKeyStore::SetCrypted()
 {
     CRITICAL_BLOCK(cs_mapKeys)
@@ -131,11 +161,6 @@ bool CKeyStore::Unlock(const CKeyingMaterial& vMasterKeyIn)
             CSecret vchSecret;
             if (!DecryptSecret(vMasterKeyIn, vchCryptedSecret, Hash(vchPubKey.begin(), vchPubKey.end()), vchSecret))
                 return false;
-            if (vchSecret.size() != CSECRET_SIZE)
-            {
-                printf("CKeyStore::Unlock: bad private key size encountered: %d\n", (int)vchSecret.size());
-                return false;
-            }
             /*CKey key;
             key.SetPubKey(vchPubKey);
             key.SetSecret(vchSecret);

@@ -59,35 +59,7 @@ public:
         }
     }
 
-    virtual bool GetPrivKey(const std::vector<unsigned char> &vchPubKey, CPrivKey& keyOut) const
-    {
-        CRITICAL_BLOCK(cs_mapKeys)
-        {
-            if (!IsCrypted())
-            {
-                std::map<std::vector<unsigned char>, CPrivKey>::const_iterator mi = mapKeys.find(vchPubKey);
-                if (mi != mapKeys.end())
-                {
-                    keyOut = (*mi).second;
-                    return true;
-                }
-            }
-            else
-            {
-                CryptedKeyMap::const_iterator mi = mapCryptedKeys.find(vchPubKey);
-                if (mi != mapCryptedKeys.end())
-                {
-                    const std::vector<unsigned char> &vchCryptedSecret = (*mi).second;
-                    if (!DecryptSecret(vMasterKey, vchCryptedSecret, Hash(vchPubKey.begin(), vchPubKey.end()), keyOut))
-                        return false;
-                    if (keyOut.size() != CSECRET_SIZE)
-                        return false;
-                    return true;
-                }
-            }
-            return false;
-        }
-    }
+    virtual bool GetPrivKey(const std::vector<unsigned char> &vchPubKey, CPrivKey& keyOut) const;
 
     std::vector<unsigned char> GenerateNewKey();
     

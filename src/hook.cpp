@@ -44,7 +44,7 @@ public:
     {
         return false;
     }
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout)
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false)
     {
         return false;
     }
