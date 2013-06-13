@@ -33,7 +33,6 @@ map<COutPoint, CInPoint> mapNextTx;
 map<uint256, CBlockIndex*> mapBlockIndex;
 uint256 hashGenesisBlock("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 32);
-int nTotalBlocksEstimate = 112000; // Conservative estimate of total nr of blocks on main chain
 const int nInitialBlockThreshold = 120; // Regard blocks up until N-threshold as "initial download"
 CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
@@ -809,8 +808,7 @@ int GetTotalBlocksEstimate()
 // Return maximum amount of blocks that other nodes claim to have
 int GetNumBlocksOfPeers()
 {
-    return std::max(cPeerBlockCounts.median(), nTotalBlocksEstimate);
-    //return std::max(cPeerBlockCounts.median(), Checkpoints::GetTotalBlocksEstimate());
+    return std::max(cPeerBlockCounts.median(), GetTotalBlocksEstimate());
 }
 
 bool IsInitialBlockDownload()
@@ -1724,7 +1722,6 @@ bool LoadBlockIndex(bool fAllowNew)
     if (fTestNet)
     {
         hashGenesisBlock = uint256("0x00000007199508e34a9ff81e6ec0c477a4cccff2a4767a8eee39c11db367b008");
-        nTotalBlocksEstimate = 23000;
         bnProofOfWorkLimit = CBigNum(~uint256(0) >> 28);
         pchMessageStart[0] = 0xfa;
         pchMessageStart[1] = 0xbf;
