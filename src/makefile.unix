@@ -50,6 +50,7 @@ BASE_OBJS= \
     obj/auxpow.o \
     obj/util.o \
     obj/script.o \
+    obj/key.o \
     obj/db.o \
     obj/net.o \
     obj/irc.o \

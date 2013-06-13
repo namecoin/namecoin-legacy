@@ -36,6 +36,7 @@ HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h
 OBJS= \
     obj/util.o \
     obj/script.o \
+    obj/key.o \
     obj/db.o \
     obj/net.o \
     obj/irc.o \
