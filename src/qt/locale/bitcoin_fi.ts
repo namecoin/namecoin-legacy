@@ -320,18 +320,18 @@ Tämä ohjelma sisältää OpenSSL projektin OpenSSL työkalupakin (http://www.o
         <translation type="unfinished">Peruuttamaton virhe on tapahtunut. Namecoin ei voi enää jatkaa turvallisesti ja sammutetaan.</translation>
     </message>
     <message>
-        <location filename="../bitcoingui.cpp" line="+73"/>
-        <location line="+550"/>
+        <location filename="../bitcoingui.cpp" line="+74"/>
+        <location line="+565"/>
         <source>Namecoin</source>
         <translation type="unfinished">Namecoin</translation>
     </message>
     <message>
-        <location line="-550"/>
+        <location line="-565"/>
         <source>Wallet</source>
         <translation type="unfinished">Lompakko</translation>
     </message>
     <message>
-        <location line="+139"/>
+        <location line="+142"/>
         <source>&amp;Overview</source>
         <translation type="unfinished">&amp;Yleisnäkymä</translation>
     </message>
@@ -381,7 +381,17 @@ Tämä ohjelma sisältää OpenSSL projektin OpenSSL työkalupakin (http://www.o
         <translation type="unfinished">Muokkaa tallennettujen nimien ja osoitteiden listaa</translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+6"/>
+        <source>&amp;Manage Names</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Manage names registered via Namecoin</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+19"/>
         <source>E&amp;xit</source>
         <translation type="unfinished">L&amp;opeta</translation>
     </message>
@@ -521,13 +531,13 @@ Tämä ohjelma sisältää OpenSSL projektin OpenSSL työkalupakin (http://www.o
         <translation type="unfinished">Välilehtipalkki</translation>
     </message>
     <message>
-        <location line="+8"/>
+        <location line="+9"/>
         <source>Actions toolbar</source>
         <translation type="unfinished">Toimintopalkki</translation>
     </message>
     <message>
         <location line="+13"/>
-        <location line="+80"/>
+        <location line="+81"/>
         <source>[testnet]</source>
         <translation type="unfinished">[testnet]</translation>
     </message>
@@ -538,7 +548,7 @@ Tämä ohjelma sisältää OpenSSL projektin OpenSSL työkalupakin (http://www.o
         <translation type="unfinished">Namecoin-asiakas</translation>
     </message>
     <message numerus="yes">
-        <location line="+80"/>
+        <location line="+81"/>
         <source>%n active connection(s) to Namecoin network</source>
         <translation type="unfinished">
             <numerusform>%n aktiivinen yhteys Namecoin-verkkoon</numerusform>
@@ -667,7 +677,7 @@ Tyyppi: %3
 Osoite: %4</translation>
     </message>
     <message>
-        <location line="+102"/>
+        <location line="+112"/>
         <location line="+28"/>
         <source>URI handling</source>
         <translation type="unfinished">URI käsittely</translation>
@@ -724,6 +734,106 @@ Osoite: %4</translation>
     <message>
         <source>Network Alert</source>
         <translation type="obsolete">Verkkohälytys</translation>
+    </message>
+</context>
+<context>
+    <name>ConfigureNameDialog</name>
+    <message>
+        <location filename="../forms/configurenamedialog.ui" line="+20"/>
+        <source>Configure Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+17"/>
+        <source>&amp;Data:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Enter JSON string that will be associated with the name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;MS Shell Dlg 2&apos;; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
+&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>&amp;Transfer to:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+18"/>
+        <source>The Namecoin address to transfer domain to
+(e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9).
+Leave empty, if not needed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+12"/>
+        <source>Choose address from address book</source>
+        <translation type="unfinished">Valitse osoite osoitekirjasta</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Alt+A</source>
+        <translation type="unfinished">Alt+A</translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Paste address from clipboard</source>
+        <translation type="unfinished">Liitä osoite leikepöydältä</translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Alt+P</source>
+        <translation type="unfinished">Alt+P</translation>
+    </message>
+    <message>
+        <location line="+22"/>
+        <source>Domain name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+27"/>
+        <source>(can be left empty)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../configurenamedialog.cpp" line="+37"/>
+        <source>(not a domain name)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Name_update transaction will be issued immediately</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Update Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+55"/>
+        <source>Name update error</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -836,6 +946,160 @@ Osoite: %4</translation>
         <location line="+1"/>
         <source>Show splash screen on startup (default: 1)</source>
         <translation>Näytä aloitusruutu käynnistettäessä (oletus: 1)</translation>
+    </message>
+</context>
+<context>
+    <name>ManageNamesPage</name>
+    <message>
+        <location filename="../forms/managenamespage.ui" line="+20"/>
+        <source>Manage Names</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+14"/>
+        <source>&amp;New name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>Enter a name or domain name (prefixed with d/) to be registered via Namecoin.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <source>d/</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+13"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt;&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prfixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+28"/>
+        <source>Confirm the new name action. Sends name_new transaction
+to the network and creates a pending name_firstupdate transaction.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>&amp;Submit</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+36"/>
+        <source>Your registered names:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+16"/>
+        <source>Double-click name to configure</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+37"/>
+        <source>Configure name and submit update operation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+3"/>
+        <location filename="../managenamespage.cpp" line="+34"/>
+        <source>&amp;Configure Name...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../managenamespage.cpp" line="-2"/>
+        <source>Copy &amp;Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Copy &amp;Value</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+64"/>
+        <source>Name registration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Name not available</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+7"/>
+        <source>Are you sure you want to register domain name %1, which corresponds to domain %2?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Are you sure you want to register non-domain name %1?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Confirm name registration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+57"/>
+        <source>Name registration failed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+87"/>
+        <source>Export Registered Names Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Comma separated file (*.csv)</source>
+        <translation type="unfinished">Comma separated file (*.csv)</translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>Error exporting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Could not write to file %1.</source>
+        <translation type="unfinished">Ei voida kirjoittaa tiedostoon %1.</translation>
+    </message>
+</context>
+<context>
+    <name>NameTableModel</name>
+    <message>
+        <location filename="../nametablemodel.cpp" line="+338"/>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Value</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+0"/>
+        <source>Expires in</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+124"/>
+        <source>Name registered using Namecoin.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Data associated with the name.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+2"/>
+        <source>Number of blocks, after which the name will expire. Update name to renew it.
+Empty cell means pending (awaiting automatic name_firstupdate or awaiting network confirmation).</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -2653,12 +2917,17 @@ Osoite: %4</translation>
         <translation>Louhittu</translation>
     </message>
     <message>
-        <location line="+38"/>
+        <location line="+2"/>
+        <source>Name operation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+41"/>
         <source>(n/a)</source>
         <translation>(ei saatavilla)</translation>
     </message>
     <message>
-        <location line="+199"/>
+        <location line="+200"/>
         <source>Transaction status. Hover over this field to show number of confirmations.</source>
         <translation>Rahansiirron tila. Siirrä osoitin kentän päälle nähdäksesi vahvistusten lukumäärä.</translation>
     </message>
@@ -2740,6 +3009,11 @@ Osoite: %4</translation>
         <location line="+1"/>
         <source>Mined</source>
         <translation>Louhittu</translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Name operation</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2845,6 +3119,39 @@ Osoite: %4</translation>
         <location line="+8"/>
         <source>to</source>
         <translation>kenelle</translation>
+    </message>
+</context>
+<context>
+    <name>WalletModel</name>
+    <message>
+        <location filename="../walletmodel.cpp" line="+514"/>
+        <source>Cannot find stored tx hash for name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+4"/>
+        <source>Cannot find stored rand value for name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+38"/>
+        <source>Invalid Namecoin address</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <source>There are pending operations on that name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>Could not find a coin with this name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+8"/>
+        <source>This coin is not in your wallet</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

@@ -4,11 +4,14 @@
 #include <QObject>
 
 #include "../allocators.h" /* for SecureString */
+#include "../base58.h"     /* for uint256, uint64 */
 
 class OptionsModel;
 class AddressTableModel;
+class NameTableModel;
 class TransactionTableModel;
 class CWallet;
+class CWalletTx;
 
 QT_BEGIN_NAMESPACE
 class QTimer;
@@ -53,6 +56,7 @@ public:
 
     OptionsModel *getOptionsModel();
     AddressTableModel *getAddressTableModel();
+    NameTableModel *getNameTableModel();
     TransactionTableModel *getTransactionTableModel();
 
     qint64 getBalance() const;
@@ -78,6 +82,33 @@ public:
 
     // Send coins to a list of recipients
     SendCoinsReturn sendCoins(const QList<SendCoinsRecipient> &recipients);
+
+    bool nameAvailable(const QString &name);
+
+    struct NameNewReturn
+    {
+         bool ok;
+         QString err_msg;
+         std::vector<unsigned char> vchName;
+         uint256 hex;   // Transaction hash in hex
+         uint64 rand;   // Secret number in hex
+         uint160 hash;  // Hash of rand+name
+    };
+
+    // Register new name
+    // Requires unlocked wallet; can throw exception instead of returning error
+    NameNewReturn nameNew(const QString &name);
+    
+    // Create pending name update
+    // Requires unlocked wallet; can throw exception instead of returning error
+    QString nameFirstUpdatePrepare(const QString &name, const QString &data);
+
+    // Send pending name updates, if they are 12 blocks old
+    void sendPendingNameFirstUpdates();
+    
+    // Update name
+    // Requires unlocked wallet; can throw exception instead of returning error
+    QString nameUpdate(const QString &name, const QString &data, const QString &transferToAddress);
 
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
@@ -117,6 +148,7 @@ private:
     OptionsModel *optionsModel;
 
     AddressTableModel *addressTableModel;
+    NameTableModel *nameTableModel;
     TransactionTableModel *transactionTableModel;
 
     // Cache some values to be able to detect changes
@@ -132,6 +164,8 @@ private:
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
     void checkBalanceChanged();
+
+    std::string nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue);
 
 signals:
     // Signal that balance in wallet changed
