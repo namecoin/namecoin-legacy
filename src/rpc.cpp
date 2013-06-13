@@ -3101,7 +3101,6 @@ string pAllowInSafeMode[] =
     "getworkaux",
     "getauxblock",
     "getmemorypool",
-    "dumpprivkey",
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
