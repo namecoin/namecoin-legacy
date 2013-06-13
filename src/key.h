@@ -8,6 +8,8 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
+#include "base58.h" // For CSecret32
+
 // secp160k1
 // const unsigned int PRIVATE_KEY_SIZE = 192;
 // const unsigned int PUBLIC_KEY_SIZE  = 41;
@@ -41,7 +43,13 @@ public:
 
 
 // secure_allocator is defined in serialize.h
+// CPrivKey is a serialized private key, with all parameters included (279 bytes)
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
+
+// Currently CSecret is encrypted privkey. In Bitcoin it is just 32-byte secret (not the whole key).
+// In current Namecoin implementation the whole privkey is encrypted, rather than the secret,
+// when encrypting the wallet.
+typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
 
 
@@ -50,6 +58,7 @@ class CKey
 protected:
     EC_KEY* pkey;
     bool fSet;
+    bool fCompressedPubKey;
 
 public:
     CKey()
@@ -58,6 +67,7 @@ public:
         if (pkey == NULL)
             throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
         fSet = false;
+        fCompressedPubKey = false;
     }
 
     CKey(const CKey& b)
@@ -66,6 +76,7 @@ public:
         if (pkey == NULL)
             throw key_error("CKey::CKey(const CKey&) : EC_KEY_dup failed");
         fSet = b.fSet;
+        fCompressedPubKey = b.fCompressedPubKey;
     }
 
     CKey& operator=(const CKey& b)
@@ -73,6 +84,7 @@ public:
         if (!EC_KEY_copy(pkey, b.pkey))
             throw key_error("CKey::operator=(const CKey&) : EC_KEY_copy failed");
         fSet = b.fSet;
+        fCompressedPubKey = b.fCompressedPubKey;
         return (*this);
     }
 
@@ -101,6 +113,8 @@ public:
         fSet = true;
         return true;
     }
+
+    CSecret32 GetSecret(bool &fCompressed) const;
 
     CPrivKey GetPrivKey() const
     {

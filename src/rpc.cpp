@@ -7,6 +7,7 @@
 #include "db.h"
 #include "net.h"
 #include "init.h"
+#include "main.h"
 #include "auxpow.h"
 #undef printf
 #include <boost/asio.hpp>
@@ -23,11 +24,14 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
 #include "namecoin.h"
+#include "rpc.h"
 #define printf OutputDebugStringF
 // MinGW 3.4.5 gets "fatal error: had to relocate PCH" if the json headers are
 // precompiled in headers.h.  The problem might be when the pch file goes over
 // a certain size around 145MB.  If we need access to json_spirit outside this
 // file, we could use the compiled json_spirit option.
+
+#include "key.h"
 
 using namespace std;
 using namespace boost;
@@ -1973,6 +1977,37 @@ Value buildmerkletree(const Array& params, bool fHelp)
     return result;
 }
 
+Value dumpprivkey(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "dumpprivkey <namecoinaddress>\n"
+            "Reveals the private key corresponding to <namecoinaddress>.\n");
+
+    string strAddress = params[0].get_str();
+
+    uint160 hash160;
+    if (!AddressToHash160(strAddress, hash160))
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
+
+    CPrivKey privKey;
+    bool found = false;
+    CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
+    {  
+        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
+        if (mi != mapPubKeys.end() && pwalletMain->GetPrivKey(mi->second, privKey))
+            found = true;
+    }
+
+    if (!found)
+        throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is not known");
+    CKey key;
+    if (!key.SetPrivKey(privKey))
+        throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is invalid");
+    bool fCompressed;
+    CSecret32 secret = key.GetSecret(fCompressed);
+    return CBitcoinSecret(secret, fCompressed).ToString();
+}
 
 
 
@@ -2031,6 +2066,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("listaccounts",          &listaccounts),
     make_pair("settxfee",              &settxfee),
     make_pair("getmemorypool",         &getmemorypool),
+    make_pair("dumpprivkey",           &dumpprivkey),
     make_pair("setmininput",           &setmininput),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));

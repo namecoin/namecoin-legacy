@@ -55,6 +55,7 @@ LIBS += -l kernel32 -l user32 -l gdi32 -l comdlg32 -l winspool -l winmm -l shell
 OBJS= \
     obj/util.o \
     obj/script.o \
+    obj/key.o \
     obj/db.o \
     obj/net.o \
     obj/irc.o \
