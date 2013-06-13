@@ -8,7 +8,7 @@
 #include <QMessageBox>
 
 EditAddressDialog::EditAddressDialog(Mode mode, QWidget *parent) :
-    QDialog(parent),
+    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
     ui(new Ui::EditAddressDialog), mapper(0), mode(mode), model(0)
 {
     ui->setupUi(this);

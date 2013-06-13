@@ -11,6 +11,7 @@ class TransactionView;
 class OverviewPage;
 class AddressBookPage;
 class SendCoinsDialog;
+class ManageNamesPage;
 class SignVerifyMessageDialog;
 class Notificator;
 class RPCConsole;
@@ -62,6 +63,7 @@ private:
     AddressBookPage *addressBookPage;
     AddressBookPage *receiveCoinsPage;
     SendCoinsDialog *sendCoinsPage;
+	ManageNamesPage *manageNamesPage;
     SignVerifyMessageDialog *signVerifyMessageDialog;
 
     QLabel *labelEncryptionIcon;
@@ -75,6 +77,7 @@ private:
     QAction *historyAction;
     QAction *quitAction;
     QAction *sendCoinsAction;
+	QAction *manageNamesAction;
     QAction *addressBookAction;
     QAction *signMessageAction;
     QAction *verifyMessageAction;
@@ -150,6 +153,8 @@ private slots:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage(QString addr = "");
+    /** Switch to manage names page */
+    void gotoManageNamesPage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");

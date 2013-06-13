@@ -62,10 +62,10 @@ QFont bitcoinAddressFont()
     return font;
 }
 
-void setupAddressWidget(QLineEdit *widget, QWidget *parent)
+void setupAddressWidget(QLineEdit *widget, QWidget *parent, bool fAllowEmpty /*= false*/)
 {
     widget->setMaxLength(BitcoinAddressValidator::MaxAddressLength);
-    widget->setValidator(new BitcoinAddressValidator(parent));
+    widget->setValidator(new BitcoinAddressValidator(parent, fAllowEmpty));
     widget->setFont(bitcoinAddressFont());
 }
 

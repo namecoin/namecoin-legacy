@@ -953,7 +953,7 @@ Value getbalance(const Array& params, bool fHelp)
             "If [account] is specified, returns the balance in the account.");
 
     if (params.size() == 0)
-        return  ValueFromAmount(pwalletMain->GetBalance());
+        return ValueFromAmount(pwalletMain->GetBalance());
 
     int nMinDepth = 1;
     if (params.size() > 1)
@@ -984,7 +984,7 @@ Value getbalance(const Array& params, bool fHelp)
             nBalance -= allFee;
             nBalance += allGeneratedMature;
         }
-        return  ValueFromAmount(nBalance);
+        return ValueFromAmount(nBalance);
     }
 
     string strAccount = AccountFromValue(params[0]);

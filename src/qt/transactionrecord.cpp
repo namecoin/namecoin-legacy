@@ -71,12 +71,39 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     else
     {
         bool fAllFromMe = true;
+        int64 nCarriedOverCoin = 0;
         BOOST_FOREACH(const CTxIn& txin, wtx.vin)
-            fAllFromMe = fAllFromMe && wallet->IsMine(txin);
-
+        {
+            if (!wallet->IsMine(txin))
+            {
+                // Check whether transaction input is name_* operation - in this case consider it ours
+                CTransaction txPrev;
+                uint256 hash = 0;
+                CTxDestination address;
+                if (GetTransaction(txin.prevout.hash, txPrev, hash) &&
+                        txin.prevout.n < txPrev.vout.size() &&
+                        hooks->ExtractAddress(txPrev.vout[txin.prevout.n].scriptPubKey, address)
+                   )
+                {
+                    // This is our name transaction
+                    // Accumulate the coin carried from name_new, because it is not actually spent
+                    nCarriedOverCoin += txPrev.vout[txin.prevout.n].nValue;
+                }
+                else
+                {
+                    fAllFromMe = false;
+                    break;
+                }
+            }
+        }
+        
         bool fAllToMe = true;
         BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-            fAllToMe = fAllToMe && wallet->IsMine(txout);
+            if (!wallet->IsMine(txout))
+            {
+                fAllToMe = false;
+                break;
+            }
 
         if (fAllFromMe && fAllToMe)
         {
@@ -91,7 +118,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             // Debit
             //
-            int64 nTxFee = nDebit - wtx.GetValueOut();
+            int64 nTxFee = nDebit - (wtx.GetValueOut() - nCarriedOverCoin);
 
             for (unsigned int nOut = 0; nOut < wtx.vout.size(); nOut++)
             {
@@ -106,12 +133,37 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     continue;
                 }
 
+                int64 nValue = txout.nValue;
+                
                 CTxDestination address;
                 if (ExtractDestination(txout.scriptPubKey, address))
                 {
                     // Sent to Bitcoin Address
                     sub.type = TransactionRecord::SendToAddress;
                     sub.address = CBitcoinAddress(address).ToString();
+                }
+                else if (hooks->ExtractAddress(txout.scriptPubKey, address))
+                {
+                    sub.type = TransactionRecord::NameOp;
+                    sub.address = address;
+                    
+                    // Add carried coin (from name_new)
+                    if (nCarriedOverCoin > 0)
+                    {
+                        // Note: we subtract nCarriedOverCoin equally from all name operations,
+                        // until it becomes zero. It may fail for complex transactions, which
+                        // update multiple names simultaneously (standard client never creates such transactions).
+                        if (nValue >= nCarriedOverCoin)
+                        {
+                            nValue -= nCarriedOverCoin;
+                            nCarriedOverCoin = 0;
+                        }
+                        else
+                        {
+                            nCarriedOverCoin -= nValue;
+                            nValue = 0;
+                        }
+                    }
                 }
                 else
                 {
@@ -120,13 +172,13 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     sub.address = mapValue["to"];
                 }
 
-                int64 nValue = txout.nValue;
                 /* Add fee to first output */
                 if (nTxFee > 0)
                 {
                     nValue += nTxFee;
                     nTxFee = 0;
                 }
+
                 sub.debit = -nValue;
 
                 parts.append(sub);

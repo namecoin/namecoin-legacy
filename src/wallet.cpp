@@ -1011,7 +1011,7 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
         if (!wtxNew.AcceptToMemoryPool())
         {
             // This must not fail. The transaction has already been signed and recorded.
-            printf("CommitTransaction() : Error: Transaction not valid");
+            printf("CommitTransaction() : Error: Transaction not valid\n");
             return false;
         }
         wtxNew.RelayWalletTransaction();
@@ -1125,6 +1125,26 @@ bool CWallet::DelAddressBookName(const string& strAddress)
         return false;
     return CWalletDB(strWalletFile).EraseName(strAddress);
 }
+
+#ifdef GUI
+bool CWallet::WriteNameFirstUpdate(const std::vector<unsigned char>& vchName,
+                                   const uint256& hex,
+                                   const uint64& rand,
+                                   const std::vector<unsigned char>& vchData,
+                                   const CWalletTx &wtx)
+{
+    if (!fFileBacked)
+        return false;
+    return CWalletDB(strWalletFile).WriteNameFirstUpdate(vchName, hex, rand, vchData, wtx);
+}
+
+bool CWallet::EraseNameFirstUpdate(const std::vector<unsigned char>& vchName)
+{
+    if (!fFileBacked)
+        return false;
+    return CWalletDB(strWalletFile).EraseNameFirstUpdate(vchName);
+}
+#endif
 
 
 void CWallet::PrintWallet(const CBlock& block)

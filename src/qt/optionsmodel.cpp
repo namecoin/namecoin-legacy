@@ -12,9 +12,6 @@
 
 #include <set>
 
-static std::set<std::string> LinesToAddrSet(const QString &s, bool *pSuccessful = NULL);
-
-
 OptionsModel::OptionsModel(QObject *parent) :
     QAbstractListModel(parent)
 {
@@ -309,29 +306,4 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
 qint64 OptionsModel::getTransactionFee()
 {
     return nTransactionFee;
-}
-
-static std::set<std::string> LinesToAddrSet(const QString &s, bool *pSuccessful /*= NULL*/)
-{
-    std::set<std::string> setAddrs;
-    QStringList vLines = s.split(QRegExp("[\r\n]"), QString::SkipEmptyParts);
-
-    if (pSuccessful)
-        *pSuccessful = true;
-
-    for (int i = 0; i < vLines.count(); i++)
-    {
-        QString addr = vLines.at(i).trimmed();
-        if (addr.isEmpty())
-            continue;
-            
-        std::string a = addr.toStdString();
-        CBitcoinAddress addressParsed(a);
-        if (CBitcoinAddress(a).IsValid())
-            setAddrs.insert(a);
-        else if (pSuccessful)
-                *pSuccessful = false;
-    }
-    
-    return setAddrs;
 }
