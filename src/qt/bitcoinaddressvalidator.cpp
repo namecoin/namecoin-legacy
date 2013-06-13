@@ -13,8 +13,8 @@
   - '0' and 'O' to 'o'
 */
 
-BitcoinAddressValidator::BitcoinAddressValidator(QObject *parent) :
-    QValidator(parent)
+BitcoinAddressValidator::BitcoinAddressValidator(QObject *parent, bool fAllowEmpty) :
+    QValidator(parent), allowEmpty(fAllowEmpty)
 {
 }
 
@@ -67,9 +67,9 @@ QValidator::State BitcoinAddressValidator::validate(QString &input, int &pos) co
         }
     }
 
-    // Empty address is "intermediate" input
-    if(input.isEmpty())
+    if (input.isEmpty() && !allowEmpty)
     {
+        // Empty address is "intermediate" input
         state = QValidator::Intermediate;
     }
 

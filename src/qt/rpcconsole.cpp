@@ -186,7 +186,7 @@ void RPCExecutor::request(const QString &command)
 }
 
 RPCConsole::RPCConsole(QWidget *parent) :
-    QDialog(parent),
+    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
     ui(new Ui::RPCConsole),
     historyPtr(0)
 {

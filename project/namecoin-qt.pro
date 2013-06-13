@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
-VERSION = 3.57.00
+VERSION = 0.3.60
 QT += network
 DEFINES += GUI QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
@@ -149,6 +149,9 @@ HEADERS += \
     ../src/qt/addresstablemodel.h \
     ../src/qt/optionsdialog.h \
     ../src/qt/sendcoinsdialog.h \
+    ../src/qt/managenamespage.h \
+    ../src/qt/configurenamedialog.h \
+    ../src/qt/nametablemodel.h \
     ../src/qt/addressbookpage.h \
     ../src/qt/signverifymessagedialog.h \
     ../src/qt/aboutdialog.h \
@@ -195,6 +198,9 @@ SOURCES += \
     ../src/qt/addresstablemodel.cpp \
     ../src/qt/optionsdialog.cpp \
     ../src/qt/sendcoinsdialog.cpp \
+    ../src/qt/managenamespage.cpp \
+    ../src/qt/configurenamedialog.cpp \
+    ../src/qt/nametablemodel.cpp \
     ../src/qt/addressbookpage.cpp \
     ../src/qt/signverifymessagedialog.cpp \
     ../src/qt/aboutdialog.cpp \
@@ -227,6 +233,8 @@ RESOURCES += ../src/qt/bitcoin.qrc
 
 FORMS += \
     ../src/qt/forms/sendcoinsdialog.ui \
+    ../src/qt/forms/managenamespage.ui \
+	../src/qt/forms/configurenamedialog.ui \
     ../src/qt/forms/addressbookpage.ui \
     ../src/qt/forms/signverifymessagedialog.ui \
     ../src/qt/forms/aboutdialog.ui \

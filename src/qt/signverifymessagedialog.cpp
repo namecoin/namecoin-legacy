@@ -15,7 +15,7 @@
 #include <vector>
 
 SignVerifyMessageDialog::SignVerifyMessageDialog(QWidget *parent) :
-    QDialog(parent),
+    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
     ui(new Ui::SignVerifyMessageDialog),
     model(0)
 {

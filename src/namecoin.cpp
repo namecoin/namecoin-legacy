@@ -27,31 +27,20 @@ extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
 template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 
-static const int NAMECOIN_TX_VERSION = 0x7100;
-static const int64 MIN_AMOUNT = CENT;
-static const int MAX_NAME_LENGTH = 255;
-static const int MAX_VALUE_LENGTH = 1023;
-static const int OP_NAME_INVALID = 0x00;
-static const int OP_NAME_NEW = 0x01;
-static const int OP_NAME_FIRSTUPDATE = 0x02;
-static const int OP_NAME_UPDATE = 0x03;
-static const int OP_NAME_NOP = 0x04;
-static const int MIN_FIRSTUPDATE_DEPTH = 12;
-
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
+
+#ifdef GUI
+extern std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
+#endif
+
 extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 
 // forward decls
-extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch);
 extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc);
-extern int IndexOfNameOutput(CWalletTx& wtx);
 extern bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet);
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
-extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
-extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
-bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
 extern void rescanfornames();
 extern Value sendtoaddress(const Array& params, bool fHelp);
 
@@ -138,14 +127,14 @@ vector<unsigned char> vchFromValue(const Value& value) {
     return vector<unsigned char>(strbeg, strbeg + strName.size());
 }
 
-vector<unsigned char> vchFromString(string str) {
+std::vector<unsigned char> vchFromString(const std::string &str) {
     unsigned char *strbeg = (unsigned char*)str.c_str();
     return vector<unsigned char>(strbeg, strbeg + str.size());
 }
 
-string stringFromVch(vector<unsigned char> vch) {
+string stringFromVch(const vector<unsigned char> &vch) {
     string res;
-    vector<unsigned char>::iterator vi = vch.begin();
+    vector<unsigned char>::const_iterator vi = vch.begin();
     while (vi != vch.end()) {
         res += (char)(*vi);
         vi++;
@@ -205,6 +194,7 @@ int GetTxPosHeight(const CDiskTxPos& txPos)
         return 0;
     return pindex->nHeight;
 }
+
 int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
 {
     nHeight = GetTxPosHeight(txPos);
@@ -474,7 +464,7 @@ bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, u
     return true;
 }
 
-bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsigned char>& vchValue, int& nHeight)
+bool GetValueOfName(CNameDB& dbName, const vector<unsigned char> &vchName, vector<unsigned char>& vchValue, int& nHeight)
 {
     //vector<CDiskTxPos> vtxPos;
     vector<CNameIndex> vtxPos;
@@ -492,7 +482,7 @@ bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsig
     return true;
 }
 
-bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& tx)
+bool GetTxOfName(CNameDB& dbName, const vector<unsigned char> &vchName, CTransaction& tx)
 {
     //vector<CDiskTxPos> vtxPos;
     vector<CNameIndex> vtxPos;
@@ -1138,7 +1128,7 @@ Value name_update(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
-                "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name\n"
+                "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name"
                 + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
@@ -1208,7 +1198,7 @@ Value name_new(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-                "name_new <name>\n"
+                "name_new <name>"
                 + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
@@ -1734,7 +1724,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
  
     if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
         return false;
-
+        
     if (ignore_name_new && op == OP_NAME_NEW)
         return false;
 
@@ -2110,9 +2100,19 @@ bool CNamecoinHooks::ExtractAddress(const CScript& script, string& address)
         return false;
 
     string strOp = nameFromOp(op);
-    string strName = stringFromVch(vvch[0]);
+    string strName;
     if (op == OP_NAME_NEW)
-        strName = HexStr(vvch[0]);
+    {
+#ifdef GUI
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = mapMyNameHashes.find(uint160(vvch[0]));
+        if (mi != mapMyNameHashes.end())
+            strName = stringFromVch(mi->second);
+        else
+#endif
+            strName = HexStr(vvch[0]);
+    }
+    else
+        strName = stringFromVch(vvch[0]);
 
     address = strOp + ": " + strName;
     return true;

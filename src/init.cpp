@@ -563,6 +563,7 @@ std::string HelpMessage()
         "  -gen=0           \t\t  " + _("Don't generate coins\n") +
         "  -min             \t\t  " + _("Start minimized\n") +
         "  -datadir=<dir>   \t\t  " + _("Specify data directory\n") +
+        "  -dbcache=<n>     \t\t  " + _("Set database cache size in megabytes (default: 25)") + "\n" +
         "  -timeout=<n>     \t  "   + _("Specify connection timeout (in milliseconds)\n") +
         "  -proxy=<ip:port> \t  "   + _("Connect through socks4 proxy\n") +
         "  -dns             \t  "   + _("Allow DNS lookups for addnode and connect\n") +
