@@ -29,6 +29,8 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
     ui->labelName->setText(name);
     ui->dataEdit->setText(data);
 
+    ui->dataEdit->setMaxLength(MAX_VALUE_LENGTH);
+
     returnData = data;
 
     if (name.startsWith("d/"))

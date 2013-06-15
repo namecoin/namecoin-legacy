@@ -835,7 +835,6 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
 #ifdef GUI
         uiInterface.NotifyBlocksChanged();
 #endif
-        //MainFrameRepaint();
     }
     printf("InvalidChainFound: invalid block=%s  height=%d  work=%s\n", pindexNew->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->nHeight, pindexNew->bnChainWork.ToString().c_str());
     printf("InvalidChainFound:  current best=%s  height=%d  work=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str());
@@ -1399,7 +1398,6 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 #ifdef GUI
     uiInterface.NotifyBlocksChanged();
 #endif
-    //MainFrameRepaint();
     return true;
 }
 
@@ -2006,7 +2004,6 @@ bool CAlert::ProcessAlert()
     }
 
     printf("accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());
-    MainFrameRepaint();
     return true;
 }
 
@@ -3403,7 +3400,6 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
     {
         fGenerateBitcoins = fGenerate;
         WriteSetting("fGenerateBitcoins", fGenerateBitcoins);
-        MainFrameRepaint();
     }
     if (fGenerateBitcoins)
     {

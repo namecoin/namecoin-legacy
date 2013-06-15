@@ -47,9 +47,12 @@ ManageNamesPage::ManageNamesPage(QWidget *parent) :
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
     connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_configureNameButton_clicked()));
     ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    
+
+    // Catch focus changes to make the appropriate button the default one (Submit or Configure)
     ui->registerName->installEventFilter(this);
-    ui->tableView->installEventFilter(this);  
+    ui->tableView->installEventFilter(this);
+
+    ui->registerName->setMaxLength(MAX_NAME_LENGTH);
 }
 
 ManageNamesPage::~ManageNamesPage()

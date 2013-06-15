@@ -84,7 +84,7 @@ void WalletModel::pollBalanceChanged()
         checkBalanceChanged();
 
         if (!IsInitialBlockDownload())
-            sendPendingNameFirstUpdates();
+            sendPendingNameFirstUpdates();      // FIXME: on client start it fails to broadcast (too fee connections?) - need to wait for some time or some condition
     }
 }
 
@@ -179,8 +179,22 @@ void WalletModel::sendPendingNameFirstUpdates()
 // This is needed because of wallet encryption (otherwise we could store just hash+rand+value and create transaction
 // on-the-fly after 12 blocks).
 // Must hold cs_main lock.
-std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue)
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
 {
+    LOCK(wallet->cs_wallet);
+
+    std::map<uint256, CWalletTx>::iterator it = wallet->mapWallet.find(wtxInHash);
+    if (it == wallet->mapWallet.end())
+        return _("previous transaction is not in the wallet");
+
+    return nameFirstUpdateCreateTx(wtx, vchName, it->second, rand, vchValue, pnFeeRet);
+}
+
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, CWalletTx &wtxIn, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
+{
+    if (pnFeeRet)
+        *pnFeeRet = 0;
+
     wtx.nVersion = NAMECOIN_TX_VERSION;
     
     if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
@@ -202,9 +216,6 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
         }
     }
 
-    if (!wallet->mapWallet.count(wtxInHash))
-        return _("previous transaction is not in the wallet");
-
     std::vector<unsigned char> vchRand = CBigNum(rand).getvch();
 
     std::vector<unsigned char> strPubKey = wallet->GetKeyFromKeyPool();
@@ -214,7 +225,6 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
     scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
 
-    CWalletTx& wtxIn = wallet->mapWallet[wtxInHash];
     std::vector<unsigned char> vchHash;
     bool found = false;
     BOOST_FOREACH(CTxOut& out, wtxIn.vout)
@@ -248,7 +258,10 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
     int64 nValue = MIN_AMOUNT;
 
     int nTxOut = IndexOfNameOutput(wtxIn);
+
+    // TODO: since firstupdate can be called multiple times from GUI and only the last one is used, we should reuse reservekey
     CReserveKey reservekey(wallet);
+
     int64 nFeeRequired;
     std::vector< std::pair<CScript, int64> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
@@ -271,6 +284,9 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
         return strError;
     }
 
+    if (pnFeeRet)
+        *pnFeeRet = nNetFee + nFeeRequired;
+
     // Note: currently we do not notify the user about the name_firstupdate fee:
     // - it can be confusing, since name_firstupdate can be re-configured many times
     // - canceling the fee will leave the configured name in inconsistent state: name_new without pending name_firstupdate may result in losing the hex value (rand)
@@ -281,7 +297,7 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
     reservekey.KeepKey();
     
     if (!wtx.CheckTransaction())
-        return "Error: CheckTransaction failed for transaction created by nameFirstUpdateCreateTx";
+        return _("Error: CheckTransaction failed for transaction created by nameFirstUpdateCreateTx");
 
     return "";
 }
@@ -473,27 +489,75 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
 
     CRITICAL_BLOCK(cs_main)
     {
-        std::string strError = wallet->SendMoney(scriptPubKey, MIN_AMOUNT, wtx, true);
-        if (strError != "")
+        // Include additional fee to name_new, which will be re-used by name_firstupdate
+        // In this way we can preconfigure name_firstupdate
+
+        int64 nFirstUpdateFee = 0;
+        int64 nPrevFirstUpdateFee;
+        CReserveKey reservekey(wallet);
+        
+        PreparedNameFirstUpdate prep;
+        prep.rand = rand;
+        
+        // 1st pass: compute fee for name_firstupdate
+        // 2nd pass: try using that fee in name_new
+        for (int pass = 1; pass <= 2; pass++)
+        {
+            nPrevFirstUpdateFee = nFirstUpdateFee;
+            reservekey.ReturnKey();
+
+            // Prepare name_new, but do not commit until we prepare name_firstupdate
+            std::string strError = wallet->SendMoneyPrepare(scriptPubKey, MIN_AMOUNT + nFirstUpdateFee, wtx, reservekey, pass == 1);
+            if (!strError.empty())
+            {
+                ret.ok = false;
+                ret.err_msg = QString::fromStdString(strError);
+                return ret;
+            }
+
+            ret.hex = wtx.GetHash();
+            ret.rand = rand;
+            ret.hash = hash;
+
+            // Prepare name_firstupdate (with empty value)
+            // FIXME: AddSupportingTransactions will fail and write msg to the log
+            // Though we manually call AddSupportingTransactions (near the end of this function)
+            strError = nameFirstUpdateCreateTx(prep.wtx, ret.vchName, wtx, rand, prep.vchData, &nFirstUpdateFee);
+            if (!strError.empty())
+            {
+                ret.ok = false;
+                ret.err_msg = QString::fromStdString(strError);
+                return ret;
+            }
+            if (nPrevFirstUpdateFee == nFirstUpdateFee)
+                break;
+        }
+        if (nPrevFirstUpdateFee != nFirstUpdateFee)
+            printf("name_new GUI warning: cannot prepare fee for automatic name_firstupdate - fee changed from %s to %s", FormatMoney(nPrevFirstUpdateFee).c_str(), FormatMoney(nFirstUpdateFee).c_str());
+
+        // name_firstupdate prepared, let's commit name_new
+        if (!wallet->CommitTransaction(wtx, reservekey))
         {
             ret.ok = false;
-            ret.err_msg = QString::fromStdString(strError);
+            ret.err_msg = tr("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
             return ret;
         }
+
+        // name_new committed successfully, from this point we must return ok
         ret.ok = true;
-        ret.hex = wtx.GetHash();
-        ret.rand = rand;
-        ret.hash = hash;
 
         mapMyNames[ret.vchName] = ret.hex;
         mapMyNameHashes[ret.hash] = ret.vchName;
-        mapMyNameFirstUpdate[ret.vchName].rand = ret.rand;
+        mapMyNameFirstUpdate[ret.vchName] = prep;
 
-        strError = nameFirstUpdatePrepare(name, "").toStdString();
-        if (strError != "")
         {
-            printf("nameFirstUpdatePrepare for %s returned error: %s\n", strName.c_str(), strError.c_str());
-            // We do not return this error, because we stored data to mapMyNameFirstUpdate and configure dialog should show up
+            CTxDB txdb("r"); 
+            CRITICAL_BLOCK(wallet->cs_wallet)
+            {
+                // Fill vtxPrev by copying from previous transactions vtxPrev
+                prep.wtx.AddSupportingTransactions(txdb);
+                wallet->WriteNameFirstUpdate(ret.vchName, ret.hex, rand, prep.vchData, prep.wtx);
+            }
         }
     }
     return ret;
@@ -503,7 +567,7 @@ QString WalletModel::nameFirstUpdatePrepare(const QString &name, const QString &
 {
     std::string strName = name.toStdString();
     std::vector<unsigned char> vchName(strName.begin(), strName.end());
-    
+
     std::string strData = data.toStdString();
     std::vector<unsigned char> vchValue(strData.begin(), strData.end());
 

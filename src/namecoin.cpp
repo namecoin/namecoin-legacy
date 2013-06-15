@@ -437,7 +437,6 @@ string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, C
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey))
         return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
 
-    MainFrameRepaint();
     return "";
 }
 
@@ -2104,6 +2103,8 @@ bool CNamecoinHooks::ExtractAddress(const CScript& script, string& address)
     if (op == OP_NAME_NEW)
     {
 #ifdef GUI
+        LOCK(cs_main);
+
         std::map<uint160, std::vector<unsigned char> >::const_iterator mi = mapMyNameHashes.find(uint160(vvch[0]));
         if (mi != mapMyNameHashes.end())
             strName = stringFromVch(mi->second);

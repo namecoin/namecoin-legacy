@@ -160,9 +160,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
         WalletUpdateSpent(wtx);
     }
 
-    // Refresh UI
-    //MainFrameRepaint();
 #ifdef GUI
+    // Refresh UI
     NotifyTransactionChanged(this, hash, fInsertedNew ? CT_NEW : CT_UPDATED);
 #endif
     return true;
@@ -1016,7 +1015,6 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
         }
         wtxNew.RelayWalletTransaction();
     }
-    MainFrameRepaint();
     return true;
 }
 
@@ -1027,6 +1025,18 @@ bool CWallet::CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey)
 string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee)
 {
     CReserveKey reservekey(this);
+    string err = SendMoneyPrepare(scriptPubKey, nValue, wtxNew, reservekey, fAskFee);
+    if (!err.empty())
+        return err;
+
+    if (!CommitTransaction(wtxNew, reservekey))
+        return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+
+    return "";
+}
+
+string CWallet::SendMoneyPrepare(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, bool fAskFee)
+{
     int64 nFeeRequired;
     if (!CreateTransaction(scriptPubKey, nValue, wtxNew, reservekey, nFeeRequired))
     {
@@ -1047,12 +1057,9 @@ string CWallet::SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew,
         return "ABORTED";
 #endif
 
-    if (!CommitTransaction(wtxNew, reservekey))
-        return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
-
-    MainFrameRepaint();
     return "";
 }
+
 
 
 
