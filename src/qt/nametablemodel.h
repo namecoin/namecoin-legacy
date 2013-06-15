@@ -58,6 +58,7 @@ struct NameTableEntry
     QString name;
     QString value;
     int nHeight;
+    bool transferred;
 
     static const int NAME_NEW = -1;             // Dummy nHeight value for not-yet-created names
     static const int NAME_NON_EXISTING = -2;    // Dummy nHeight value for unitinialized entries
@@ -66,11 +67,11 @@ struct NameTableEntry
     bool HeightValid() { return nHeight >= 0; }
     static bool CompareHeight(int nOldHeight, int nNewHeight);    // Returns true if new height is better
 
-    NameTableEntry() : nHeight(NAME_NON_EXISTING) {}
-    NameTableEntry(const QString &name, const QString &value, int nHeight):
-        name(name), value(value), nHeight(nHeight) {}
-    NameTableEntry(const std::string &name, const std::string &value, int nHeight):
-        name(QString::fromStdString(name)), value(QString::fromStdString(value)), nHeight(nHeight) {}
+    NameTableEntry() : nHeight(NAME_NON_EXISTING), transferred(false) {}
+    NameTableEntry(const QString &name, const QString &value, int nHeight, bool transferred = false) :
+        name(name), value(value), nHeight(nHeight), transferred(transferred) {}
+    NameTableEntry(const std::string &name, const std::string &value, int nHeight, bool transferred = false) :
+        name(QString::fromStdString(name)), value(QString::fromStdString(value)), nHeight(nHeight), transferred(transferred) {}
 };
 
 #endif // NAMETABLEMODEL_H
