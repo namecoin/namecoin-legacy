@@ -211,7 +211,7 @@ string GetDefaultDataDirSuffix() {
     // Windows
     return string("Namecoin");
 #else
-#ifdef __WXMAC_OSX__
+#ifdef MAC_OSX
     return string("Namecoin");
 #else
     return string(".namecoin");
