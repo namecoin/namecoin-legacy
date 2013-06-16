@@ -83,6 +83,7 @@ public:
             {
                 hash = item.second.GetHash();
                 bool fConfirmed;
+                bool fTransferred = false;
                 // TODO: Maybe CMerkleTx::GetDepthInMainChain() would be faster?
                 if (!txdb.ReadDiskTx(hash, tx, txindex))
                 {
@@ -104,7 +105,7 @@ public:
                     continue;
 
                 if (!hooks->IsMine(wallet->mapWallet[tx.GetHash()]))
-                    continue;  // Transferred
+                    fTransferred = true;
                     
                 // height
                 if (fConfirmed)
@@ -121,13 +122,14 @@ public:
                 if (mi != vNamesO.end() && !NameTableEntry::CompareHeight(mi->second.nHeight, nHeight))
                     continue;
 
-                vNamesO[vchName] = NameTableEntry(stringFromVch(vchName), stringFromVch(vchValue), nHeight);
+                vNamesO[vchName] = NameTableEntry(stringFromVch(vchName), stringFromVch(vchValue), nHeight, fTransferred);
             }
         }        
 
         // Add existing names
         BOOST_FOREACH(const PAIRTYPE(std::vector<unsigned char>, NameTableEntry)& item, vNamesO)
-            cachedNameTable.append(item.second);
+            if (!item.second.transferred)
+                cachedNameTable.append(item.second);
 
         // Add pending names (name_new)
         BOOST_FOREACH(const PAIRTYPE(std::vector<unsigned char>, PreparedNameFirstUpdate)& item, mapMyNameFirstUpdate)
@@ -158,6 +160,8 @@ public:
             {
                 hash = item.second.GetHash();
                 bool fConfirmed;
+                bool fTransferred = false;
+
                 if (!txdb.ReadDiskTx(hash, tx, txindex))
                 {
                     tx = item.second;
@@ -182,8 +186,8 @@ public:
 
                 if (!hooks->IsMine(wallet->mapWallet[tx.GetHash()]))
                 {
-                    printf("refreshName(%s): skipping tx %s (transferred name)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
-                    continue;  // Transferred
+                    printf("refreshName(%s): tx %s - transferred\n", qPrintable(nameObj.name), hash.GetHex().c_str());
+                    fTransferred = true;
                 }
 
                 // height
@@ -212,13 +216,18 @@ public:
                     printf("refreshName(%s): tx %s - skipped (more recent transaction exists)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     continue;
                 }
-                
+
                 nameObj.value = QString::fromStdString(stringFromVch(vchValue));
                 nameObj.nHeight = nHeight;
+                nameObj.transferred = fTransferred;
 
                 printf("refreshName(%s) found tx %s, nHeight=%d, value: %s\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nameObj.nHeight, qPrintable(nameObj.value));
             }
         }
+
+        // Transferred name is not ours anymore - remove it from the table
+        if (nameObj.transferred)
+            nameObj.nHeight = NameTableEntry::NAME_NON_EXISTING;
 
         // Find name in model
         QList<NameTableEntry>::iterator lower = qLowerBound(
@@ -439,6 +448,8 @@ QVariant NameTableModel::data(const QModelIndex &index, int role) const
                 return rec->nHeight + GetDisplayExpirationDepth(rec->nHeight) - pindexBest->nHeight;
         }
     }
+    else if (role == Qt::TextAlignmentRole)
+        return column_alignments[index.column()];
     return QVariant();
 }
 

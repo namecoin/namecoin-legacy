@@ -43,7 +43,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             if(wallet->IsMine(txout))
             {
                 TransactionRecord sub(hash, nTime);
-                CTxDestination address;
+                std::string address;
                 sub.idx = parts.size(); // sequence number
                 sub.credit = txout.nValue;
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address))
@@ -135,7 +135,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 
                 int64 nValue = txout.nValue;
                 
-                CTxDestination address;
+                std::string address;
                 if (ExtractDestination(txout.scriptPubKey, address))
                 {
                     // Sent to Bitcoin Address
@@ -187,9 +187,22 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         else
         {
             //
+            // Check for name transferring operation
+            //
+            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+            {
+                std::string address;
+                // We do not check, if coin address belongs to us, assuming that the wallet can only contain
+                // transactions involving us
+                if (hooks->ExtractAddress(txout.scriptPubKey, address))
+                    parts.append(TransactionRecord(hash, nTime, TransactionRecord::NameOp, address, 0, 0));
+            }
+
+            //
             // Mixed debit transaction, can't break down payees
             //
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
+            if (parts.empty() || nNet != 0)
+                parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
         }
     }
 

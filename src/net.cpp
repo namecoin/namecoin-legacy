@@ -808,7 +808,6 @@ void ThreadSocketHandler2(void* parg)
 #ifdef GUI
             uiInterface.NotifyNumConnectionsChanged(vNodes.size());
 #endif
-            //MainFrameRepaint();
         }
 
 

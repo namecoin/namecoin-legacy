@@ -56,10 +56,6 @@ inline void UIThreadCall(boost::function0<void> fn)
 {
 }
 
-inline void MainFrameRepaint()
-{
-}
-
 inline void CreateMainWindow()
 {
 }
