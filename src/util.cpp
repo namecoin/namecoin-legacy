@@ -828,7 +828,7 @@ string GetDefaultDataDir()
     string strHome = pszHome;
     if (strHome[strHome.size()-1] != '/')
         strHome += '/';
-#ifdef __WXMAC_OSX__
+#ifdef MAC_OSX
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());

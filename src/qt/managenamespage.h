@@ -2,6 +2,7 @@
 #define MANAGENAMESPAGE_H
 
 #include <QDialog>
+#include <QSortFilterProxyModel>
 
 namespace Ui {
     class ManageNamesPage;
@@ -12,10 +13,26 @@ class NameTableModel;
 QT_BEGIN_NAMESPACE
 class QTableView;
 class QItemSelection;
-class QSortFilterProxyModel;
 class QMenu;
 class QModelIndex;
 QT_END_NAMESPACE
+
+class NameFilterProxyModel : public QSortFilterProxyModel
+{
+    Q_OBJECT
+
+public:
+    explicit NameFilterProxyModel(QObject *parent = 0);
+
+    void setNameSearch(const QString &search);
+    void setValueSearch(const QString &search);
+
+protected:
+    bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
+
+private:
+    QString nameSearch, valueSearch;
+};
 
 /** Page for managing names */
 class ManageNamesPage : public QDialog
@@ -32,11 +49,14 @@ private:
     Ui::ManageNamesPage *ui;
     NameTableModel *model;
     WalletModel *walletModel;
-    QSortFilterProxyModel *proxyModel;
+    NameFilterProxyModel *proxyModel;
     QMenu *contextMenu;
     
 public slots:
     void exportClicked();
+
+    void changedNameFilter(const QString &filter);
+    void changedValueFilter(const QString &filter);
 
 private slots:
     void on_submitNameButton_clicked();
