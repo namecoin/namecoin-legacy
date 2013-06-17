@@ -16,8 +16,48 @@
 #include <QSortFilterProxyModel>
 #include <QMessageBox>
 #include <QMenu>
+#include <QScrollBar>
 
 extern std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFirstUpdate;
+
+//
+// NameFilterProxyModel
+//
+
+NameFilterProxyModel::NameFilterProxyModel(QObject *parent /*= 0*/)
+    : QSortFilterProxyModel(parent)
+{
+}
+
+void NameFilterProxyModel::setNameSearch(const QString &search)
+{
+    nameSearch = search;
+    invalidateFilter();
+}
+
+void NameFilterProxyModel::setValueSearch(const QString &search)
+{
+    valueSearch = search;
+    invalidateFilter();
+}
+
+bool NameFilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
+{
+    QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
+
+    QString name = index.sibling(index.row(), NameTableModel::Name).data(Qt::EditRole).toString();
+    QString value = index.sibling(index.row(), NameTableModel::Value).data(Qt::EditRole).toString();
+
+    Qt::CaseSensitivity case_sens = filterCaseSensitivity();
+    return name.contains(nameSearch, case_sens) && value.contains(valueSearch, case_sens);
+}
+
+//
+// ManageNamesPage
+//
+
+const static int COLUMN_WIDTH_NAME = 320,
+                 COLUMN_WIDTH_EXPIRES_IN = 100;
 
 ManageNamesPage::ManageNamesPage(QWidget *parent) :
     QDialog(parent),
@@ -47,12 +87,39 @@ ManageNamesPage::ManageNamesPage(QWidget *parent) :
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
     connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_configureNameButton_clicked()));
     ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-
+    
     // Catch focus changes to make the appropriate button the default one (Submit or Configure)
     ui->registerName->installEventFilter(this);
+    ui->submitNameButton->installEventFilter(this);
     ui->tableView->installEventFilter(this);
+    ui->nameFilter->installEventFilter(this);
+    ui->valueFilter->installEventFilter(this);
+    ui->configureNameButton->installEventFilter(this);
 
     ui->registerName->setMaxLength(MAX_NAME_LENGTH);
+    
+    ui->nameFilter->setMaxLength(MAX_NAME_LENGTH);
+    ui->valueFilter->setMaxLength(MAX_VALUE_LENGTH);
+
+#if QT_VERSION >= 0x040700
+    /* Do not move this to the XML file, Qt before 4.7 will choke on it */
+    ui->nameFilter->setPlaceholderText(tr("Name filter"));
+    ui->valueFilter->setPlaceholderText(tr("Value filter"));
+#endif
+
+    ui->nameFilter->setFixedWidth(COLUMN_WIDTH_NAME);
+    ui->horizontalSpacer_ExpiresIn->changeSize(
+        COLUMN_WIDTH_EXPIRES_IN + ui->tableView->verticalScrollBar()->sizeHint().width()
+            
+#ifdef Q_OS_MAC
+        // Not sure if this is needed, but other Mac code adds 2 pixels to scroll bar width;
+        // see transactionview.cpp, search for verticalScrollBar()->sizeHint()
+        + 2
+#endif
+
+        ,
+        ui->horizontalSpacer_ExpiresIn->sizeHint().height(),
+        QSizePolicy::Fixed);
 }
 
 ManageNamesPage::~ManageNamesPage()
@@ -65,7 +132,7 @@ void ManageNamesPage::setModel(WalletModel *walletModel)
     this->walletModel = walletModel;
     model = walletModel->getNameTableModel();
 
-    proxyModel = new QSortFilterProxyModel(this);
+    proxyModel = new NameFilterProxyModel(this);
     proxyModel->setSourceModel(model);
     proxyModel->setDynamicSortFilter(true);
     proxyModel->setSortCaseSensitivity(Qt::CaseInsensitive);
@@ -78,14 +145,33 @@ void ManageNamesPage::setModel(WalletModel *walletModel)
 
     // Set column widths
     ui->tableView->horizontalHeader()->resizeSection(
-            NameTableModel::Name, 320);
+            NameTableModel::Name, COLUMN_WIDTH_NAME);
     ui->tableView->horizontalHeader()->setResizeMode(
             NameTableModel::Value, QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->resizeSection(
+            NameTableModel::ExpiresIn, COLUMN_WIDTH_EXPIRES_IN);
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(selectionChanged()));
+            
+    connect(ui->nameFilter, SIGNAL(textChanged(QString)), this, SLOT(changedNameFilter(QString)));
+    connect(ui->valueFilter, SIGNAL(textChanged(QString)), this, SLOT(changedValueFilter(QString)));
 
     selectionChanged();
+}
+
+void ManageNamesPage::changedNameFilter(const QString &filter)
+{
+    if (!proxyModel)
+        return;
+    proxyModel->setNameSearch(filter);
+}
+
+void ManageNamesPage::changedValueFilter(const QString &filter)
+{
+    if (!proxyModel)
+        return;
+    proxyModel->setValueSearch(filter);
 }
 
 void ManageNamesPage::on_submitNameButton_clicked()
@@ -100,6 +186,29 @@ void ManageNamesPage::on_submitNameButton_clicked()
         QMessageBox::warning(this, tr("Name registration"), tr("Name not available"));
         ui->registerName->setFocus();
         return;
+    }
+
+    // TODO: name needs more exhaustive syntax checking, Unicode characters etc.
+    // TODO: maybe it should be done while the user is typing (e.g. show/hide a red notice below the input box)
+    if (name != name.simplified() || name.contains(" "))
+    {
+        if (QMessageBox::Yes != QMessageBox::warning(this, tr("Name registration warning"),
+              tr("The name you entered contains whitespace characters. It is probably invalid. Are you sure you want to use this name?"),
+              QMessageBox::Yes | QMessageBox::Cancel,
+              QMessageBox::Cancel))
+        {
+            return;
+        }
+    }
+    if (!name.contains("/") || name.startsWith("/"))
+    {
+        if (QMessageBox::Yes != QMessageBox::warning(this, tr("Name registration warning"),
+              tr("The name you entered does not start with prefix (such as \"d/\"). It may be invalid for certain tasks. Are you sure you want to use this name?"),
+              QMessageBox::Yes | QMessageBox::Cancel,
+              QMessageBox::Cancel))
+        {
+            return;
+        }
     }
 
     QString msg;
@@ -172,7 +281,7 @@ bool ManageNamesPage::eventFilter(QObject *object, QEvent *event)
 {
     if (event->type() == QEvent::FocusIn)
     {
-        if (object == ui->registerName)
+        if (object == ui->registerName || object == ui->submitNameButton)
         {
             ui->submitNameButton->setDefault(true);
             ui->configureNameButton->setDefault(false);

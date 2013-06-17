@@ -87,6 +87,8 @@ void ConfigureNameDialog::accept()
         return;
 
     returnData = ui->dataEdit->text();
+    // TODO: JSON syntax checking; maybe removing leading/trailing whitespace
+
     QString err_msg;
     try
     {
