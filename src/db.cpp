@@ -775,14 +775,20 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
                 filesystem::path pathDest(strDest);
                 if (filesystem::is_directory(pathDest))
                     pathDest = pathDest / wallet.strWalletFile;
+                    
+                try {
 #if BOOST_VERSION >= 104000
-                filesystem::copy_file(pathSrc, pathDest, filesystem::copy_option::overwrite_if_exists);
+                    filesystem::copy_file(pathSrc, pathDest, filesystem::copy_option::overwrite_if_exists);
 #else
-                filesystem::copy_file(pathSrc, pathDest);
+                    filesystem::copy_file(pathSrc, pathDest);
 #endif
-                printf("copied wallet.dat to %s\n", pathDest.string().c_str());
+                    printf("copied wallet.dat to %s\n", pathDest.string().c_str());
 
-                return true;
+                    return true;
+                } catch(const filesystem::filesystem_error &e) {
+                    printf("error copying wallet.dat to %s - %s\n", pathDest.string().c_str(), e.what());
+                    return false;
+                }
             }
         }
         Sleep(100);
