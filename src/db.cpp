@@ -144,8 +144,10 @@ void CDB::Close()
         nMinutes = 1;
     if (strFile == "addr.dat")
         nMinutes = 2;
+    if (strFile == "blkindex.dat")
+        nMinutes = 2;         
     if (strFile == "blkindex.dat" && IsInitialBlockDownload() && nBestHeight % 5000 != 0)
-        nMinutes = 1;
+        nMinutes = 5;
     dbenv.txn_checkpoint(0, nMinutes, 0);
 
     CRITICAL_BLOCK(cs_db)
