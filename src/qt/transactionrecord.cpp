@@ -172,6 +172,22 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                     sub.address = mapValue["to"];
                 }
 
+                // Carried over coin can be used to pay fee, if it the required
+                // amount was reserved in OP_NAME_NEW
+                if (nCarriedOverCoin > 0)
+                {
+                    if (nTxFee >= nCarriedOverCoin)
+                    {
+                        nTxFee -= nCarriedOverCoin;
+                        nCarriedOverCoin = 0;
+                    }
+                    else
+                    {
+                        nCarriedOverCoin -= nTxFee;
+                        nTxFee = 0;
+                    }
+                }
+
                 /* Add fee to first output */
                 if (nTxFee > 0)
                 {
