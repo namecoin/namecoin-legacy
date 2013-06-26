@@ -9,6 +9,13 @@
 #include "../wallet.h"
 #include "../namecoin.h"
 
+#include "../json/json_spirit.h"
+#include "../json/json_spirit_utils.h"
+#include "../json/json_spirit_reader_template.h"
+#include "../json/json_spirit_writer_template.h"
+
+#include <boost/foreach.hpp>
+
 #include <QMessageBox>
 #include <QClipboard>
 
@@ -16,6 +23,7 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
     QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
     name(_name),
     firstUpdate(_firstUpdate),
+    initialized(false),
     ui(new Ui::ConfigureNameDialog)
 {
     ui->setupUi(this);
@@ -37,6 +45,117 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
         ui->labelDomain->setText(name.mid(2) + ".bit");
     else
         ui->labelDomain->setText(tr("(not a domain name)"));
+        
+    // Try to select the most appropriate wizard
+    json_spirit::Value val;
+    if (data.trimmed().isEmpty())
+    {
+        // Empty data - select DNS for domains, custom for other
+        if (name.startsWith("d/"))
+            ui->tabWidget->setCurrentWidget(ui->tab_dns);
+        else
+            ui->tabWidget->setCurrentWidget(ui->tab_json);
+    }
+    else if (!json_spirit::read_string(data.toStdString(), val) || val.type() != json_spirit::obj_type)
+    {
+        // Non-JSON data - select custom tab
+        ui->tabWidget->setCurrentWidget(ui->tab_json);
+    }
+    else
+    {
+        // Check conformance to DNS type
+        bool ok = true;
+        QStringList ns;
+        QString translate, fingerprint;
+        BOOST_FOREACH(json_spirit::Pair& item, val.get_obj())
+        {
+            if (item.name_ == "ns")
+            {
+                if (item.value_.type() == json_spirit::array_type)
+                {
+                    BOOST_FOREACH(json_spirit::Value val, item.value_.get_array())
+                    {
+                        if (val.type() == json_spirit::str_type)
+                            ns.append(QString::fromStdString(val.get_str()));
+                        else
+                        {
+                            ok = false;
+                            break;
+                        }
+                    }
+                }
+                else
+                    ok = false;
+            }
+            else if (item.name_ == "translate")
+            {
+                if (item.value_.type() == json_spirit::str_type)
+                    translate = QString::fromStdString(item.value_.get_str());
+                else
+                    ok = false;
+            }
+            else if (item.name_ == "fingerprint")
+            {
+                if (item.value_.type() == json_spirit::str_type)
+                    fingerprint = QString::fromStdString(item.value_.get_str());
+                else
+                    ok = false;
+            }
+            else
+                ok = false;
+
+            if (!ok)
+                break;
+        }
+        if (ns.empty())
+            ok = false;
+
+        if (ok)
+        {
+            ui->nsEdit->setPlainText(ns.join("\n"));
+            ui->nsTranslateEdit->setText(translate);
+            ui->nsFingerprintEdit->setText(fingerprint);
+            ui->tabWidget->setCurrentWidget(ui->tab_dns);
+        }
+        else
+        {
+            // Check conformance to IP type
+            json_spirit::Object obj = val.get_obj();
+            QString ip, fingerprint;
+            json_spirit::Value ipVal = json_spirit::find_value(obj, "ip");
+            json_spirit::Value mapVal = json_spirit::find_value(obj, "map");
+            json_spirit::Value fingerprintVal = json_spirit::find_value(obj, "fingerprint");
+            int n = 2;
+            if (fingerprintVal.type() == json_spirit::str_type)
+            {
+                fingerprint = QString::fromStdString(fingerprintVal.get_str());
+                n++;
+            }
+            if (obj.size() == n && ipVal.type() == json_spirit::str_type && mapVal.type() == json_spirit::obj_type)
+            {
+                ip = QString::fromStdString(ipVal.get_str());
+                json_spirit::Object map = mapVal.get_obj();
+                json_spirit::Value starVal = json_spirit::find_value(map, "*");
+                if (map.size() == 1 && starVal.type() == json_spirit::str_type)
+                    ok = starVal.get_str() == ipVal.get_str();
+                else
+                    ok = false;
+            }
+            else
+                ok = false;
+
+            if (ok)
+            {
+                ui->ipEdit->setText(ip);
+                ui->ipFingerprintEdit->setText(fingerprint);
+                ui->tabWidget->setCurrentWidget(ui->tab_ip);
+            }
+            else
+                ui->tabWidget->setCurrentWidget(ui->tab_json);
+        }
+    }
+
+    on_dataEdit_textChanged(data);
 
     if (firstUpdate)
     {
@@ -52,6 +171,8 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
         ui->labelSubmitHint->setText(tr("Name_update transaction will be issued immediately"));
         setWindowTitle(tr("Update Name"));
     }
+
+    initialized = true;
 }
 
 ConfigureNameDialog::~ConfigureNameDialog()
@@ -87,7 +208,6 @@ void ConfigureNameDialog::accept()
         return;
 
     returnData = ui->dataEdit->text();
-    // TODO: JSON syntax checking; maybe removing leading/trailing whitespace
 
     QString err_msg;
     try
@@ -139,3 +259,62 @@ void ConfigureNameDialog::on_addressBookButton_clicked()
     if (dlg.exec())
         ui->transferTo->setText(dlg.getReturnValue());
 }
+
+void ConfigureNameDialog::SetDNS()
+{
+    json_spirit::Object data;
+    QStringList vLines = ui->nsEdit->toPlainText().split(QRegExp("[\r\n]"), QString::SkipEmptyParts);
+
+    json_spirit::Array ns;
+
+    for (int i = 0; i < vLines.size(); i++)
+    {
+        QString item = vLines.at(i).trimmed();
+        if (item.isEmpty())
+            continue;
+        ns.push_back(json_spirit::Value(item.toStdString()));
+    }
+    data.push_back(json_spirit::Pair("ns", ns));
+    QString translate = ui->nsTranslateEdit->text().trimmed();
+    if (!translate.isEmpty())
+    {
+        if (!translate.endsWith("."))
+            translate += ".";
+        data.push_back(json_spirit::Pair("translate", translate.toStdString()));
+    }
+    QString fingerprint = ui->nsFingerprintEdit->text().trimmed();
+    if (!fingerprint.isEmpty())
+        data.push_back(json_spirit::Pair("fingerprint", fingerprint.toStdString()));
+
+    ui->dataEdit->setText(QString::fromStdString(json_spirit::write_string(json_spirit::Value(data), false)));
+}
+
+void ConfigureNameDialog::SetIP()
+{
+    json_spirit::Object data;
+    data.push_back(json_spirit::Pair("ip", ui->ipEdit->text().trimmed().toStdString()));
+    json_spirit::Object map;
+    map.push_back(json_spirit::Pair("*", ui->ipEdit->text().trimmed().toStdString()));
+    data.push_back(json_spirit::Pair("map", map));
+    QString ipFingerprint = ui->ipFingerprintEdit->text().trimmed();
+    if (!ipFingerprint.isEmpty())
+        data.push_back(json_spirit::Pair("fingerprint", ipFingerprint.toStdString()));
+
+    ui->dataEdit->setText(QString::fromStdString(json_spirit::write_string(json_spirit::Value(data), false)));
+}
+
+void ConfigureNameDialog::on_dataEdit_textChanged(const QString &text)
+{
+    json_spirit::Value val;
+    if (json_spirit::read_string(text.toStdString(), val))
+    {
+        ui->labelJsonValid->setText(tr("Valid JSON string"));
+        ui->labelJsonValid->setStyleSheet("color:green");
+    }
+    else
+    {
+        ui->labelJsonValid->setText(tr("Invalid JSON string (can still be used, if not intended as JSON string)"));
+        ui->labelJsonValid->setStyleSheet("color:brown");
+    }
+}
+

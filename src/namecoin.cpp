@@ -293,7 +293,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 wtxNew.fFromMe = true;
 
                 int64 nTotalValue = nValue + nFeeRet;
-                printf("total value = %d\n", nTotalValue);
+                printf("CreateTransactionWithInputTx: total value = %d\n", nTotalValue);
                 double dPriority = 0;
                 // vouts to the payees
                 BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -304,8 +304,14 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 // Choose coins to use
                 set<pair<const CWalletTx*, unsigned int> > setCoins;
                 int64 nValueIn = 0;
-                if (!pwalletMain->SelectCoins(nTotalValue - nWtxinCredit, setCoins, nValueIn))
-                    return false;
+                printf("CreateTransactionWithInputTx: SelectCoins(%s), nTotalValue = %s, nWtxinCredit = %s\n", FormatMoney(nTotalValue - nWtxinCredit).c_str(), FormatMoney(nTotalValue).c_str(), FormatMoney(nWtxinCredit).c_str());
+                if (nTotalValue - nWtxinCredit > 0)
+                {
+                    if (!pwalletMain->SelectCoins(nTotalValue - nWtxinCredit, setCoins, nValueIn))
+                        return false;
+                }
+
+                printf("CreateTransactionWithInputTx: selected %d tx outs, nValueIn = %s\n", setCoins.size(), FormatMoney(nValueIn).c_str());
 
                 vector<pair<const CWalletTx*, unsigned int> >
                     vecCoins(setCoins.begin(), setCoins.end());
@@ -384,6 +390,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);
+                    printf("CreateTransactionWithInputTx: re-iterating (nFreeRet = %s)\n", FormatMoney(nFeeRet).c_str());
                     continue;
                 }
 
@@ -395,6 +402,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
             }
         }
     }
+    printf("CreateTransactionWithInputTx succeeded:\n%s", wtxNew.ToString().c_str()); 
     return true;
 }
 
@@ -1286,7 +1294,13 @@ Value deletetransaction(const Array& params, bool fHelp)
         throw runtime_error("transaction not in wallet");
 
       if (!mapTransactions.count(hash))
-        throw runtime_error("transaction not in memory - is already in blockchain?");
+      {
+        //throw runtime_error("transaction not in memory - is already in blockchain?");
+        CTransaction tx;
+        uint256 hashBlock = 0;
+        if (GetTransaction(hash, tx, hashBlock /*, true*/) && hashBlock != 0)
+          throw runtime_error("transaction is already in blockchain");
+      }
       CWalletTx wtx = pwalletMain->mapWallet[hash];
       UnspendInputs(wtx);
 

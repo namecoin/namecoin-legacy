@@ -15,10 +15,6 @@
         <translation>גרסת &lt;b&gt;ביטקוין&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>Copyright © 2009-2013 The Bitcoin and Namecoin developers</source>
-        <translation type="obsolete">זכויות יוצרים 2009-2013 שמורות למפתחי הביטקוין</translation>
-    </message>
-    <message>
         <location line="+57"/>
         <source>
 This is experimental software.
@@ -729,13 +725,6 @@ Address: %4
     </message>
 </context>
 <context>
-    <name>ClientModel</name>
-    <message>
-        <source>Network Alert</source>
-        <translation type="obsolete">אזעקת רשת</translation>
-    </message>
-</context>
-<context>
     <name>ConfigureNameDialog</name>
     <message>
         <location filename="../forms/configurenamedialog.ui" line="+20"/>
@@ -748,27 +737,98 @@ Address: %4
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+41"/>
         <source>&amp;Data:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location line="+17"/>
+        <source>D&amp;NS Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>&amp;Name servers:
+(one per line,
+host or IP)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter substitution name that will be used in DNS queries.&lt;/p&gt;&lt;p&gt;For example: bitcoin.org&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Enter name servers as host names (preferable), or IP addresses. E.g.
+ns0.web-sweet-web.net
+ns1.web-sweet-web.net
+ns0.xname.org
+1.2.3.4
+1.2.3.5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>T&amp;ranslate name:
+(optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <location line="+94"/>
+        <source>&amp;SSL fingerprint:
+(optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-80"/>
+        <location line="+73"/>
+        <source>Enter SSL certificate fingerprint if you want to use HTTPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-33"/>
+        <source>&amp;IP Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>I&amp;P Address:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location line="+13"/>
-        <source>Enter JSON string that will be associated with the name</source>
+        <source>IP address, e.g. 1.2.3.4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+7"/>
+        <source>Subdomains will be mapped to the same IP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+45"/>
+        <source>&amp;Custom Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;MS Shell Dlg 2&apos;; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
-&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Enter JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+15"/>
+        <source>Enter JSON string that will be associated with the name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+44"/>
         <source>&amp;Transfer to:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -800,22 +860,22 @@ Leave empty, if not needed.</source>
         <translation type="unfinished">Alt+P</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="-351"/>
         <source>Domain name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+360"/>
         <source>(can be left empty)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../configurenamedialog.cpp" line="+39"/>
+        <location filename="../configurenamedialog.cpp" line="+47"/>
         <source>(not a domain name)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+120"/>
         <source>Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old</source>
         <translation type="unfinished"></translation>
     </message>
@@ -830,8 +890,18 @@ Leave empty, if not needed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+58"/>
         <source>Name update error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+81"/>
+        <source>Valid JSON string</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Invalid JSON string (can still be used, if not intended as JSON string)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -965,13 +1035,8 @@ Leave empty, if not needed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>d/</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt;&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prfixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <location line="+16"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt; (note: domains can be lower-case only, valid characters are alphanumeric and hyphen; hyphen can&apos;t be first/last character).&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prefixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -991,18 +1056,28 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+29"/>
+        <source>Enter part of name to search for</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Enter part of value to search for</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+31"/>
         <source>Double-click name to configure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+42"/>
         <source>Configure name and submit update operation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../managenamespage.cpp" line="+34"/>
+        <location filename="../managenamespage.cpp" line="+74"/>
         <source>&amp;Configure Name...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1017,7 +1092,17 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+67"/>
+        <location line="+33"/>
+        <source>Name filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Value filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+79"/>
         <source>Name registration</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1027,7 +1112,23 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+9"/>
+        <location line="+10"/>
+        <source>Name registration warning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-9"/>
+        <source>The name you entered contains whitespace characters. It is probably invalid. Are you sure you want to use this name?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>The name you entered does not start with prefix (such as &quot;d/&quot;). It may be invalid for certain tasks. Are you sure you want to use this name?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Are you sure you want to register domain name %1, which corresponds to domain %2?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1070,7 +1171,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
 <context>
     <name>NameTableModel</name>
     <message>
-        <location filename="../nametablemodel.cpp" line="+338"/>
+        <location filename="../nametablemodel.cpp" line="+347"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1085,7 +1186,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+124"/>
+        <location line="+126"/>
         <source>Name registered using Namecoin.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1099,792 +1200,6 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <source>Number of blocks, after which the name will expire. Update name to renew it.
 Empty cell means pending (awaiting automatic name_firstupdate or awaiting network confirmation).</source>
         <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>Namecoin-core</name>
-    <message>
-        <source>Namecoin version</source>
-        <translation type="obsolete">גרסת ביטקוין</translation>
-    </message>
-    <message>
-        <source>Usage:</source>
-        <translation type="obsolete">שימוש:</translation>
-    </message>
-    <message>
-        <source>Send command to -server or namecoind</source>
-        <translation type="obsolete">שלח פקודה ל -server או namecoind</translation>
-    </message>
-    <message>
-        <source>List commands</source>
-        <translation type="obsolete">רשימת פקודות</translation>
-    </message>
-    <message>
-        <source>Get help for a command</source>
-        <translation type="obsolete">קבל עזרה עבור פקודה</translation>
-    </message>
-    <message>
-        <source>Options:</source>
-        <translation type="obsolete">אפשרויות:</translation>
-    </message>
-    <message>
-        <source>Specify configuration file (default: namecoin.conf)</source>
-        <translation type="obsolete">ציין קובץ הגדרות (ברירת מחדל: namecoin.conf)</translation>
-    </message>
-    <message>
-        <source>Specify pid file (default: namecoind.pid)</source>
-        <translation type="obsolete">ציין קובץ pid (ברירת מחדל: namecoind.pid)</translation>
-    </message>
-    <message>
-        <source>Generate coins</source>
-        <translation type="obsolete">צור מטבעות</translation>
-    </message>
-    <message>
-        <source>Don&apos;t generate coins</source>
-        <translation type="obsolete">אל תייצר מטבעות</translation>
-    </message>
-    <message>
-        <source>Specify data directory</source>
-        <translation type="obsolete">ציין תיקיית נתונים</translation>
-    </message>
-    <message>
-        <source>Set database cache size in megabytes (default: 25)</source>
-        <translation type="obsolete">קבע את גודל המטמון של מסד הנתונים במגהבייט (ברירת מחדל: 25)</translation>
-    </message>
-    <message>
-        <source>Listen for connections on &lt;port&gt; (default: 8334 or testnet: 18334)</source>
-        <translation type="obsolete">האזן לחיבורים ב&lt;פורט&gt; (ברירת מחדל: 8334 או ברשת הבדיקה: 18334)</translation>
-    </message>
-    <message>
-        <source>Maintain at most &lt;n&gt; connections to peers (default: 125)</source>
-        <translation type="obsolete">החזק לכל היותר &lt;n&gt; חיבורים לעמיתים (ברירת מחדל: 125)</translation>
-    </message>
-    <message>
-        <source>Connect to a node to retrieve peer addresses, and disconnect</source>
-        <translation type="obsolete">התחבר לצומת כדי לדלות כתובות עמיתים, ואז התנתק</translation>
-    </message>
-    <message>
-        <source>Specify your own public address</source>
-        <translation type="obsolete">ציין את הכתובת הפומבית שלך</translation>
-    </message>
-    <message>
-        <source>Threshold for disconnecting misbehaving peers (default: 100)</source>
-        <translation type="obsolete">סף להתנתקות מעמיתים הנוהגים שלא כהלכה (ברירת מחדל: 100)</translation>
-    </message>
-    <message>
-        <source>Number of seconds to keep misbehaving peers from reconnecting (default: 86400)</source>
-        <translation type="obsolete">מספר שניות למנוע מעמיתים הנוהגים שלא כהלכה מלהתחבר מחדש (ברירת מחדל: 86400)</translation>
-    </message>
-    <message>
-        <source>An error occurred while setting up the RPC port %u for listening on IPv4: %s</source>
-        <translation type="obsolete">אירעה שגיאה בעת הגדרת פורט RPC %u להאזנה ב-IPv4: %s</translation>
-    </message>
-    <message>
-        <source>Listen for JSON-RPC connections on &lt;port&gt; (default: 8336 or testnet: 18336)</source>
-        <translation type="obsolete">האזן לחיבורי JSON-RPC ב- &lt;port&gt; (ברירת מחדל: 8336 או רשת בדיקה: 18336)</translation>
-    </message>
-    <message>
-        <source>Accept command line and JSON-RPC commands</source>
-        <translation type="obsolete">קבל פקודות משורת הפקודה ו- JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Run in the background as a daemon and accept commands</source>
-        <translation type="obsolete">רוץ ברקע כדימון וקבל פקודות</translation>
-    </message>
-    <message>
-        <source>Use the test network</source>
-        <translation type="obsolete">השתמש ברשת הבדיקה</translation>
-    </message>
-    <message>
-        <source>Accept connections from outside (default: 1 if no -proxy or -connect)</source>
-        <translation type="obsolete">קבל חיבורים מבחוץ (ברירת מחדל: 1 ללא -proxy או -connect)</translation>
-    </message>
-    <message>
-        <source>%s, you must set a rpcpassword in the configuration file:
- %s
-It is recommended you use the following random password:
-rpcuser=namecoinrpc
-rpcpassword=%s
-(you do not need to remember this password)
-The username and password MUST NOT be the same.
-If the file does not exist, create it with owner-readable-only file permissions.
-</source>
-        <translation type="obsolete">%s, עליך לקבוע סיסמת RPC בקובץ הקונפיגורציה:
- %s
-מומלץ להשתמש בסיסמא האקראית הבאה:
-rpcuser=namecoinrpc
-rpcpassword=%s
-(אין צורך לזכור את הסיסמה)
-אסור ששם המשתמש והסיסמא יהיו זהים.
-אם הקובץ אינו קיים, צור אותו עם הרשאות קריאה לבעלים בלבד.</translation>
-    </message>
-    <message>
-        <source>An error occurred while setting up the RPC port %u for listening on IPv6, falling back to IPv4: %s</source>
-        <translation type="obsolete">אירעה שגיאה בעת הגדרת פורט RPC %u להאזנה ב-IPv6, נסוג ל-IPv4: %s</translation>
-    </message>
-    <message>
-        <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>
-        <translation type="obsolete">קשור עם כתובת נתונה והאזן לה תמיד. השתמש בסימון [host]:port עבוד IPv6.</translation>
-    </message>
-    <message>
-        <source>Cannot obtain a lock on data directory %s. Namecoin is probably already running.</source>
-        <translation type="obsolete">לא מסוגל להשיג נעילה על תיקיית הנתונים %s. כנראה שביטקוין כבר רץ.</translation>
-    </message>
-    <message>
-        <source>Error initializing database environment %s! To recover, BACKUP THAT DIRECTORY, then remove everything from it except for wallet.dat.</source>
-        <translation type="obsolete">שגיאה באתחול סביבת מסד הנתונים %s! בשביל להתאושש, גבה את התיקיה הזאת, ואז הסר הכל מלבד wallet.dat.</translation>
-    </message>
-    <message>
-        <source>Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.</source>
-        <translation type="obsolete">שגיאה: הפעולה נדחתה! זה עלול לקרות אם כמה מהמטבעות בארנק שלך כבר נוצלו, למשל אם השתמשת בעותק של wallet.dat ומטבעות נשלחו בעותק אך לא סומנו כמנוצלות כאן.</translation>
-    </message>
-    <message>
-        <source>Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!</source>
-        <translation type="obsolete">שגיאה: הפעולה הזאת דורשת עמלת פעולה של לפחות %s עקב הכמות, המורכבות, או השימוש בכספים שהתקבלו לאחרונה!</translation>
-    </message>
-    <message>
-        <source>Set maximum size of high-priority/low-fee transactions in bytes (default: 27000)</source>
-        <translation type="obsolete">קבע גודל מקסימלי עבור פעולות עדיפות גבוהה/עמלה נמוכה בבתים (ברירת מחדל: 27000)</translation>
-    </message>
-    <message>
-        <source>This is a pre-release test build - use at your own risk - do not use for mining or merchant applications</source>
-        <translation type="obsolete">זוהי בניית ניסיון טרום-שחרור - השימוש בה על אחריותך - אין להשתמש לצורך כריה או יישומי מסחר</translation>
-    </message>
-    <message>
-        <source>Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction.</source>
-        <translation type="obsolete">אזהרה: -paytxfee נקבע לערך מאד גבוה! זוהי עמלת הפעולה שתשלם אם אתה שולח פעולה.</translation>
-    </message>
-    <message>
-        <source>Warning: Displayed transactions may not be correct! You may need to upgrade, or other nodes may need to upgrade.</source>
-        <translation type="obsolete">אזהרה: הפעולות המוצגות עשויות לא להיות נכונות! ייתכן ואתה צריך לשדרג, או שצמתים אחרים צריכים לשדרג.</translation>
-    </message>
-    <message>
-        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong Namecoin will not work properly.</source>
-        <translation type="obsolete">אזהרה: אנא בדוק שהתאריך והשעה של המחשב שלך נכונים! אם השעון שלך אינו נכון ביטקוין לא יעבוד כראוי.</translation>
-    </message>
-    <message>
-        <source>Warning: error reading wallet.dat! All keys read correctly, but transaction data or address book entries might be missing or incorrect.</source>
-        <translation type="obsolete">אזהרה: שגיאה בקריאת wallet.dat! כל המתפחות נקראו באופן תקין, אך נתוני הפעולות או ספר הכתובות עלולים להיות חסרים או שגויים.</translation>
-    </message>
-    <message>
-        <source>Warning: wallet.dat corrupt, data salvaged! Original wallet.dat saved as wallet.{timestamp}.bak in %s; if your balance or transactions are incorrect you should restore from a backup.</source>
-        <translation type="obsolete">אזהרה: קובץ wallet.dat מושחת, המידע חולץ! קובץ wallet.dat המקורח נשמר כ - wallet.{timestamp}.bak ב - %s; אם המאזן או הפעולות שגויים עליך לשחזר גיבוי.</translation>
-    </message>
-    <message>
-        <source>Attempt to recover private keys from a corrupt wallet.dat</source>
-        <translation type="obsolete">נסה לשחזר מפתחות פרטיים מקובץ wallet.dat מושחת.</translation>
-    </message>
-    <message>
-        <source>Block creation options:</source>
-        <translation type="obsolete">אפשרויות יצירת בלוק:</translation>
-    </message>
-    <message>
-        <source>Connect only to the specified node(s)</source>
-        <translation type="obsolete">התחבר רק לצמתים המצוינים</translation>
-    </message>
-    <message>
-        <source>Discover own IP address (default: 1 when listening and no -externalip)</source>
-        <translation type="obsolete">גלה את כתובת ה-IP העצמית (ברירת מחדל: 1 כשמאזינים וללא -externalip)</translation>
-    </message>
-    <message>
-        <source>Error: Transaction creation failed!</source>
-        <translation type="obsolete">שגיאה: יצירת הפעולה נכשלה!</translation>
-    </message>
-    <message>
-        <source>Error: Wallet locked, unable to create transaction!</source>
-        <translation type="obsolete">שגיאה: הארנק נעול, אין אפשרות ליצור פעולה!</translation>
-    </message>
-    <message>
-        <source>Failed to listen on any port. Use -listen=0 if you want this.</source>
-        <translation type="obsolete">האזנה נכשלה בכל פורט. השתמש ב- -listen=0 אם ברצונך בכך.</translation>
-    </message>
-    <message>
-        <source>Find peers using DNS lookup (default: 1 unless -connect)</source>
-        <translation type="obsolete">מצא עמיתים ע&quot;י חיפוש DNS (ברירת מחדל: 1 ללא -connect)</translation>
-    </message>
-    <message>
-        <source>Importing blocks from block database...</source>
-        <translation type="obsolete">מייבא בלוקים ממסד נתוני הבלוקים...</translation>
-    </message>
-    <message>
-        <source>Invalid -tor address: &apos;%s&apos;</source>
-        <translation type="obsolete">כתובת לא תקינה ל -tor: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Maximum per-connection receive buffer, &lt;n&gt;*1000 bytes (default: 5000)</source>
-        <translation type="obsolete">חוצץ קבלה מירבי לכל חיבור, &lt;n&gt;*1000 בתים (ברירת מחדל: 5000)</translation>
-    </message>
-    <message>
-        <source>Maximum per-connection send buffer, &lt;n&gt;*1000 bytes (default: 1000)</source>
-        <translation type="obsolete">חוצץ שליחה מירבי לכל חיבור, &lt;n&gt;*1000 בתים (ברירת מחדל: 1000)</translation>
-    </message>
-    <message>
-        <source>Only connect to nodes in network &lt;net&gt; (IPv4, IPv6 or Tor)</source>
-        <translation type="obsolete">התחבר רק לצמתים ברשת &lt;net&gt; (IPv4, IPv6 או Tor)</translation>
-    </message>
-    <message>
-        <source>Output extra debugging information. Implies all other -debug* options</source>
-        <translation type="obsolete">פלוט מידע ניפוי נוסף. נובע מכך כל אפשרויות -debug* האחרות.</translation>
-    </message>
-    <message>
-        <source>Output extra network debugging information</source>
-        <translation type="obsolete">פלוט מידע נוסף לניפוי שגיאות ברשת.</translation>
-    </message>
-    <message>
-        <source>Prepend debug output with timestamp</source>
-        <translation type="obsolete">הוסף חותמת זמן לפני פלט דיבאג</translation>
-    </message>
-    <message>
-        <source>Rebuild blockchain index from current blk000??.dat files</source>
-        <translation type="obsolete">בנה מחדש את אינדקס שרשרת הבלוקים מקובצי blk000??.dat הנוכחיים</translation>
-    </message>
-    <message>
-        <source>SSL options: (see the Bitcoin Wiki for SSL setup instructions)</source>
-        <translation type="obsolete">אפשרויות SSL: (ראה את הויקי של ביטקוין עבור הוראות הגדרת SSL)</translation>
-    </message>
-    <message>
-        <source>Select the version of socks proxy to use (4-5, default: 5)</source>
-        <translation type="obsolete">בחר את גרסת פרוקסי SOCKS להשתמש בה (4-5, ברירת מחדל: 5)</translation>
-    </message>
-    <message>
-        <source>Send trace/debug info to console instead of debug.log file</source>
-        <translation type="obsolete">שלח מידע דיבאג ועקבה לקונסולה במקום לקובץ debug.log</translation>
-    </message>
-    <message>
-        <source>Send trace/debug info to debugger</source>
-        <translation type="obsolete">שלח מידע דיבאג ועקבה לכלי דיבאג</translation>
-    </message>
-    <message>
-        <source>Set maximum block size in bytes (default: 250000)</source>
-        <translation type="obsolete">קבע את גדול הבלוק המירבי בבתים (ברירת מחדל: 250000)</translation>
-    </message>
-    <message>
-        <source>Set minimum block size in bytes (default: 0)</source>
-        <translation type="obsolete">קבע את גודל הבלוק המינימלי בבתים (ברירת מחדל: 0)</translation>
-    </message>
-    <message>
-        <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
-        <translation type="obsolete">כווץ את קובץ debug.log בהפעלת הקליינט (ברירת מחדל: 1 ללא -debug)</translation>
-    </message>
-    <message>
-        <source>Specify connection timeout in milliseconds (default: 5000)</source>
-        <translation type="obsolete">ציין הגבלת זמן לחיבור במילישניות (ברירת מחדל: 5000)</translation>
-    </message>
-    <message>
-        <source>Use UPnP to map the listening port (default: 0)</source>
-        <translation type="obsolete">השתמש ב-UPnP כדי למפות את הפורט להאזנה (ברירת מחדל: 0)</translation>
-    </message>
-    <message>
-        <source>Use UPnP to map the listening port (default: 1 when listening)</source>
-        <translation type="obsolete">השתמש ב-UPnP כדי למפות את הפורט להאזנה (ברירת מחדל: 1 בעת האזנה)</translation>
-    </message>
-    <message>
-        <source>Use proxy to reach tor hidden services (default: same as -proxy)</source>
-        <translation type="obsolete">השתמש בפרוקסי כדי להגיע לשירותים חבויים ב-tor (ברירת מחדל: כמו ב- -proxy)</translation>
-    </message>
-    <message>
-        <source>Username for JSON-RPC connections</source>
-        <translation type="obsolete">שם משתמש לחיבורי JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Warning: This version is obsolete, upgrade required!</source>
-        <translation type="obsolete">אזהרה: הגרסה הזאת מיושנת, יש צורך בשדרוג!</translation>
-    </message>
-    <message>
-        <source>wallet.dat corrupt, salvage failed</source>
-        <translation type="obsolete">קובץ wallet.dat מושחת, החילוץ נכשל</translation>
-    </message>
-    <message>
-        <source>Password for JSON-RPC connections</source>
-        <translation type="obsolete">סיסמה לחיבורי JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Allow JSON-RPC connections from specified IP address</source>
-        <translation type="obsolete">אפשר חיבורי JSON-RPC מכתובת האינטרנט המצוינת</translation>
-    </message>
-    <message>
-        <source>Send commands to node running on &lt;ip&gt; (default: 127.0.0.1)</source>
-        <translation type="obsolete">שלח פקודות לצומת ב-&lt;ip&gt; (ברירת מחדל: 127.0.0.1)</translation>
-    </message>
-    <message>
-        <source>Execute command when the best block changes (%s in cmd is replaced by block hash)</source>
-        <translation type="obsolete">בצע פקודה זו כשהבלוק הטוב ביותר משתנה (%s בפקודה יוחלף בגיבוב הבלוק)</translation>
-    </message>
-    <message>
-        <source>Upgrade wallet to latest format</source>
-        <translation type="obsolete">שדרג את הארנק לפורמט העדכני</translation>
-    </message>
-    <message>
-        <source>Set key pool size to &lt;n&gt; (default: 100)</source>
-        <translation type="obsolete">קבע את גודל המאגר ל -&lt;n&gt; (ברירת מחדל: 100)</translation>
-    </message>
-    <message>
-        <source>Rescan the block chain for missing wallet transactions</source>
-        <translation type="obsolete">סרוק מחדש את שרשרת הבלוקים למציאת פעולות חסרות בארנק</translation>
-    </message>
-    <message>
-        <source>How many blocks to check at startup (default: 2500, 0 = all)</source>
-        <translation type="obsolete">מספר הבלוקים לבדוק בעת ההפעלה (ברירת מחדל: 2500, 0=כולם)</translation>
-    </message>
-    <message>
-        <source>Use OpenSSL (https) for JSON-RPC connections</source>
-        <translation type="obsolete">השתמש ב-OpenSSL (https( עבור חיבורי JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Server certificate file (default: server.cert)</source>
-        <translation type="obsolete">קובץ תעודת שרת (ברירת מחדל: server.cert)</translation>
-    </message>
-    <message>
-        <source>Server private key (default: server.pem)</source>
-        <translation type="obsolete">מפתח פרטי של השרת (ברירת מחדל: server.pem)</translation>
-    </message>
-    <message>
-        <source>Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</source>
-        <translation type="obsolete">צפנים קבילים (ברירת מחדל: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</translation>
-    </message>
-    <message>
-        <source>This help message</source>
-        <translation type="obsolete">הודעת העזרה הזו</translation>
-    </message>
-    <message>
-        <source>Unable to bind to %s on this computer (bind returned error %d, %s)</source>
-        <translation type="obsolete">לא מסוגל לקשור ל-%s במחשב זה (הקשירה החזירה שגיאה %d, %s)</translation>
-    </message>
-    <message>
-        <source>Connect through socks proxy</source>
-        <translation type="obsolete">התחבר דרך פרוקסי SOCKS</translation>
-    </message>
-    <message>
-        <source>Allow DNS lookups for -addnode, -seednode and -connect</source>
-        <translation type="obsolete">אפשר בדיקת DNS עבור -addnode, -seednode ו- -connect</translation>
-    </message>
-    <message>
-        <source>Loading addresses...</source>
-        <translation type="obsolete">טוען כתובות...</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat: Wallet corrupted</source>
-        <translation type="obsolete">שגיאה בטעינת הקובץ wallet.dat: הארנק מושחת</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat: Wallet requires newer version of Namecoin</source>
-        <translation type="obsolete">שגיאה בטעינת הקובץ wallet.dat: הארנק דורש גרסה חדשה יותר של ביטקוין</translation>
-    </message>
-    <message>
-        <source>Wallet needed to be rewritten: restart Namecoin to complete</source>
-        <translation type="obsolete">יש לכתוב מחדש את הארנק: אתחל את ביטקוין לסיום</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat</source>
-        <translation type="obsolete">שגיאה בטעינת הקובץ wallet.dat</translation>
-    </message>
-    <message>
-        <source>Invalid -proxy address: &apos;%s&apos;</source>
-        <translation type="obsolete">כתובת -proxy לא תקינה: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Unknown network specified in -onlynet: &apos;%s&apos;</source>
-        <translation type="obsolete">רשת לא ידועה צוינה ב- -onlynet: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Unknown -socks proxy version requested: %i</source>
-        <translation type="obsolete">התבקשה גרסת פרוקסי -socks לא ידועה: %i</translation>
-    </message>
-    <message>
-        <source>Cannot resolve -bind address: &apos;%s&apos;</source>
-        <translation type="obsolete">לא מסוגל לפתור כתובת -bind: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Cannot resolve -externalip address: &apos;%s&apos;</source>
-        <translation type="obsolete">לא מסוגל לפתור כתובת -externalip: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos;</source>
-        <translation type="obsolete">כמות לא תקינה עבור -paytxfee=&lt;amount&gt;: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Error: could not start node</source>
-        <translation type="obsolete">שגיאה: לא ניתן להתחיל צומת</translation>
-    </message>
-    <message>
-        <source>Invalid amount</source>
-        <translation type="obsolete">כמות לא תקינה</translation>
-    </message>
-    <message>
-        <source>Insufficient funds</source>
-        <translation type="obsolete">אין מספיק כספים</translation>
-    </message>
-    <message>
-        <source>Loading block index...</source>
-        <translation type="obsolete">טוען את אינדקס הבלוקים...</translation>
-    </message>
-    <message>
-        <source>Add a node to connect to and attempt to keep the connection open</source>
-        <translation type="obsolete">הוסף צומת להתחברות ונסה לשמור את החיבור פתוח</translation>
-    </message>
-    <message>
-        <source>Unable to bind to %s on this computer. Namecoin is probably already running.</source>
-        <translation type="obsolete">לא ניתן לקשור ל-%s במחשב זה. ביטקוין כנראה עדיין רץ.</translation>
-    </message>
-    <message>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation type="obsolete">מצא עמיתים תוך שימוש ב-IRC (ברירת מחדל: 0)</translation>
-    </message>
-    <message>
-        <source>Fee per KB to add to transactions you send</source>
-        <translation type="obsolete">עמלה להוסיף לפעולות שאתה שולח עבור כל KB</translation>
-    </message>
-    <message>
-        <source>Loading wallet...</source>
-        <translation type="obsolete">טוען ארנק...</translation>
-    </message>
-    <message>
-        <source>Cannot downgrade wallet</source>
-        <translation type="obsolete">לא יכול להוריד דרגת הארנק</translation>
-    </message>
-    <message>
-        <source>Cannot initialize keypool</source>
-        <translation type="obsolete">לא יכול לאתחל את מאגר המפתחות</translation>
-    </message>
-    <message>
-        <source>Cannot write default address</source>
-        <translation type="obsolete">לא יכול לכתוב את כתובת ברירת המחדל</translation>
-    </message>
-    <message>
-        <source>Rescanning...</source>
-        <translation type="obsolete">סורק מחדש...</translation>
-    </message>
-    <message>
-        <source>Done loading</source>
-        <translation type="obsolete">טעינה הושלמה</translation>
-    </message>
-    <message>
-        <source>To use the %s option</source>
-        <translation type="obsolete">להשתמש באפשרות %s</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">שגיאה</translation>
-    </message>
-    <message>
-        <source>You must set rpcpassword=&lt;password&gt; in the configuration file:
-%s
-If the file does not exist, create it with owner-readable-only file permissions.</source>
-        <translation type="obsolete">עליך לקבוע rpcpassword=yourpassword בקובץ ההגדרות:
-%s
-אם הקובץ אינו קיים, צור אותו עם הרשאות קריאה לבעלים בלבד.</translation>
-    </message>
-</context>
-<context>
-    <name>NamecoinGUI</name>
-    <message>
-        <source>Sign &amp;message...</source>
-        <translation type="obsolete">חתום על הודעה</translation>
-    </message>
-    <message>
-        <source>Synchronizing with network...</source>
-        <translation type="obsolete">מסתנכרן עם הרשת...</translation>
-    </message>
-    <message>
-        <source>&amp;Overview</source>
-        <translation type="obsolete">&amp;סקירה</translation>
-    </message>
-    <message>
-        <source>Show general overview of wallet</source>
-        <translation type="obsolete">הצג סקירה כללית של הארנק</translation>
-    </message>
-    <message>
-        <source>&amp;Transactions</source>
-        <translation type="obsolete">&amp;פעולות</translation>
-    </message>
-    <message>
-        <source>Browse transaction history</source>
-        <translation type="obsolete">דפדף בהיסטוריית הפעולות</translation>
-    </message>
-    <message>
-        <source>&amp;Address Book</source>
-        <translation type="obsolete">פנקס &amp;כתובות</translation>
-    </message>
-    <message>
-        <source>Edit the list of stored addresses and labels</source>
-        <translation type="obsolete">ערוך את רשימת הכתובות והתויות</translation>
-    </message>
-    <message>
-        <source>&amp;Receive coins</source>
-        <translation type="obsolete">&amp;קבלת מטבעות</translation>
-    </message>
-    <message>
-        <source>Show the list of addresses for receiving payments</source>
-        <translation type="obsolete">הצג את רשימת הכתובות לקבלת תשלומים</translation>
-    </message>
-    <message>
-        <source>&amp;Send coins</source>
-        <translation type="obsolete">&amp;שלח מטבעות</translation>
-    </message>
-    <message>
-        <source>E&amp;xit</source>
-        <translation type="obsolete">י&amp;ציאה</translation>
-    </message>
-    <message>
-        <source>Quit application</source>
-        <translation type="obsolete">סגור תוכנה</translation>
-    </message>
-    <message>
-        <source>Show information about Namecoin</source>
-        <translation type="obsolete">הצג מידע על ביטקוין</translation>
-    </message>
-    <message>
-        <source>About &amp;Qt</source>
-        <translation type="obsolete">אודות Qt</translation>
-    </message>
-    <message>
-        <source>Show information about Qt</source>
-        <translation type="obsolete">הצג מידע על Qt</translation>
-    </message>
-    <message>
-        <source>&amp;Options...</source>
-        <translation type="obsolete">&amp;אפשרויות</translation>
-    </message>
-    <message>
-        <source>&amp;Encrypt Wallet...</source>
-        <translation type="obsolete">הצפן ארנק</translation>
-    </message>
-    <message>
-        <source>&amp;Backup Wallet...</source>
-        <translation type="obsolete">גיבוי ארנק</translation>
-    </message>
-    <message>
-        <source>&amp;Change Passphrase...</source>
-        <translation type="obsolete">שנה סיסמא</translation>
-    </message>
-    <message>
-        <source>Importing blocks from disk...</source>
-        <translation type="obsolete">מייבא בלוקים מהדיסק...</translation>
-    </message>
-    <message>
-        <source>Reindexing blocks on disk...</source>
-        <translation type="obsolete">מחדש את אינדקס הבלוקים בדיסק...</translation>
-    </message>
-    <message numerus="yes">
-        <source>~%n block(s) remaining</source>
-        <translation type="obsolete">
-            <numerusform>בלוק אחד נותר</numerusform>
-            <numerusform>~%n בלוקים נותרו</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>&amp;Export...</source>
-        <translation type="obsolete">י&amp;צא לקובץ</translation>
-    </message>
-    <message>
-        <source>Send coins to a Namecoin address</source>
-        <translation type="obsolete">שלח מטבעות לכתובת ביטקוין</translation>
-    </message>
-    <message>
-        <source>Modify configuration options for Namecoin</source>
-        <translation type="obsolete">שנה אפשרויות תצורה עבור ביטקוין</translation>
-    </message>
-    <message>
-        <source>Export the data in the current tab to a file</source>
-        <translation type="obsolete">יצוא הנתונים בטאב הנוכחי לקובץ</translation>
-    </message>
-    <message>
-        <source>Backup wallet to another location</source>
-        <translation type="obsolete">גיבוי הארנק למקום אחר</translation>
-    </message>
-    <message>
-        <source>Change the passphrase used for wallet encryption</source>
-        <translation type="obsolete">שנה את הסיסמה להצפנת הארנק</translation>
-    </message>
-    <message>
-        <source>&amp;Debug window</source>
-        <translation type="obsolete">חלון ניפוי</translation>
-    </message>
-    <message>
-        <source>Open debugging and diagnostic console</source>
-        <translation type="obsolete">פתח את לוח הבקרה לאבחון וניפוי</translation>
-    </message>
-    <message>
-        <source>&amp;Verify message...</source>
-        <translation type="obsolete">אמת הודעה...</translation>
-    </message>
-    <message>
-        <source>Namecoin</source>
-        <translation type="obsolete">ביטקוין</translation>
-    </message>
-    <message>
-        <source>Wallet</source>
-        <translation type="obsolete">ארנק</translation>
-    </message>
-    <message>
-        <source>&amp;About Namecoin</source>
-        <translation type="obsolete">אודות ביטקוין</translation>
-    </message>
-    <message>
-        <source>&amp;Show / Hide</source>
-        <translation type="obsolete">הצג / הסתר</translation>
-    </message>
-    <message>
-        <source>Show or hide the main Window</source>
-        <translation type="obsolete">הצג או הסתר את החלון הראשי</translation>
-    </message>
-    <message>
-        <source>Encrypt the private keys that belong to your wallet</source>
-        <translation type="obsolete">הצפן את המפתחות הפרטיים ששייכים לארנק שלך</translation>
-    </message>
-    <message>
-        <source>Sign messages with your Namecoin addresses to prove you own them</source>
-        <translation type="obsolete">חתום על הודעות עם כתובות הביטקוין שלך כדי להוכיח שהן בבעלותך</translation>
-    </message>
-    <message>
-        <source>Verify messages to ensure they were signed with specified Namecoin addresses</source>
-        <translation type="obsolete">אמת הודעות כדי להבטיח שהן נחתמו עם כתובת ביטקוין מסוימות</translation>
-    </message>
-    <message>
-        <source>&amp;File</source>
-        <translation type="obsolete">&amp;קובץ</translation>
-    </message>
-    <message>
-        <source>&amp;Settings</source>
-        <translation type="obsolete">ה&amp;גדרות</translation>
-    </message>
-    <message>
-        <source>&amp;Help</source>
-        <translation type="obsolete">&amp;עזרה</translation>
-    </message>
-    <message>
-        <source>Tabs toolbar</source>
-        <translation type="obsolete">סרגל כלים טאבים</translation>
-    </message>
-    <message>
-        <source>Actions toolbar</source>
-        <translation type="obsolete">סרגל כלים פעולות</translation>
-    </message>
-    <message>
-        <source>[testnet]</source>
-        <translation type="obsolete">[רשת-בדיקה]</translation>
-    </message>
-    <message>
-        <source>Namecoin client</source>
-        <translation type="obsolete">תוכנת ביטקוין</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n active connection(s) to Namecoin network</source>
-        <translation type="obsolete">
-            <numerusform>חיבור פעיל אחד לרשת הביטקוין</numerusform>
-            <numerusform>%n חיבורים פעילים לרשת הביטקוין</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>Processed %1 of %2 blocks of transaction history (%3% done).</source>
-        <translation type="obsolete">הושלם עיבוד של %1 מתוך %2 בלוקים של היסטוריית פעולות (%3%).</translation>
-    </message>
-    <message>
-        <source>Processed %1 blocks of transaction history.</source>
-        <translation type="obsolete">הושלם עיבוד של %1 בלוקים של היסטוריית פעולות.</translation>
-    </message>
-    <message>
-        <source>This transaction is over the size limit. You can still send it for a fee of %1, which goes to the nodes that process your transaction and helps to support the network. Do you want to pay the fee?</source>
-        <translation type="obsolete">פעולה זו חורגת מגבולות הגודל. עדיין באפשרותך לשלוח אותה תמורת עמלה של %1, המיועדת לצמתים שמעבדים את הפעולה שלך ועוזרת לתמוך ברשת. האם ברצונך לשלם את העמלה?</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n second(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>לפני שניה</numerusform>
-            <numerusform>לפני %n שניות</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n minute(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>לפני דקה</numerusform>
-            <numerusform>לפני %n דקות</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n hour(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>לפני שעה</numerusform>
-            <numerusform>לפני %n שעות</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n day(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>לפני יום</numerusform>
-            <numerusform>לפני %n ימים</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>Up to date</source>
-        <translation type="obsolete">עדכני</translation>
-    </message>
-    <message>
-        <source>Catching up...</source>
-        <translation type="obsolete">מתעדכן...</translation>
-    </message>
-    <message>
-        <source>Last received block was generated %1.</source>
-        <translation type="obsolete">הבלוק האחרון שהתקבל נוצר ב-%1.</translation>
-    </message>
-    <message>
-        <source>Confirm transaction fee</source>
-        <translation type="obsolete">אשר עמלת פעולה</translation>
-    </message>
-    <message>
-        <source>Sent transaction</source>
-        <translation type="obsolete">פעולה שנשלחה</translation>
-    </message>
-    <message>
-        <source>Incoming transaction</source>
-        <translation type="obsolete">פעולה שהתקבלה</translation>
-    </message>
-    <message>
-        <source>Date: %1
-Amount: %2
-Type: %3
-Address: %4
-</source>
-        <translation type="obsolete">תאריך: %1
-כמות: %2
-סוג: %3
-כתובת: %4</translation>
-    </message>
-    <message>
-        <source>URI handling</source>
-        <translation type="obsolete">תפעול URI</translation>
-    </message>
-    <message>
-        <source>URI can not be parsed! This can be caused by an invalid Namecoin address or malformed URI parameters.</source>
-        <translation type="obsolete">לא ניתן לנתח URI! זה יכול להיגרם כתוצאה מכתובת ביטקוין לא תקינה או פרמטרי URI חסרי צורה תקינה.</translation>
-    </message>
-    <message>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</source>
-        <translation type="obsolete">הארנק &lt;b&gt;מוצפן&lt;/b&gt; וכרגע &lt;b&gt;פתוח&lt;/b&gt;</translation>
-    </message>
-    <message>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
-        <translation type="obsolete">הארנק &lt;b&gt;מוצפן&lt;/b&gt; וכרגע &lt;b&gt;נעול&lt;/b&gt;</translation>
-    </message>
-    <message>
-        <source>Backup Wallet</source>
-        <translation type="obsolete">גיבוי ארנק</translation>
-    </message>
-    <message>
-        <source>Wallet Data (*.dat)</source>
-        <translation type="obsolete">נתוני ארנק (*.dat)</translation>
-    </message>
-    <message>
-        <source>Backup Failed</source>
-        <translation type="obsolete">הגיבוי נכשל</translation>
-    </message>
-    <message>
-        <source>There was an error trying to save the wallet data to the new location.</source>
-        <translation type="obsolete">היתה שגיאה בניסיון לשמור את מידע הארנק למיקום החדש.</translation>
-    </message>
-    <message>
-        <source>A fatal error occurred. Namecoin can no longer continue safely and will quit.</source>
-        <translation type="obsolete">שגיאה סופנית אירעה. ביטקוין אינו יכול להמשיך לפעול בבטחה ולכן ייסגר.</translation>
     </message>
 </context>
 <context>
@@ -2693,10 +2008,6 @@ Address: %4
         <translation>אנא בדוק את הכתובת ונסה שנית.</translation>
     </message>
     <message>
-        <source>The entered address does not refer to a key.</source>
-        <translation type="obsolete">הכתובת שהוכנסה אינה מתייחסת למפתח.</translation>
-    </message>
-    <message>
         <location line="-74"/>
         <source>Wallet unlock was cancelled.</source>
         <translation>פתיחת הארנק בוטלה.</translation>
@@ -2891,18 +2202,6 @@ Address: %4
         <location line="+3"/>
         <source>Inputs</source>
         <translation>קלטים</translation>
-    </message>
-    <message>
-        <source>Amount</source>
-        <translation type="obsolete">כמות</translation>
-    </message>
-    <message>
-        <source>true</source>
-        <translation type="obsolete">אמת</translation>
-    </message>
-    <message>
-        <source>false</source>
-        <translation type="obsolete">שקר</translation>
     </message>
     <message>
         <location line="-185"/>
@@ -3237,7 +2536,7 @@ Address: %4
 <context>
     <name>WalletModel</name>
     <message>
-        <location filename="../walletmodel.cpp" line="+542"/>
+        <location filename="../walletmodel.cpp" line="+564"/>
         <source>Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.</source>
         <translation type="unfinished"></translation>
     </message>
