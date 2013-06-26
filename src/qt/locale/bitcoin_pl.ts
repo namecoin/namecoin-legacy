@@ -15,10 +15,6 @@
         <translation>Wersja &lt;b&gt;Namecoin&lt;/b&gt;</translation>
     </message>
     <message>
-        <source>Copyright © 2009-2013 The Bitcoin and Namecoin developers</source>
-        <translation type="obsolete">Copyright © 2009-2013 The Bitcoin and Namecoin developers</translation>
-    </message>
-    <message>
         <location line="+57"/>
         <source>
 This is experimental software.
@@ -734,13 +730,6 @@ Adres: %4
     </message>
 </context>
 <context>
-    <name>ClientModel</name>
-    <message>
-        <source>Network Alert</source>
-        <translation type="obsolete">Sieć Alert</translation>
-    </message>
-</context>
-<context>
     <name>ConfigureNameDialog</name>
     <message>
         <location filename="../forms/configurenamedialog.ui" line="+20"/>
@@ -753,27 +742,98 @@ Adres: %4
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+17"/>
+        <location line="+41"/>
         <source>&amp;Data:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location line="+17"/>
+        <source>D&amp;NS Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+9"/>
+        <source>&amp;Name servers:
+(one per line,
+host or IP)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+44"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter substitution name that will be used in DNS queries.&lt;/p&gt;&lt;p&gt;For example: bitcoin.org&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-29"/>
+        <source>Enter name servers as host names (preferable), or IP addresses. E.g.
+ns0.web-sweet-web.net
+ns1.web-sweet-web.net
+ns0.xname.org
+1.2.3.4
+1.2.3.5</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+15"/>
+        <source>T&amp;ranslate name:
+(optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+21"/>
+        <location line="+94"/>
+        <source>&amp;SSL fingerprint:
+(optional)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-80"/>
+        <location line="+73"/>
+        <source>Enter SSL certificate fingerprint if you want to use HTTPS</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-33"/>
+        <source>&amp;IP Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
+        <source>I&amp;P Address:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location line="+13"/>
-        <source>Enter JSON string that will be associated with the name</source>
+        <source>IP address, e.g. 1.2.3.4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+7"/>
+        <source>Subdomains will be mapped to the same IP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+45"/>
+        <source>&amp;Custom Configuration</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+6"/>
         <source>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;MS Shell Dlg 2&apos;; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
-&lt;p style=&quot; margin:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Enter JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+18"/>
+        <location line="+15"/>
+        <source>Enter JSON string that will be associated with the name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+44"/>
         <source>&amp;Transfer to:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -805,22 +865,22 @@ Leave empty, if not needed.</source>
         <translation type="unfinished">Alt+P</translation>
     </message>
     <message>
-        <location line="+22"/>
+        <location line="-351"/>
         <source>Domain name:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+27"/>
+        <location line="+360"/>
         <source>(can be left empty)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../configurenamedialog.cpp" line="+39"/>
+        <location filename="../configurenamedialog.cpp" line="+47"/>
         <source>(not a domain name)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+9"/>
+        <location line="+120"/>
         <source>Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old</source>
         <translation type="unfinished"></translation>
     </message>
@@ -835,8 +895,18 @@ Leave empty, if not needed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+55"/>
+        <location line="+58"/>
         <source>Name update error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+81"/>
+        <source>Valid JSON string</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+5"/>
+        <source>Invalid JSON string (can still be used, if not intended as JSON string)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -970,13 +1040,8 @@ Leave empty, if not needed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+3"/>
-        <source>d/</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location line="+13"/>
-        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt;&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prfixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
+        <location line="+16"/>
+        <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt; (note: domains can be lower-case only, valid characters are alphanumeric and hyphen; hyphen can&apos;t be first/last character).&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prefixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -996,18 +1061,28 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+16"/>
+        <location line="+29"/>
+        <source>Enter part of name to search for</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>Enter part of value to search for</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+31"/>
         <source>Double-click name to configure</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+37"/>
+        <location line="+42"/>
         <source>Configure name and submit update operation</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <location filename="../managenamespage.cpp" line="+34"/>
+        <location filename="../managenamespage.cpp" line="+74"/>
         <source>&amp;Configure Name...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1022,7 +1097,17 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+67"/>
+        <location line="+33"/>
+        <source>Name filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+1"/>
+        <source>Value filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+79"/>
         <source>Name registration</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1032,7 +1117,23 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+7"/>
+        <location line="+9"/>
+        <location line="+10"/>
+        <source>Name registration warning</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="-9"/>
+        <source>The name you entered contains whitespace characters. It is probably invalid. Are you sure you want to use this name?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
+        <source>The name you entered does not start with prefix (such as &quot;d/&quot;). It may be invalid for certain tasks. Are you sure you want to use this name?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location line="+10"/>
         <source>Are you sure you want to register domain name %1, which corresponds to domain %2?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1075,7 +1176,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
 <context>
     <name>NameTableModel</name>
     <message>
-        <location filename="../nametablemodel.cpp" line="+338"/>
+        <location filename="../nametablemodel.cpp" line="+347"/>
         <source>Name</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1090,7 +1191,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location line="+124"/>
+        <location line="+126"/>
         <source>Name registered using Namecoin.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -1104,697 +1205,6 @@ to the network and creates a pending name_firstupdate transaction.</source>
         <source>Number of blocks, after which the name will expire. Update name to renew it.
 Empty cell means pending (awaiting automatic name_firstupdate or awaiting network confirmation).</source>
         <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>Namecoin-core</name>
-    <message>
-        <source>Namecoin version</source>
-        <translation type="obsolete">Wersja Namecoin</translation>
-    </message>
-    <message>
-        <source>Usage:</source>
-        <translation type="obsolete">Użycie:</translation>
-    </message>
-    <message>
-        <source>Send command to -server or namecoind</source>
-        <translation type="obsolete">Wyślij polecenie do -server lub namecoind</translation>
-    </message>
-    <message>
-        <source>List commands</source>
-        <translation type="obsolete">Lista poleceń</translation>
-    </message>
-    <message>
-        <source>Get help for a command</source>
-        <translation type="obsolete">Uzyskaj pomoc do polecenia</translation>
-    </message>
-    <message>
-        <source>Options:</source>
-        <translation type="obsolete">Opcje:</translation>
-    </message>
-    <message>
-        <source>Specify configuration file (default: namecoin.conf)</source>
-        <translation type="obsolete">Wskaż plik konfiguracyjny (domyślnie: namecoin.conf)</translation>
-    </message>
-    <message>
-        <source>Specify pid file (default: namecoind.pid)</source>
-        <translation type="obsolete">Wskaż plik pid (domyślnie: Namecoin.pid)</translation>
-    </message>
-    <message>
-        <source>Generate coins</source>
-        <translation type="obsolete">Generuj monety</translation>
-    </message>
-    <message>
-        <source>Don&apos;t generate coins</source>
-        <translation type="obsolete">Nie generuj monet</translation>
-    </message>
-    <message>
-        <source>Specify data directory</source>
-        <translation type="obsolete">Wskaż folder danych</translation>
-    </message>
-    <message>
-        <source>Set database cache size in megabytes (default: 25)</source>
-        <translation type="obsolete">Ustaw rozmiar w megabajtach cache-u bazy danych (domyślnie: 25)</translation>
-    </message>
-    <message>
-        <source>Listen for connections on &lt;port&gt; (default: 8334 or testnet: 18334)</source>
-        <translation type="obsolete">Nasłuchuj połączeń na &lt;port&gt; (domyślnie: 8334 lub testnet: 18334)</translation>
-    </message>
-    <message>
-        <source>Maintain at most &lt;n&gt; connections to peers (default: 125)</source>
-        <translation type="obsolete">Utrzymuj maksymalnie &lt;n&gt; połączeń z peerami (domyślnie: 125)</translation>
-    </message>
-    <message>
-        <source>Connect to a node to retrieve peer addresses, and disconnect</source>
-        <translation type="obsolete">Podłącz się do węzła aby otrzymać adresy peerów i rozłącz</translation>
-    </message>
-    <message>
-        <source>Specify your own public address</source>
-        <translation type="obsolete">Podaj swój publiczny adres</translation>
-    </message>
-    <message>
-        <source>Threshold for disconnecting misbehaving peers (default: 100)</source>
-        <translation type="obsolete">Próg po którym nastąpi rozłączenie nietrzymających się zasad peerów (domyślnie: 100)</translation>
-    </message>
-    <message>
-        <source>Number of seconds to keep misbehaving peers from reconnecting (default: 86400)</source>
-        <translation type="obsolete">Czas w sekundach, przez jaki nietrzymający się zasad peerzy nie będą mogli ponownie się podłączyć (domyślnie: 86400)</translation>
-    </message>
-    <message>
-        <source>An error occurred while setting up the RPC port %u for listening on IPv4: %s</source>
-        <translation type="obsolete">Wystąpił błąd podczas ustawiania portu RPC %u w tryb nasłuchu: %s</translation>
-    </message>
-    <message>
-        <source>Listen for JSON-RPC connections on &lt;port&gt; (default: 8336 or testnet: 18336)</source>
-        <translation type="obsolete">Nasłuchuj połączeń JSON-RPC na &lt;port&gt; (domyślnie: 8336 or testnet: 18336)</translation>
-    </message>
-    <message>
-        <source>Accept command line and JSON-RPC commands</source>
-        <translation type="obsolete">Akceptuj linię poleceń oraz polecenia JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Run in the background as a daemon and accept commands</source>
-        <translation type="obsolete">Uruchom w tle jako daemon i przyjmuj polecenia</translation>
-    </message>
-    <message>
-        <source>Use the test network</source>
-        <translation type="obsolete">Użyj sieci testowej</translation>
-    </message>
-    <message>
-        <source>Accept connections from outside (default: 1 if no -proxy or -connect)</source>
-        <translation type="obsolete">Akceptuj połączenia z zewnątrz (domyślnie: 1 jeśli nie ustawiono -proxy lub -connect)</translation>
-    </message>
-    <message>
-        <source>Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction.</source>
-        <translation type="obsolete">Ostrzeżenie: -paytxfee jest bardzo duży. To jest prowizja za transakcje, którą płacisz, gdy wysyłasz monety.</translation>
-    </message>
-    <message>
-        <source>Warning: Displayed transactions may not be correct! You may need to upgrade, or other nodes may need to upgrade.</source>
-        <translation type="obsolete">Uwaga: Wyświetlone transakcje mogą nie być poprawne! Możliwe, że potrzebujesz aktualizacji bądź inne węzły jej potrzebują</translation>
-    </message>
-    <message>
-        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong Namecoin will not work properly.</source>
-        <translation type="obsolete">Uwaga: Sprawdź czy data i czas na Twoim komputerze są prawidłowe! Jeśli nie to Namecoin nie będzie działał prawidłowo.</translation>
-    </message>
-    <message>
-        <source>Block creation options:</source>
-        <translation type="obsolete">Opcje tworzenia bloku:</translation>
-    </message>
-    <message>
-        <source>Connect only to the specified node(s)</source>
-        <translation type="obsolete">Łącz tylko do wskazanego węzła</translation>
-    </message>
-    <message>
-        <source>Discover own IP address (default: 1 when listening and no -externalip)</source>
-        <translation type="obsolete">Odkryj własny adres IP (domyślnie: 1 kiedy w trybie nasłuchu i brak -externalip )</translation>
-    </message>
-    <message>
-        <source>Error: Disk space is low!</source>
-        <translation type="obsolete">Błąd: Mało miejsca na dysku!</translation>
-    </message>
-    <message>
-        <source>Failed to listen on any port. Use -listen=0 if you want this.</source>
-        <translation type="obsolete">Próba otwarcia jakiegokolwiek portu nie powiodła się. Użyj -listen=0 jeśli tego chcesz.</translation>
-    </message>
-    <message>
-        <source>Information</source>
-        <translation type="obsolete">Informacja</translation>
-    </message>
-    <message>
-        <source>Invalid -tor address: &apos;%s&apos;</source>
-        <translation type="obsolete">Nieprawidłowy adres -tor: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Maximum per-connection receive buffer, &lt;n&gt;*1000 bytes (default: 5000)</source>
-        <translation type="obsolete">Maksymalny bufor odbioru na połączenie, &lt;n&gt;*1000 bajtów (domyślnie: 5000)</translation>
-    </message>
-    <message>
-        <source>Maximum per-connection send buffer, &lt;n&gt;*1000 bytes (default: 1000)</source>
-        <translation type="obsolete">Maksymalny bufor wysyłu na połączenie, &lt;n&gt;*1000 bajtów (domyślnie: 1000)</translation>
-    </message>
-    <message>
-        <source>Only connect to nodes in network &lt;net&gt; (IPv4, IPv6 or Tor)</source>
-        <translation type="obsolete">Łącz z węzłami tylko w sieci &lt;net&gt; (IPv4, IPv6 lub Tor)</translation>
-    </message>
-    <message>
-        <source>Prepend debug output with timestamp</source>
-        <translation type="obsolete">Poprzedź informacje debugowania znacznikiem czasowym</translation>
-    </message>
-    <message>
-        <source>SSL options: (see the Bitcoin Wiki for SSL setup instructions)</source>
-        <translation type="obsolete">Opcje SSL: (odwiedź Bitcoin Wiki w celu uzyskania instrukcji)</translation>
-    </message>
-    <message>
-        <source>Select the version of socks proxy to use (4-5, default: 5)</source>
-        <translation type="obsolete">Wybierz używaną wersje socks serwera proxy (4-5, domyślnie:5)</translation>
-    </message>
-    <message>
-        <source>Send trace/debug info to console instead of debug.log file</source>
-        <translation type="obsolete">Wyślij informację/raport do konsoli zamiast do pliku debug.log.</translation>
-    </message>
-    <message>
-        <source>Send trace/debug info to debugger</source>
-        <translation type="obsolete">Wyślij informację/raport do debuggera.</translation>
-    </message>
-    <message>
-        <source>Set maximum block size in bytes (default: 250000)</source>
-        <translation type="obsolete">Ustaw maksymalny rozmiar bloku w bajtach (domyślnie: 250000)</translation>
-    </message>
-    <message>
-        <source>Set minimum block size in bytes (default: 0)</source>
-        <translation type="obsolete">Ustaw minimalny rozmiar bloku w bajtach (domyślnie: 0)</translation>
-    </message>
-    <message>
-        <source>Specify connection timeout in milliseconds (default: 5000)</source>
-        <translation type="obsolete">Wskaż czas oczekiwania bezczynności połączenia w milisekundach (domyślnie: 5000)</translation>
-    </message>
-    <message>
-        <source>Use UPnP to map the listening port (default: 0)</source>
-        <translation type="obsolete">Używaj UPnP do mapowania portu nasłuchu (domyślnie: 0)</translation>
-    </message>
-    <message>
-        <source>Use UPnP to map the listening port (default: 1 when listening)</source>
-        <translation type="obsolete">Używaj UPnP do mapowania portu nasłuchu (domyślnie: 1 gdy nasłuchuje)</translation>
-    </message>
-    <message>
-        <source>Username for JSON-RPC connections</source>
-        <translation type="obsolete">Nazwa użytkownika dla połączeń JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Warning</source>
-        <translation type="obsolete">Ostrzeżenie</translation>
-    </message>
-    <message>
-        <source>Warning: This version is obsolete, upgrade required!</source>
-        <translation type="obsolete">Uwaga: Ta wersja jest przestarzała, aktualizacja wymagana!</translation>
-    </message>
-    <message>
-        <source>Password for JSON-RPC connections</source>
-        <translation type="obsolete">Hasło do połączeń JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Allow JSON-RPC connections from specified IP address</source>
-        <translation type="obsolete">Przyjmuj połączenia JSON-RPC ze wskazanego adresu IP</translation>
-    </message>
-    <message>
-        <source>Send commands to node running on &lt;ip&gt; (default: 127.0.0.1)</source>
-        <translation type="obsolete">Wysyłaj polecenia do węzła działającego na &lt;ip&gt; (domyślnie: 127.0.0.1)</translation>
-    </message>
-    <message>
-        <source>Execute command when the best block changes (%s in cmd is replaced by block hash)</source>
-        <translation type="obsolete">Wykonaj polecenie kiedy najlepszy blok ulegnie zmianie (%s w komendzie zastanie zastąpione przez hash bloku)</translation>
-    </message>
-    <message>
-        <source>Upgrade wallet to latest format</source>
-        <translation type="obsolete">Zaktualizuj portfel do najnowszego formatu.</translation>
-    </message>
-    <message>
-        <source>Set key pool size to &lt;n&gt; (default: 100)</source>
-        <translation type="obsolete">Ustaw rozmiar puli kluczy na &lt;n&gt; (domyślnie: 100)</translation>
-    </message>
-    <message>
-        <source>Rescan the block chain for missing wallet transactions</source>
-        <translation type="obsolete">Przeskanuj blok łańcuchów żeby znaleźć zaginione transakcje portfela</translation>
-    </message>
-    <message>
-        <source>How many blocks to check at startup (default: 2500, 0 = all)</source>
-        <translation type="obsolete">Ile bloków sprawdzać przy uruchomieniu (domyślnie: 2500, 0 = wszystkie)</translation>
-    </message>
-    <message>
-        <source>Use OpenSSL (https) for JSON-RPC connections</source>
-        <translation type="obsolete">Użyj OpenSSL (https) do połączeń JSON-RPC</translation>
-    </message>
-    <message>
-        <source>Server certificate file (default: server.cert)</source>
-        <translation type="obsolete">Plik certyfikatu serwera (domyślnie: server.cert)</translation>
-    </message>
-    <message>
-        <source>Server private key (default: server.pem)</source>
-        <translation type="obsolete">Klucz prywatny serwera (domyślnie: server.pem)</translation>
-    </message>
-    <message>
-        <source>Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</source>
-        <translation type="obsolete">Aceptowalne szyfry (domyślnie: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</translation>
-    </message>
-    <message>
-        <source>This help message</source>
-        <translation type="obsolete">Ta wiadomość pomocy</translation>
-    </message>
-    <message>
-        <source>Unable to bind to %s on this computer (bind returned error %d, %s)</source>
-        <translation type="obsolete">Nie można przywiązać %s na tym komputerze (bind returned error %d, %s)</translation>
-    </message>
-    <message>
-        <source>Connect through socks proxy</source>
-        <translation type="obsolete">Łączy przez proxy socks</translation>
-    </message>
-    <message>
-        <source>Allow DNS lookups for -addnode, -seednode and -connect</source>
-        <translation type="obsolete">Zezwól -addnode, -seednode i -connect na łączenie się z serwerem DNS</translation>
-    </message>
-    <message>
-        <source>Loading addresses...</source>
-        <translation type="obsolete">Wczytywanie adresów...</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat: Wallet corrupted</source>
-        <translation type="obsolete">Błąd ładowania wallet.dat: Uszkodzony portfel</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat: Wallet requires newer version of Namecoin</source>
-        <translation type="obsolete">Błąd ładowania wallet.dat: Portfel wymaga nowszej wersji Namecoin</translation>
-    </message>
-    <message>
-        <source>Wallet needed to be rewritten: restart Namecoin to complete</source>
-        <translation type="obsolete">Portfel wymaga przepisania: zrestartuj Bitcoina żeby ukończyć</translation>
-    </message>
-    <message>
-        <source>Error loading wallet.dat</source>
-        <translation type="obsolete">Błąd ładowania wallet.dat</translation>
-    </message>
-    <message>
-        <source>Invalid -proxy address: &apos;%s&apos;</source>
-        <translation type="obsolete">Nieprawidłowy adres -proxy: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Unknown network specified in -onlynet: &apos;%s&apos;</source>
-        <translation type="obsolete">Nieznana sieć w -onlynet: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Unknown -socks proxy version requested: %i</source>
-        <translation type="obsolete">Nieznana wersja proxy w -socks: %i</translation>
-    </message>
-    <message>
-        <source>Cannot resolve -bind address: &apos;%s&apos;</source>
-        <translation type="obsolete">Nie można uzyskać adresu -bind: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Cannot resolve -externalip address: &apos;%s&apos;</source>
-        <translation type="obsolete">Nie można uzyskać adresu -externalip: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos;</source>
-        <translation type="obsolete">Nieprawidłowa kwota dla -paytxfee=&lt;amount&gt;: &apos;%s&apos;</translation>
-    </message>
-    <message>
-        <source>Error: could not start node</source>
-        <translation type="obsolete">Błąd: nie można utworzyć węzła</translation>
-    </message>
-    <message>
-        <source>Invalid amount</source>
-        <translation type="obsolete">Nieprawidłowa kwota</translation>
-    </message>
-    <message>
-        <source>Insufficient funds</source>
-        <translation type="obsolete">Niewystarczające środki</translation>
-    </message>
-    <message>
-        <source>Loading block index...</source>
-        <translation type="obsolete">Ładowanie indeksu bloku...</translation>
-    </message>
-    <message>
-        <source>Add a node to connect to and attempt to keep the connection open</source>
-        <translation type="obsolete">Dodaj węzeł do łączenia się and attempt to keep the connection open</translation>
-    </message>
-    <message>
-        <source>Unable to bind to %s on this computer. Namecoin is probably already running.</source>
-        <translation type="obsolete">Nie można przywiązać %s na tym komputerze. Namecoin prawdopodobnie już działa.</translation>
-    </message>
-    <message>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation type="obsolete">Znajdź peery używające IRC (domyślnie: 0)</translation>
-    </message>
-    <message>
-        <source>Fee per KB to add to transactions you send</source>
-        <translation type="obsolete">
-</translation>
-    </message>
-    <message>
-        <source>Loading wallet...</source>
-        <translation type="obsolete">Wczytywanie portfela...</translation>
-    </message>
-    <message>
-        <source>Cannot downgrade wallet</source>
-        <translation type="obsolete">Nie można dezaktualizować portfela</translation>
-    </message>
-    <message>
-        <source>Cannot initialize keypool</source>
-        <translation type="obsolete">Inicjalizacja puli kluczy nieudana</translation>
-    </message>
-    <message>
-        <source>Cannot write default address</source>
-        <translation type="obsolete">Nie można zapisać domyślnego adresu</translation>
-    </message>
-    <message>
-        <source>Rescanning...</source>
-        <translation type="obsolete">Ponowne skanowanie...</translation>
-    </message>
-    <message>
-        <source>Done loading</source>
-        <translation type="obsolete">Wczytywanie zakończone</translation>
-    </message>
-    <message>
-        <source>To use the %s option</source>
-        <translation type="obsolete">Aby użyć opcji %s</translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">Błąd</translation>
-    </message>
-    <message>
-        <source>You must set rpcpassword=&lt;password&gt; in the configuration file:
-%s
-If the file does not exist, create it with owner-readable-only file permissions.</source>
-        <translation type="obsolete">Musisz ustawić rpcpassword=&lt;hasło&gt; w pliku configuracyjnym:
-%s
-Jeżeli plik nie istnieje, utwórz go z uprawnieniami właściciela-tylko-do-odczytu.</translation>
-    </message>
-</context>
-<context>
-    <name>NamecoinGUI</name>
-    <message>
-        <source>Sign &amp;message...</source>
-        <translation type="obsolete">Podpisz wiado&amp;mość...</translation>
-    </message>
-    <message>
-        <source>Synchronizing with network...</source>
-        <translation type="obsolete">Synchronizacja z siecią...</translation>
-    </message>
-    <message>
-        <source>&amp;Overview</source>
-        <translation type="obsolete">P&amp;odsumowanie</translation>
-    </message>
-    <message>
-        <source>Show general overview of wallet</source>
-        <translation type="obsolete">Pokazuje ogólny zarys portfela</translation>
-    </message>
-    <message>
-        <source>&amp;Transactions</source>
-        <translation type="obsolete">&amp;Transakcje</translation>
-    </message>
-    <message>
-        <source>Browse transaction history</source>
-        <translation type="obsolete">Przeglądaj historię transakcji</translation>
-    </message>
-    <message>
-        <source>&amp;Address Book</source>
-        <translation type="obsolete">Książka &amp;adresowa</translation>
-    </message>
-    <message>
-        <source>Edit the list of stored addresses and labels</source>
-        <translation type="obsolete">Edytuj listę zapisanych adresów i i etykiet</translation>
-    </message>
-    <message>
-        <source>&amp;Receive coins</source>
-        <translation type="obsolete">Odbie&amp;rz monety</translation>
-    </message>
-    <message>
-        <source>Show the list of addresses for receiving payments</source>
-        <translation type="obsolete">Pokaż listę adresów do otrzymywania płatności</translation>
-    </message>
-    <message>
-        <source>&amp;Send coins</source>
-        <translation type="obsolete">Wy&amp;syłka monet</translation>
-    </message>
-    <message>
-        <source>E&amp;xit</source>
-        <translation type="obsolete">&amp;Zakończ</translation>
-    </message>
-    <message>
-        <source>Quit application</source>
-        <translation type="obsolete">Zamknij program</translation>
-    </message>
-    <message>
-        <source>Show information about Namecoin</source>
-        <translation type="obsolete">Pokaż informację o Namecoin</translation>
-    </message>
-    <message>
-        <source>About &amp;Qt</source>
-        <translation type="obsolete">O &amp;Qt</translation>
-    </message>
-    <message>
-        <source>Show information about Qt</source>
-        <translation type="obsolete">Pokazuje informacje o Qt</translation>
-    </message>
-    <message>
-        <source>&amp;Options...</source>
-        <translation type="obsolete">&amp;Opcje...</translation>
-    </message>
-    <message>
-        <source>&amp;Encrypt Wallet...</source>
-        <translation type="obsolete">Zaszyfruj Portf&amp;el</translation>
-    </message>
-    <message>
-        <source>&amp;Backup Wallet...</source>
-        <translation type="obsolete">Wykonaj kopię zapasową...</translation>
-    </message>
-    <message>
-        <source>&amp;Change Passphrase...</source>
-        <translation type="obsolete">&amp;Zmień hasło...</translation>
-    </message>
-    <message numerus="yes">
-        <source>~%n block(s) remaining</source>
-        <translation type="obsolete">
-            <numerusform>pozostał ~%n blok</numerusform>
-            <numerusform>pozostało ~%n bloki</numerusform>
-            <numerusform>pozostało ~%n bloków</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>&amp;Export...</source>
-        <translation type="obsolete">&amp;Eksportuj...</translation>
-    </message>
-    <message>
-        <source>Send coins to a Namecoin address</source>
-        <translation type="obsolete">Wyślij monety na adres Namecoin</translation>
-    </message>
-    <message>
-        <source>Modify configuration options for Namecoin</source>
-        <translation type="obsolete">Zmienia opcje konfiguracji bitcoina</translation>
-    </message>
-    <message>
-        <source>Export the data in the current tab to a file</source>
-        <translation type="obsolete">Eksportuj dane z aktywnej karty do pliku</translation>
-    </message>
-    <message>
-        <source>Backup wallet to another location</source>
-        <translation type="obsolete">Zapasowy portfel w innej lokalizacji</translation>
-    </message>
-    <message>
-        <source>Change the passphrase used for wallet encryption</source>
-        <translation type="obsolete">Zmień hasło użyte do szyfrowania portfela</translation>
-    </message>
-    <message>
-        <source>&amp;Debug window</source>
-        <translation type="obsolete">&amp;Okno debudowania</translation>
-    </message>
-    <message>
-        <source>Open debugging and diagnostic console</source>
-        <translation type="obsolete">Otwórz konsolę debugowania i diagnostyki</translation>
-    </message>
-    <message>
-        <source>&amp;Verify message...</source>
-        <translation type="obsolete">&amp;Zweryfikuj wiadomość...</translation>
-    </message>
-    <message>
-        <source>Namecoin</source>
-        <translation type="obsolete">Namecoin</translation>
-    </message>
-    <message>
-        <source>Wallet</source>
-        <translation type="obsolete">Portfel</translation>
-    </message>
-    <message>
-        <source>&amp;About Namecoin</source>
-        <translation type="obsolete">O Namecoin</translation>
-    </message>
-    <message>
-        <source>&amp;Show / Hide</source>
-        <translation type="obsolete">&amp;Pokaż / Ukryj</translation>
-    </message>
-    <message>
-        <source>Show or hide the main Window</source>
-        <translation type="obsolete">Pokazuje lub ukrywa główne okno</translation>
-    </message>
-    <message>
-        <source>Encrypt the private keys that belong to your wallet</source>
-        <translation type="obsolete">Szyfruj klucze prywatne, które są powiązane z twoim portfelem</translation>
-    </message>
-    <message>
-        <source>&amp;File</source>
-        <translation type="obsolete">&amp;Plik</translation>
-    </message>
-    <message>
-        <source>&amp;Settings</source>
-        <translation type="obsolete">P&amp;referencje</translation>
-    </message>
-    <message>
-        <source>&amp;Help</source>
-        <translation type="obsolete">Pomo&amp;c</translation>
-    </message>
-    <message>
-        <source>Tabs toolbar</source>
-        <translation type="obsolete">Pasek zakładek</translation>
-    </message>
-    <message>
-        <source>Actions toolbar</source>
-        <translation type="obsolete">Pasek akcji</translation>
-    </message>
-    <message>
-        <source>[testnet]</source>
-        <translation type="obsolete">[testnet]</translation>
-    </message>
-    <message>
-        <source>Namecoin client</source>
-        <translation type="obsolete">Namecoin klient</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n active connection(s) to Namecoin network</source>
-        <translation type="obsolete">
-            <numerusform>%n aktywne połączenie do sieci Namecoin</numerusform>
-            <numerusform>%n aktywne połączenia do sieci Namecoin</numerusform>
-            <numerusform>%n aktywnych połączeń do sieci Namecoin</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>Error</source>
-        <translation type="obsolete">Błąd</translation>
-    </message>
-    <message>
-        <source>Warning</source>
-        <translation type="obsolete">Ostrzeżenie</translation>
-    </message>
-    <message>
-        <source>Information</source>
-        <translation type="obsolete">Informacja</translation>
-    </message>
-    <message>
-        <source>The wallet data was successfully saved to the new location.</source>
-        <translation type="obsolete">Dane portfela zostały poprawnie zapisane w nowym miejscu.</translation>
-    </message>
-    <message numerus="yes">
-        <source>%n second(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>%n sekundę temu</numerusform>
-            <numerusform>%n sekundy temu</numerusform>
-            <numerusform>%n sekund temu</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n minute(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>%n minutę temu</numerusform>
-            <numerusform>%n minuty temu</numerusform>
-            <numerusform>%n minut temu</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n hour(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>%n godzinę temu</numerusform>
-            <numerusform>%n godziny temu</numerusform>
-            <numerusform>%n godzin temu</numerusform>
-        </translation>
-    </message>
-    <message numerus="yes">
-        <source>%n day(s) ago</source>
-        <translation type="obsolete">
-            <numerusform>%n dzień temu</numerusform>
-            <numerusform>%n dni temu</numerusform>
-            <numerusform>%n dni temu</numerusform>
-        </translation>
-    </message>
-    <message>
-        <source>Up to date</source>
-        <translation type="obsolete">Aktualny</translation>
-    </message>
-    <message>
-        <source>Catching up...</source>
-        <translation type="obsolete">Łapanie bloków...</translation>
-    </message>
-    <message>
-        <source>Last received block was generated %1.</source>
-        <translation type="obsolete">Ostatnio otrzymany blok został wygenerowany %1.</translation>
-    </message>
-    <message>
-        <source>Confirm transaction fee</source>
-        <translation type="obsolete">Potwierdź prowizję transakcyjną</translation>
-    </message>
-    <message>
-        <source>Sent transaction</source>
-        <translation type="obsolete">Transakcja wysłana</translation>
-    </message>
-    <message>
-        <source>Incoming transaction</source>
-        <translation type="obsolete">Transakcja przychodząca</translation>
-    </message>
-    <message>
-        <source>Date: %1
-Amount: %2
-Type: %3
-Address: %4
-</source>
-        <translation type="obsolete">Data: %1
-Kwota: %2
-Typ: %3
-Adres: %4
-</translation>
-    </message>
-    <message>
-        <source>URI handling</source>
-        <translation type="obsolete">Obsługa URI</translation>
-    </message>
-    <message>
-        <source>URI can not be parsed! This can be caused by an invalid Namecoin address or malformed URI parameters.</source>
-        <translation type="obsolete">URI nie może zostać przetworzony! Prawdopodobnie błędny adres Namecoin bądź nieprawidłowe parametry URI.</translation>
-    </message>
-    <message>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</source>
-        <translation type="obsolete">Portfel jest &lt;b&gt;zaszyfrowany&lt;/b&gt; i obecnie &lt;b&gt;niezablokowany&lt;/b&gt;</translation>
-    </message>
-    <message>
-        <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
-        <translation type="obsolete">Portfel jest &lt;b&gt;zaszyfrowany&lt;/b&gt; i obecnie &lt;b&gt;zablokowany&lt;/b&gt;</translation>
-    </message>
-    <message>
-        <source>Backup Wallet</source>
-        <translation type="obsolete">Kopia Zapasowa Portfela</translation>
-    </message>
-    <message>
-        <source>Wallet Data (*.dat)</source>
-        <translation type="obsolete">Dane Portfela (*.dat)</translation>
-    </message>
-    <message>
-        <source>Backup Failed</source>
-        <translation type="obsolete">Kopia Zapasowa Nie Została Wykonana</translation>
-    </message>
-    <message>
-        <source>There was an error trying to save the wallet data to the new location.</source>
-        <translation type="obsolete">Wystąpił błąd podczas próby zapisu portfela do nowej lokalizacji.</translation>
-    </message>
-    <message>
-        <source>A fatal error occurred. Namecoin can no longer continue safely and will quit.</source>
-        <translation type="obsolete">Błąd krytyczny. Namecoin nie może kontynuować bezpiecznie więc zostanie zamknięty.</translation>
     </message>
 </context>
 <context>
@@ -2801,18 +2211,6 @@ Adres: %4
         <translation>Wejścia</translation>
     </message>
     <message>
-        <source>Amount</source>
-        <translation type="obsolete">Kwota</translation>
-    </message>
-    <message>
-        <source>true</source>
-        <translation type="obsolete">prawda</translation>
-    </message>
-    <message>
-        <source>false</source>
-        <translation type="obsolete">fałsz</translation>
-    </message>
-    <message>
         <location line="-185"/>
         <source>, has not been successfully broadcast yet</source>
         <translation>, nie został jeszcze pomyślnie wyemitowany</translation>
@@ -3148,7 +2546,7 @@ Adres: %4
 <context>
     <name>WalletModel</name>
     <message>
-        <location filename="../walletmodel.cpp" line="+542"/>
+        <location filename="../walletmodel.cpp" line="+564"/>
         <source>Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.</source>
         <translation type="unfinished"></translation>
     </message>

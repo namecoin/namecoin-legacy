@@ -7,6 +7,8 @@
 #include "cryptopp/sha.h"
 #include "crypter.h"
 
+#include "namecoin.h"    // For DecodeNameScript in GetAmounts to correctly compute credit/debit
+
 using namespace std;
 
 
@@ -331,6 +333,10 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         nFee = nDebit - nValueOut;
     }
 
+    // Compute the coin carried with the name operation
+    // as difference of GetDebitInclName() and GetDebit()
+    int64 nCarriedOverCoin = nDebit - GetDebit();
+    
     // Sent/received.  Standard client will never generate a send-to-multiple-recipients,
     // but non-standard clients might (so return a list of address/amount pairs)
     BOOST_FOREACH(const CTxOut& txout, vout)
@@ -338,12 +344,22 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         string address;
         uint160 hash160;
         vector<unsigned char> vchPubKey;
+        bool fAddressOperation = false;
         if (ExtractHash160(txout.scriptPubKey, hash160))
             address = Hash160ToAddress(hash160);
         else if (ExtractPubKey(txout.scriptPubKey, NULL, vchPubKey))
             address = PubKeyToAddress(vchPubKey);
         else if (hooks->ExtractAddress(txout.scriptPubKey, address))
-            ;
+        {
+            vector<vector<unsigned char> > vvch;
+            int op;
+            if (DecodeNameScript(txout.scriptPubKey, op, vvch))
+            {
+                nCarriedOverCoin -= txout.nValue;
+                if (op != OP_NAME_NEW)
+                    continue; // Ignore locked coin
+            }
+        }
         else
         {
             printf("CWalletTx::GetAmounts: Unknown transaction type found, txid %s\n",
@@ -360,6 +376,21 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
 
         if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout, true))
             listReceived.push_back(make_pair(address, txout.nValue));
+    }
+    
+    // Carried over coin may be used to pay fee, if it was reserved during OP_NAME_NEW
+    if (nCarriedOverCoin > 0)
+    {
+        if (nCarriedOverCoin >= nFee)
+        {
+            nCarriedOverCoin -= nFee;
+            nFee = 0;
+        }
+        else
+        {
+            nFee -= nCarriedOverCoin;
+            nCarriedOverCoin = 0;
+        }
     }
 }
 

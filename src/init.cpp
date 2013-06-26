@@ -375,6 +375,18 @@ bool AppInit2(int argc, char* argv[])
     printf(" wallet      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);
+    
+    // Read -mininput before -rescan, otherwise rescan will skip transactions
+    // lower than the default mininput
+    if (mapArgs.count("-mininput"))
+    {
+        if (!ParseMoney(mapArgs["-mininput"], nMinimumInputValue))
+        {
+            wxMessageBox(_("Invalid amount for -mininput=<amount>"), "Namecoin");
+            return false;
+        }
+    }
+
 
     CBlockIndex *pindexRescan = pindexBest;
     if (GetBoolArg("-rescan"))
@@ -491,15 +503,6 @@ bool AppInit2(int argc, char* argv[])
         }
         if (nTransactionFee > 0.25 * COIN)
             wxMessageBox(_("Warning: -paytxfee is set very high.  This is the transaction fee you will pay if you send a transaction."), "Namecoin", wxOK | wxICON_EXCLAMATION);
-    }
-
-    if (mapArgs.count("-mininput"))
-    {
-        if (!ParseMoney(mapArgs["-mininput"], nMinimumInputValue))
-        {
-            wxMessageBox(_("Invalid amount for -mininput=<amount>"), "Namecoin");
-            return false;
-        }
     }
 
     if (fHaveUPnP)
