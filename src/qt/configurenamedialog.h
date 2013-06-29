@@ -27,7 +27,13 @@ public slots:
     void accept();
     void reject();
     void on_addressBookButton_clicked();
-    void on_pasteButton_clicked(); 
+    void on_pasteButton_clicked();
+    void on_nsEdit_textChanged()                              { if (initialized) SetDNS(); }
+    void on_nsTranslateEdit_textChanged(const QString &text)  { if (initialized) SetDNS(); }
+    void on_nsFingerprintEdit_textChanged()                   { if (initialized) SetDNS(); }
+    void on_ipEdit_textChanged(const QString &text)           { if (initialized) SetIP();  }
+    void on_ipFingerprintEdit_textChanged()                   { if (initialized) SetIP(); }
+    void on_dataEdit_textChanged(const QString &text);
 
 private:
     QString returnData;
@@ -35,6 +41,10 @@ private:
     WalletModel *walletModel;
     QString name;
     bool firstUpdate;
+    bool initialized;
+
+    void SetDNS();
+    void SetIP();
 };
 
 #endif // CONFIGURENAMEDIALOG_H

@@ -13,6 +13,7 @@
 
 #include <QSet>
 #include <QTimer>
+#include <QDateTime>
 
 std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFirstUpdate;
 std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
@@ -28,6 +29,8 @@ WalletModel::WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *p
     addressTableModel = new AddressTableModel(wallet, this);
     nameTableModel = new NameTableModel(wallet, this);
     transactionTableModel = new TransactionTableModel(wallet, this);
+
+    fSyncedAtLeastOnce = false;    // For sending automatic name_firstupdate
 
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
@@ -84,7 +87,20 @@ void WalletModel::pollBalanceChanged()
         checkBalanceChanged();
 
         if (!IsInitialBlockDownload())
-            sendPendingNameFirstUpdates();      // FIXME: on client start it fails to broadcast (too fee connections?) - need to wait for some time or some condition
+        {
+            if (!fSyncedAtLeastOnce)
+            {
+                // On client start it fails to broadcast (too few connections?), so we wait for full synchronization
+                QDateTime lastBlockDate = QDateTime::fromTime_t(pindexBest->GetBlockTime());
+                QDateTime currentDate = QDateTime::currentDateTime();
+                int secs = lastBlockDate.secsTo(currentDate);
+                if (secs < 90*60 && nBestHeight >= GetNumBlocksOfPeers())
+                    fSyncedAtLeastOnce = true;
+            }
+
+            if (fSyncedAtLeastOnce)
+                sendPendingNameFirstUpdates();
+        }
     }
 }
 
@@ -507,9 +523,11 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
             reservekey.ReturnKey();
 
             // Prepare name_new, but do not commit until we prepare name_firstupdate
+            printf("name_new GUI: SendMoneyPrepare (pass %d)\n", pass);
             std::string strError = wallet->SendMoneyPrepare(scriptPubKey, MIN_AMOUNT + nFirstUpdateFee, wtx, reservekey, pass == 1);
             if (!strError.empty())
             {
+                printf("name_new GUI error: %s\n", strError.c_str());
                 ret.ok = false;
                 ret.err_msg = QString::fromStdString(strError);
                 return ret;
@@ -522,9 +540,11 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
             // Prepare name_firstupdate (with empty value)
             // FIXME: AddSupportingTransactions will fail and write msg to the log
             // Though we manually call AddSupportingTransactions (near the end of this function)
+            printf("name_new GUI: nameFirstUpdateCreateTx (pass %d)\n", pass);
             strError = nameFirstUpdateCreateTx(prep.wtx, ret.vchName, wtx, rand, prep.vchData, &nFirstUpdateFee);
             if (!strError.empty())
             {
+                printf("name_new GUI error: %s\n", strError.c_str());
                 ret.ok = false;
                 ret.err_msg = QString::fromStdString(strError);
                 return ret;
@@ -533,7 +553,9 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
                 break;
         }
         if (nPrevFirstUpdateFee != nFirstUpdateFee)
-            printf("name_new GUI warning: cannot prepare fee for automatic name_firstupdate - fee changed from %s to %s", FormatMoney(nPrevFirstUpdateFee).c_str(), FormatMoney(nFirstUpdateFee).c_str());
+            printf("name_new GUI warning: cannot prepare fee for automatic name_firstupdate - fee changed from %s to %s\n", FormatMoney(nPrevFirstUpdateFee).c_str(), FormatMoney(nFirstUpdateFee).c_str());
+            
+        printf("Automatic name_firstupdate created for name %s (initial, with empty value), created tx: %s:\n%s", qPrintable(name), prep.wtx.GetHash().GetHex().c_str(), prep.wtx.ToString().c_str());
 
         // name_firstupdate prepared, let's commit name_new
         if (!wallet->CommitTransaction(wtx, reservekey))
@@ -593,7 +615,7 @@ QString WalletModel::nameFirstUpdatePrepare(const QString &name, const QString &
 
         CRITICAL_BLOCK(wallet->cs_wallet)
             wallet->WriteNameFirstUpdate(vchName, wtxInHash, rand, vchValue, wtx);
-        printf("Automatic name_firstupdate created for name %s, created tx: %s\n", qPrintable(name), wtx.GetHash().GetHex().c_str());
+        printf("Automatic name_firstupdate created for name %s, created tx: %s:\n%s", qPrintable(name), wtx.GetHash().GetHex().c_str(), wtx.ToString().c_str());
     }
 
     return "";
