@@ -79,23 +79,28 @@ public:
     // For all pages in affected range, decrease lock count
     void UnlockRange(void *p, size_t size)
     {
-        boost::mutex::scoped_lock lock(mutex);
-        if(!size) return;
-        const size_t base_addr = reinterpret_cast<size_t>(p);
-        const size_t start_page = base_addr & page_mask;
-        const size_t end_page = (base_addr + size - 1) & page_mask;
-        for(size_t page = start_page; page <= end_page; page += page_size)
-        {
-            Histogram::iterator it = histogram.find(page);
-            assert(it != histogram.end()); // Cannot unlock an area that was not locked
-            // Decrease counter for page, when it is zero, the page will be unlocked
-            it->second -= 1;
-            if(it->second == 0) // Nothing on the page anymore that keeps it locked
+        try {
+            boost::mutex::scoped_lock lock(mutex);
+
+            if(!size) return;
+            const size_t base_addr = reinterpret_cast<size_t>(p);
+            const size_t start_page = base_addr & page_mask;
+            const size_t end_page = (base_addr + size - 1) & page_mask;
+            for(size_t page = start_page; page <= end_page; page += page_size)
             {
-                // Unlock page and remove the count from histogram
-                locker.Unlock(reinterpret_cast<void*>(page), page_size);
-                histogram.erase(it);
+                Histogram::iterator it = histogram.find(page);
+                assert(it != histogram.end()); // Cannot unlock an area that was not locked
+                // Decrease counter for page, when it is zero, the page will be unlocked
+                it->second -= 1;
+                if(it->second == 0) // Nothing on the page anymore that keeps it locked
+                {
+                    // Unlock page and remove the count from histogram
+                    locker.Unlock(reinterpret_cast<void*>(page), page_size);
+                    histogram.erase(it);
+                }
             }
+        } catch (boost::lock_error& e) {
+            printf("UnlockRange: lock_error: %s", e.what());
         }
     }
 
