@@ -78,6 +78,8 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
             dbenv.set_lk_max_objects(10000);
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
+            dbenv.set_flags(DB_TXN_WRITE_NOSYNC, 1);
+            dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);            
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
                              DB_INIT_LOCK  |
@@ -85,6 +87,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
                              DB_INIT_MPOOL |
                              DB_INIT_TXN   |
                              DB_THREAD     |
+                             DB_PRIVATE     |
                              DB_RECOVER,
                              S_IRUSR | S_IWUSR);
             if (ret > 0)
@@ -146,6 +149,10 @@ void CDB::Close()
         nMinutes = 2;
     if (strFile == "blkindex.dat")
         nMinutes = 2;         
+    if (strFile == "blk0001.dat" || strFile == "blk0002.dat" || strFile == "blk0003.dat")  // todo: make this proper :)
+        nMinutes = 2;
+    if (strFile == "nameindex.dat" || strFile == "nameindexfull.dat")
+        nMinutes = 2;
     if (strFile == "blkindex.dat" && IsInitialBlockDownload() && nBestHeight % 5000 != 0)
         nMinutes = 5;
     dbenv.txn_checkpoint(0, nMinutes, 0);
