@@ -382,11 +382,11 @@ Value getblockbycount(const Array& params, bool fHelp)
 }
 
 
-Value getblockbyhash(const Array& params, bool fHelp)
+Value getblock(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-            "getblockbyhash hash\n"
+            "getblock hash\n"
             "Dumps the block with specified hash");
 
     uint256 hash;
@@ -3013,7 +3013,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("help",                  &help),
     make_pair("stop",                  &stop),
     make_pair("getblockbycount",       &getblockbycount),
-    make_pair("getblockbyhash",        &getblockbyhash),
+    make_pair("getblock",              &getblock),
     make_pair("getblockcount",         &getblockcount),
     make_pair("getblocknumber",        &getblocknumber),
     make_pair("getconnectioncount",    &getconnectioncount),
