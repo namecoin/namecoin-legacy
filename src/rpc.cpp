@@ -269,8 +269,8 @@ Value BlockToValue(CBlock &block)
     Object obj;
     obj.push_back(Pair("hash", block.GetHash().ToString().c_str()));
     obj.push_back(Pair("version", block.nVersion));
-    obj.push_back(Pair("prev_block", block.hashPrevBlock.ToString().c_str()));
-    obj.push_back(Pair("mrkl_root", block.hashMerkleRoot.ToString().c_str()));
+    obj.push_back(Pair("previousblockhash", block.hashPrevBlock.ToString().c_str()));
+    obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
     obj.push_back(Pair("time", (uint64_t)block.nTime));
     obj.push_back(Pair("bits", (uint64_t)block.nBits));
     obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
@@ -279,55 +279,7 @@ Value BlockToValue(CBlock &block)
 
     Array tx;
     for (int i = 0; i < block.vtx.size(); i++) {
-    	Object txobj;
-
-	txobj.push_back(Pair("hash", block.vtx[i].GetHash().ToString().c_str()));
-	txobj.push_back(Pair("version", block.vtx[i].nVersion));
-	txobj.push_back(Pair("lock_time", (uint64_t)block.vtx[i].nLockTime));
-	txobj.push_back(Pair("size",
-		(int)::GetSerializeSize(block.vtx[i], SER_NETWORK)));
-
-	Array tx_vin;
-	for (int j = 0; j < block.vtx[i].vin.size(); j++) {
-	    Object vino;
-
-	    Object vino_outpt;
-
-	    vino_outpt.push_back(Pair("hash",
-	    	block.vtx[i].vin[j].prevout.hash.ToString().c_str()));
-	    vino_outpt.push_back(Pair("n", (uint64_t)block.vtx[i].vin[j].prevout.n));
-
-	    vino.push_back(Pair("prev_out", vino_outpt));
-
-	    if (block.vtx[i].vin[j].prevout.IsNull())
-	    	vino.push_back(Pair("coinbase", HexStr(
-			block.vtx[i].vin[j].scriptSig.begin(),
-			block.vtx[i].vin[j].scriptSig.end(), false).c_str()));
-	    else
-	    	vino.push_back(Pair("scriptSig", 
-			block.vtx[i].vin[j].scriptSig.ToString().c_str()));
-	    if (block.vtx[i].vin[j].nSequence != UINT_MAX)
-	    	vino.push_back(Pair("sequence", (uint64_t)block.vtx[i].vin[j].nSequence));
-
-	    tx_vin.push_back(vino);
-	}
-
-	Array tx_vout;
-	for (int j = 0; j < block.vtx[i].vout.size(); j++) {
-	    Object vouto;
-
-	    vouto.push_back(Pair("value",
-	    	(double)block.vtx[i].vout[j].nValue / (double)COIN));
-	    vouto.push_back(Pair("scriptPubKey", 
-		block.vtx[i].vout[j].scriptPubKey.ToString().c_str()));
-
-	    tx_vout.push_back(vouto);
-	}
-
-	txobj.push_back(Pair("in", tx_vin));
-	txobj.push_back(Pair("out", tx_vout));
-
-	tx.push_back(txobj);
+        tx.push_back(block.vtx[i].GetHash().ToString().c_str());
     }
 
     obj.push_back(Pair("tx", tx));
