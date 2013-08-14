@@ -264,8 +264,6 @@ bool CWalletDB::LoadWallet(CWallet* pwallet)
                     return false;
                     printf("Failed to add key\n");
                 }
-                //pwallet->mapKeys[vchPubKey] = wkey.vchPrivKey;
-                //mapPubKeys[Hash160(vchPubKey)] = vchPubKey;
             }
             else if (strType == "mkey")
             {

@@ -1038,7 +1038,15 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
                 // Sign
                 const valtype& vchPubKey = item.second;
                 if (hash == 0)
-                    return keystore.HaveKey(vchPubKey);
+                {
+                    if (keystore.HaveKey(vchPubKey))
+                        return true;
+                    // Check for watch-only addresses, which do not have a pubkey, but have Hash160(pubkey)
+                    map<uint160, valtype>::const_iterator mi = keystore.mapPubKeys.find(Hash160(vchPubKey));
+                    if (mi == keystore.mapPubKeys.end())
+                        return false;
+                    return keystore.HaveKey(mi->second);
+                }
                 CPrivKey privkey;
                 if (!keystore.GetPrivKey(vchPubKey, privkey))
                     return false;
@@ -1054,8 +1062,8 @@ bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash
             else if (item.first == OP_PUBKEYHASH)
             {
                 // Sign and give pubkey
-                map<uint160, valtype>::iterator mi = mapPubKeys.find(uint160(item.second));
-                if (mi == mapPubKeys.end())
+                map<uint160, valtype>::const_iterator mi = keystore.mapPubKeys.find(uint160(item.second));
+                if (mi == keystore.mapPubKeys.end())
                     return false;
                 const vector<unsigned char>& vchPubKey = (*mi).second;
                 if (hash == 0)
@@ -1104,8 +1112,8 @@ bool IsMine(const CKeyStore& keystore, const std::string& address)
     {
         uint160 hash160;
         AddressToHash160(address, hash160);
-        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
-        if (mi == mapPubKeys.end())
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = keystore.mapPubKeys.find(hash160);
+        if (mi == keystore.mapPubKeys.end())
             return false;
         return keystore.HaveKey(mi->second);
     }
@@ -1132,8 +1140,8 @@ bool IsSpendable(const CKeyStore& keystore, const std::string& address)
     {
         uint160 hash160;
         AddressToHash160(address, hash160);
-        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
-        if (mi == mapPubKeys.end())
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = keystore.mapPubKeys.find(hash160);
+        if (mi == keystore.mapPubKeys.end())
             return false;
         return !mi->second.empty() && keystore.HaveKey(mi->second);
     }
@@ -1147,7 +1155,7 @@ bool ExtractPubKey(const CScript& scriptPubKey, const CKeyStore* keystore, vecto
     if (!Solver(scriptPubKey, vSolution))
         return false;
 
-    CRITICAL_BLOCK(cs_mapPubKeys)
+    CRITICAL_BLOCK(keystore->cs_mapKeys)
     {
         BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
         {
@@ -1158,8 +1166,8 @@ bool ExtractPubKey(const CScript& scriptPubKey, const CKeyStore* keystore, vecto
             }
             else if (item.first == OP_PUBKEYHASH)
             {
-                map<uint160, valtype>::iterator mi = mapPubKeys.find(uint160(item.second));
-                if (mi == mapPubKeys.end())
+                map<uint160, valtype>::const_iterator mi = keystore->mapPubKeys.find(uint160(item.second));
+                if (mi == keystore->mapPubKeys.end())
                     continue;
                 vchPubKey = (*mi).second;
             }
