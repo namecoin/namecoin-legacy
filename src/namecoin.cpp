@@ -343,7 +343,8 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                     vector<unsigned char> vchPubKey = reservekey.GetReservedKey();
                     assert(pwalletMain->HaveKey(vchPubKey));
 
-                    // Fill a vout to ourself, using same address type as the payment
+                    // -------------- Fill a vout to ourself, using same address type as the payment
+                    // Now sending always to hash160 (GetBitcoinAddressHash160 will return hash160, even if pubkey is used)
                     CScript scriptChange;
                     if (vecSend[0].first.GetBitcoinAddressHash160() != 0)
                         scriptChange.SetBitcoinAddress(vchPubKey);

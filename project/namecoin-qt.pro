@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
-VERSION = 0.3.65
+VERSION = 0.3.66
 QT += network
 DEFINES += GUI QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
@@ -234,7 +234,7 @@ RESOURCES += ../src/qt/bitcoin.qrc
 FORMS += \
     ../src/qt/forms/sendcoinsdialog.ui \
     ../src/qt/forms/managenamespage.ui \
-	../src/qt/forms/configurenamedialog.ui \
+    ../src/qt/forms/configurenamedialog.ui \
     ../src/qt/forms/addressbookpage.ui \
     ../src/qt/forms/signverifymessagedialog.ui \
     ../src/qt/forms/aboutdialog.ui \

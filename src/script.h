@@ -625,32 +625,7 @@ public:
         return true;
     }
 
-
-    uint160 GetBitcoinAddressHash160() const
-    {
-        opcodetype opcode;
-        std::vector<unsigned char> vch;
-        CScript::const_iterator pc = begin();
-        if (!GetOp(pc, opcode, vch))
-            return 0;
-        if (opcode != OP_DUP)
-        {
-            // Pay to pubkey
-            if (vch.size() < 33 || vch.size() > 120) return 0;
-            vector<unsigned char> vch1 = vch;
-            if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return 0;
-            if (pc != end()) return 0;
-            return Hash160(vch1);
-        }
-        // Pay to pubkey hash
-        if (!GetOp(pc, opcode, vch) || opcode != OP_HASH160) return 0;
-        if (!GetOp(pc, opcode, vch) || vch.size() != sizeof(uint160)) return 0;
-        uint160 hash160 = uint160(vch);
-        if (!GetOp(pc, opcode, vch) || opcode != OP_EQUALVERIFY) return 0;
-        if (!GetOp(pc, opcode, vch) || opcode != OP_CHECKSIG) return 0;
-        if (pc != end()) return 0;
-        return hash160;
-    }
+    uint160 GetBitcoinAddressHash160() const;
 
     std::string GetBitcoinAddress() const
     {

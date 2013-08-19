@@ -1155,25 +1155,43 @@ bool ExtractPubKey(const CScript& scriptPubKey, const CKeyStore* keystore, vecto
     if (!Solver(scriptPubKey, vSolution))
         return false;
 
-    CRITICAL_BLOCK(keystore->cs_mapKeys)
+    if (keystore)
     {
+        // Use keystore to convert hash160 to pubkey; only return keys that belong to us
+        CRITICAL_BLOCK(keystore->cs_mapKeys)
+        {
+            BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
+            {
+                valtype vchPubKey;
+                if (item.first == OP_PUBKEY)
+                {
+                    vchPubKey = item.second;
+                }
+                else if (item.first == OP_PUBKEYHASH)
+                {
+                    map<uint160, valtype>::const_iterator mi = keystore->mapPubKeys.find(uint160(item.second));
+                    if (mi == keystore->mapPubKeys.end())
+                        continue;
+                    vchPubKey = (*mi).second;
+                }
+                else
+                    continue;
+                if (keystore->HaveKey(vchPubKey))
+                {
+                    vchPubKeyRet = vchPubKey;
+                    return true;
+                }
+            }
+        }
+    }
+    else
+    {
+        // No keystore - return pubkey only
         BOOST_FOREACH(PAIRTYPE(opcodetype, valtype)& item, vSolution)
         {
-            valtype vchPubKey;
             if (item.first == OP_PUBKEY)
             {
-                vchPubKey = item.second;
-            }
-            else if (item.first == OP_PUBKEYHASH)
-            {
-                map<uint160, valtype>::const_iterator mi = keystore->mapPubKeys.find(uint160(item.second));
-                if (mi == keystore->mapPubKeys.end())
-                    continue;
-                vchPubKey = (*mi).second;
-            }
-            if (keystore == NULL || keystore->HaveKey(vchPubKey))
-            {
-                vchPubKeyRet = vchPubKey;
+                vchPubKeyRet = item.second;
                 return true;
             }
         }
@@ -1201,6 +1219,16 @@ bool ExtractHash160(const CScript& scriptPubKey, uint160& hash160Ret)
     return false;
 }
 
+uint160 CScript::GetBitcoinAddressHash160() const
+{
+    uint160 hash160;
+    if (ExtractHash160(*this, hash160))
+        return hash160;
+    vector<unsigned char> vch;
+    if (ExtractPubKey(*this, NULL, vch))
+        return Hash160(vch);
+    return 0;
+}
 
 bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType)
 {

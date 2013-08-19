@@ -207,7 +207,7 @@ bool AppInit2(int argc, char* argv[])
     fDebug = GetBoolArg("-debug");
     fAllowDNS = GetBoolArg("-dns");
 
-#ifndef __WXMSW__
+#if !defined(WIN32) && !defined(QT_GUI)
     fDaemon = GetBoolArg("-daemon");
 #else
     fDaemon = false;
@@ -585,7 +585,7 @@ std::string HelpMessage()
 #ifdef GUI
         "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
 #endif
-#ifndef __WXMSW__
+#if !defined(WIN32) && !defined(QT_GUI)
         "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
 #endif
         "  -testnet         \t\t  " + _("Use the test network\n") +

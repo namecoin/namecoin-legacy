@@ -74,7 +74,7 @@ CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEFS) $(INCLUDEPATHS)
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
     script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h rpc.h uibase.h ui.h noui.h init.h auxpow.h
 
-BASE_OBJS= \
+OBJS= \
     obj/auxpow.o \
     obj/util.o \
     obj/key.o \
@@ -91,10 +91,6 @@ BASE_OBJS= \
     obj/init.o \
     cryptopp/obj/sha.o \
     cryptopp/obj/cpu.o
-
-OBJS = \
-    $(BASE_OBJS) \
-    obj/hook.o
 
 all: namecoind
 
@@ -113,7 +109,7 @@ obj/test/%.o: test/%.cpp $(HEADERS)
 
 obj/nogui/namecoin.o: namecoin.h
 
-namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
+namecoind: $(OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
 	$(CXX) $(CXXFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
 clean:

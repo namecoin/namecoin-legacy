@@ -1194,7 +1194,8 @@ Value ListReceived(const Array& params, bool fByAccounts)
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             {
-                // Only counting our own bitcoin addresses and not ip addresses
+                // -------------- Only counting our own bitcoin addresses and not ip addresses
+                // Now counting all addresses, because name tx can send change to pubkey, rather than hash160
                 uint160 hash160 = txout.scriptPubKey.GetBitcoinAddressHash160();
                 if (hash160 == 0 || !pwalletMain->mapPubKeys.count(hash160)) // IsMine
                     continue;
@@ -3003,7 +3004,26 @@ Value sendrawtransaction(const Array& params, bool fHelp)
     return hashTx.GetHex();
 }
 
+extern CCriticalSection cs_mapTransactions;
 
+Value getrawmempool(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getrawmempool\n"
+            "Returns all transaction ids in memory pool.");
+
+    Array a;
+
+    CRITICAL_BLOCK(cs_mapTransactions)
+    {
+        a.reserve(mapTransactions.size());
+        BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction) &mi, mapTransactions)
+            a.push_back(mi.first.ToString());
+    }
+
+    return a;
+}
 
 
 
@@ -3074,6 +3094,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("decoderawtransaction",  &decoderawtransaction),
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
+    make_pair("getrawmempool",         &getrawmempool),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -3105,6 +3126,7 @@ string pAllowInSafeMode[] =
     "getauxblock",
     "getmemorypool",
     "dumpprivkey",
+    "getrawmempool",
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
