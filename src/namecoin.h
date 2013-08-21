@@ -78,7 +78,7 @@ int GetTxPosHeight(const CNameIndex& txPos);
 int GetTxPosHeight(const CDiskTxPos& txPos);
 int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight);
 bool GetTxOfName(CNameDB& dbName, const std::vector<unsigned char> &vchName, CTransaction& tx);
-int IndexOfNameOutput(CWalletTx& wtx);
+int IndexOfNameOutput(const CTransaction& tx);
 bool GetValueOfTxPos(const CNameIndex& txPos, std::vector<unsigned char>& vchValue, uint256& hash, int& nHeight);
 bool GetValueOfTxPos(const CDiskTxPos& txPos, std::vector<unsigned char>& vchValue, uint256& hash, int& nHeight);
 int GetDisplayExpirationDepth(int nHeight);

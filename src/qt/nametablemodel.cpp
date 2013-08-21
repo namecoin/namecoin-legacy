@@ -180,13 +180,13 @@ public:
                 // value
                 if (!GetValueOfNameTx(tx, vchValue))
                 {
-                    printf("refreshName(%s): skipping tx %s (GetValueOfNameTx returned false)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
+                    printf("refreshName(\"%s\"): skipping tx %s (GetValueOfNameTx returned false)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     continue;
                 }
 
                 if (!hooks->IsMine(wallet->mapWallet[tx.GetHash()]))
                 {
-                    printf("refreshName(%s): tx %s - transferred\n", qPrintable(nameObj.name), hash.GetHex().c_str());
+                    printf("refreshName(\"%s\"): tx %s - transferred\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     fTransferred = true;
                 }
 
@@ -196,24 +196,24 @@ public:
                     nHeight = GetTxPosHeight(txindex.pos);
                     if (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
                     {
-                        printf("refreshName(%s): tx %s, nHeight = %d - expired\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
+                        printf("refreshName(\"%s\"): tx %s, nHeight = %d - expired\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
                         continue;  // Expired
                     }
                     else
                     {
-                        printf("refreshName(%s): tx %s, nHeight = %d\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
+                        printf("refreshName(\"%s\"): tx %s, nHeight = %d\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
                     }
                 }
                 else
                 {
-                    printf("refreshName(%s): tx %s - unconfirmed\n", qPrintable(nameObj.name), hash.GetHex().c_str());
+                    printf("refreshName(\"%s\"): tx %s - unconfirmed\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     nHeight = NameTableEntry::NAME_UNCONFIRMED;
                 }
 
                 // get last active name only
                 if (!NameTableEntry::CompareHeight(nameObj.nHeight, nHeight))
                 {
-                    printf("refreshName(%s): tx %s - skipped (more recent transaction exists)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
+                    printf("refreshName(\"%s\"): tx %s - skipped (more recent transaction exists)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     continue;
                 }
 
@@ -221,7 +221,7 @@ public:
                 nameObj.nHeight = nHeight;
                 nameObj.transferred = fTransferred;
 
-                printf("refreshName(%s) found tx %s, nHeight=%d, value: %s\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nameObj.nHeight, qPrintable(nameObj.value));
+                printf("refreshName(\"%s\") found tx %s, nHeight=%d, value: %s\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nameObj.nHeight, qPrintable(nameObj.value));
             }
         }
 
@@ -409,7 +409,7 @@ void NameTableModel::updateTransaction(const QString &hash, int status)
     if (!GetNameOfTx(tx, vchName))
         return;   // Non-name transaction
 
-    printf("updateTransaction (%s, status=%d) calls refreshName (%s)\n", qPrintable(hash), status, stringFromVch(vchName).c_str());
+    printf("updateTransaction (%s, status=%d) calls refreshName(\"%s\")\n", qPrintable(hash), status, stringFromVch(vchName).c_str());
 
     priv->refreshName(vchName);
 }

@@ -1681,14 +1681,14 @@ bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value)
     }
 }
 
-int IndexOfNameOutput(CWalletTx& wtx)
+int IndexOfNameOutput(const CTransaction& tx)
 {
     vector<vector<unsigned char> > vvch;
 
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(wtx, op, nOut, vvch);
+    bool good = DecodeNameTx(tx, op, nOut, vvch);
 
     if (!good)
         throw runtime_error("IndexOfNameOutput() : name output not found");
