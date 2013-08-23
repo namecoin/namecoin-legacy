@@ -309,12 +309,13 @@ int CWalletTx::GetRequestCount() const
 }
 
 void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, list<pair<string, int64> >& listReceived,
-                           list<pair<string, int64> >& listSent, int64& nFee, string& strSentAccount) const
+                           list<pair<string, int64> >& listSent, int64& nFee, string& strSentAccount, bool &fNameTx) const
 {
     nGeneratedImmature = nGeneratedMature = nFee = 0;
     listReceived.clear();
     listSent.clear();
     strSentAccount = strFromAccount;
+    fNameTx = false;
 
     if (IsCoinBase())
     {
@@ -336,7 +337,9 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     // Compute the coin carried with the name operation
     // as difference of GetDebitInclName() and GetDebit()
     int64 nCarriedOverCoin = nDebit - GetDebit();
-    
+    if (nCarriedOverCoin != 0)
+        fNameTx = true;
+
     // Sent/received.  Standard client will never generate a send-to-multiple-recipients,
     // but non-standard clients might (so return a list of address/amount pairs)
     BOOST_FOREACH(const CTxOut& txout, vout)
@@ -404,7 +407,8 @@ void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, i
     string strSentAccount;
     list<pair<string, int64> > listReceived;
     list<pair<string, int64> > listSent;
-    GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+    bool fNameTx;
+    GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount, fNameTx);
 
     if (strAccount == "")
         nGenerated = allGeneratedMature;
@@ -665,7 +669,7 @@ int64 CWallet::GetBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!pcoin->IsConfirmed())
+            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
                 continue;
             nTotal += pcoin->GetAvailableCredit();
         }
@@ -763,7 +767,7 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
 
        BOOST_FOREACH(const CWalletTx* pcoin, vCoins)
        {
-            if (!pcoin->IsConfirmed())
+            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
                 continue;
 
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)

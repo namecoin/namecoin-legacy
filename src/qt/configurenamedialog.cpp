@@ -4,6 +4,7 @@
 #include "guiutil.h"
 #include "addressbookpage.h"
 #include "walletmodel.h"
+#include "guiconstants.h"
 #include "../main.h"
 #include "../hook.h"
 #include "../wallet.h"
@@ -19,10 +20,11 @@
 #include <QMessageBox>
 #include <QClipboard>
 
-ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &data, bool _firstUpdate, QWidget *parent) :
+ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &data, const QString &address_, bool firstUpdate_, QWidget *parent) :
     QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
-    name(_name),
-    firstUpdate(_firstUpdate),
+    name(name_),
+    address(address_),
+    firstUpdate(firstUpdate_),
     initialized(false),
     ui(new Ui::ConfigureNameDialog)
 {
@@ -34,15 +36,17 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
 
     GUIUtil::setupAddressWidget(ui->transferTo, this, true);
 
-    ui->labelName->setText(name);
+    ui->labelName->setText(GUIUtil::HtmlEscape(name));
     ui->dataEdit->setText(data);
+    ui->labelAddress->setText(GUIUtil::HtmlEscape(address));
+    ui->labelAddress->setFont(GUIUtil::bitcoinAddressFont());
 
-    ui->dataEdit->setMaxLength(MAX_VALUE_LENGTH);
+    ui->dataEdit->setMaxLength(GUI_MAX_VALUE_LENGTH);
 
     returnData = data;
 
     if (name.startsWith("d/"))
-        ui->labelDomain->setText(name.mid(2) + ".bit");
+        ui->labelDomain->setText(GUIUtil::HtmlEscape(name.mid(2) + ".bit"));
     else
         ui->labelDomain->setText(tr("(not a domain name)"));
         
@@ -164,7 +168,10 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &_name, const QString &da
         ui->transferTo->hide();
         ui->addressBookButton->hide();
         ui->pasteButton->hide();
-        ui->labelSubmitHint->setText(tr("Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old").arg(MIN_FIRSTUPDATE_DEPTH));
+        ui->labelSubmitHint->setText(
+            tr("Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old").arg(MIN_FIRSTUPDATE_DEPTH)
+            + "<br/><span style='color:red'>" + tr("Do not close your client while the name is pending!") + "</span>"
+        );
     }
     else
     {
@@ -242,6 +249,11 @@ void ConfigureNameDialog::reject()
 void ConfigureNameDialog::setModel(WalletModel *walletModel)
 {
     this->walletModel = walletModel;
+}
+
+void ConfigureNameDialog::on_copyButton_clicked()
+{
+    QApplication::clipboard()->setText(address);
 }
 
 void ConfigureNameDialog::on_pasteButton_clicked()

@@ -499,6 +499,7 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
     std::vector<unsigned char> strPubKey = wallet->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
     scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    ret.address = QString::fromStdString(scriptPubKeyOrig.GetBitcoinAddress());
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_NEW << hash << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -781,6 +782,8 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet, 
 
 static void NotifyTransactionChanged(WalletModel *walletmodel, CWallet *wallet, const uint256 &hash, ChangeType status)
 {
+    if (!hash)
+        return;     // Ignore coinbase transactions
     OutputDebugStringF("NotifyTransactionChanged %s status=%i\n", hash.GetHex().c_str(), status);
     QMetaObject::invokeMethod(walletmodel, "updateTransaction", Qt::QueuedConnection,
                               Q_ARG(QString, QString::fromStdString(hash.GetHex())),

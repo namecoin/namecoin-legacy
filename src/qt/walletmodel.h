@@ -89,6 +89,7 @@ public:
     {
          bool ok;
          QString err_msg;
+         QString address;
          std::vector<unsigned char> vchName;
          uint256 hex;   // Transaction hash in hex
          uint64 rand;   // Secret number in hex

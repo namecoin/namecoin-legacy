@@ -22,7 +22,8 @@ public:
     enum ColumnIndex {
         Name = 0,
         Value = 1,
-        ExpiresIn = 2
+        Address = 2,
+        ExpiresIn = 3
     };
 
     /** @name Methods overridden from QAbstractTableModel
@@ -46,7 +47,7 @@ private:
     void emitDataChanged(int index);
 
 public slots:
-    void updateEntry(const QString &name, const QString &value, int nHeight, int status, int *outNewRowIndex = NULL);
+    void updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex = NULL);
     void updateExpiration();
     void updateTransaction(const QString &hash, int status);
 
@@ -57,6 +58,7 @@ struct NameTableEntry
 {
     QString name;
     QString value;
+    QString address;
     int nHeight;
     bool transferred;
 
@@ -68,10 +70,10 @@ struct NameTableEntry
     static bool CompareHeight(int nOldHeight, int nNewHeight);    // Returns true if new height is better
 
     NameTableEntry() : nHeight(NAME_NON_EXISTING), transferred(false) {}
-    NameTableEntry(const QString &name, const QString &value, int nHeight, bool transferred = false) :
-        name(name), value(value), nHeight(nHeight), transferred(transferred) {}
-    NameTableEntry(const std::string &name, const std::string &value, int nHeight, bool transferred = false) :
-        name(QString::fromStdString(name)), value(QString::fromStdString(value)), nHeight(nHeight), transferred(transferred) {}
+    NameTableEntry(const QString &name, const QString &value, const QString &address, int nHeight, bool transferred = false) :
+        name(name), value(value), address(address), nHeight(nHeight), transferred(transferred) {}
+    NameTableEntry(const std::string &name, const std::string &value, const std::string &address, int nHeight, bool transferred = false) :
+        name(QString::fromStdString(name)), value(QString::fromStdString(value)), address(QString::fromStdString(address)), nHeight(nHeight), transferred(transferred) {}
 };
 
 #endif // NAMETABLEMODEL_H

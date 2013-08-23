@@ -941,7 +941,8 @@ Value getbalance(const Array& params, bool fHelp)
             string strSentAccount;
             list<pair<string, int64> > listReceived;
             list<pair<string, int64> > listSent;
-            wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+            bool fNameTx;
+            wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount, fNameTx);
             if (wtx.GetDepthInMainChain() >= nMinDepth)
                 BOOST_FOREACH(const PAIRTYPE(string,int64)& r, listReceived)
                     nBalance += r.second;
@@ -1271,7 +1272,8 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     string strSentAccount;
     list<pair<string, int64> > listReceived;
     list<pair<string, int64> > listSent;
-    wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+    bool fNameTx;
+    wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount, fNameTx);
 
     bool fAllAccounts = (strAccount == string("*"));
 
@@ -1296,19 +1298,38 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     }
 
     // Sent
-    if ((!listSent.empty() || nFee != 0) && (fAllAccounts || strAccount == strSentAccount))
+    if ((!listSent.empty() || nFee != 0 || fNameTx) && (fAllAccounts || strAccount == strSentAccount))
     {
-        BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
+        if (listSent.empty())
         {
+            // Name transaction, or some non-standard transaction with non-zero fee
             Object entry;
             entry.push_back(Pair("account", strSentAccount));
-            entry.push_back(Pair("address", s.first));
+            string strAddress = "";
+            if (fNameTx)
+                GetNameAddress(wtx, strAddress);
+            entry.push_back(Pair("address", strAddress));
             entry.push_back(Pair("category", "send"));
-            entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
+            entry.push_back(Pair("amount", ValueFromAmount(0)));
             entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
             if (fLong)
                 WalletTxToJSON(wtx, entry);
             ret.push_back(entry);
+        }
+        else
+        {
+            BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
+            {
+                Object entry;
+                entry.push_back(Pair("account", strSentAccount));
+                entry.push_back(Pair("address", s.first));
+                entry.push_back(Pair("category", "send"));
+                entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
+                entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
+                if (fLong)
+                    WalletTxToJSON(wtx, entry);
+                ret.push_back(entry);
+            }
         }
     }
 
@@ -1450,7 +1471,8 @@ Value listaccounts(const Array& params, bool fHelp)
             string strSentAccount;
             list<pair<string, int64> > listReceived;
             list<pair<string, int64> > listSent;
-            wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+            bool fNameTx;
+            wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount, fNameTx);
             mapAccountBalances[strSentAccount] -= nFee;
             BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
                 mapAccountBalances[strSentAccount] -= s.second;
