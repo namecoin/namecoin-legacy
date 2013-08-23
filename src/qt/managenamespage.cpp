@@ -216,7 +216,8 @@ void ManageNamesPage::on_submitNameButton_clicked()
         msg = tr("Are you sure you want to register domain name %1, which corresponds to domain %2?").arg(name).arg(name.mid(2) + ".bit");
     else
         msg = tr("Are you sure you want to register non-domain name %1?").arg(name);
-
+    msg += "\n\nThis will issue both a name_new and a postponed name_firstupdate. Let the program run for three hours to make sure the process can finish.";
+  
     if (QMessageBox::Yes != QMessageBox::question(this, tr("Confirm name registration"),
           msg,
           QMessageBox::Yes | QMessageBox::Cancel,
