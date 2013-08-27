@@ -397,7 +397,7 @@ void NameTableModel::updateExpiration()
                 // Data array changed - restart scan
                 n = priv->size();
                 i = -1;
-            }            
+            }
         }
         // Invalidate expiration counter for all rows.
         // Qt is smart enough to only actually request the data for the
@@ -508,7 +508,7 @@ QVariant NameTableModel::headerData(int section, Qt::Orientation orientation, in
             case Address:
                 return tr("Namecoin address to which the name is registered.");
             case ExpiresIn:
-                return tr("Number of blocks, after which the name will expire. Update name to renew it.\nEmpty cell means pending (awaiting automatic name_firstupdate or awaiting network confirmation).");
+                return tr("Number of blocks, after which the name will expire. Update name to renew it.");
             }
         } 
     }

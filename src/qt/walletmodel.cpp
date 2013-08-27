@@ -150,7 +150,7 @@ void WalletModel::sendPendingNameFirstUpdates()
                     mapMyNameFirstUpdate.erase(mi++);
                     fSkip = true;
                 }
-                if (it2->second.GetDepthInMainChain() < MIN_FIRSTUPDATE_DEPTH)
+                else if (it2->second.GetDepthInMainChain() < MIN_FIRSTUPDATE_DEPTH)
                 {
                     mi++;
                     fSkip = true;
