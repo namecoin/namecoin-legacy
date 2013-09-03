@@ -305,7 +305,14 @@ void DBFlush(bool fShutdown)
             char** listp;
             if (mapFileUseCount.empty())
                 dbenv.log_archive(&listp, DB_ARCH_REMOVE);
-            dbenv.close(0);
+            try
+            {
+                dbenv.close(0);
+            }
+            catch (const DbException& e)
+            {
+                printf("EnvShutdown exception: %s (%d)\n", e.what(), e.get_errno());
+            }
             fDbEnvInit = false;
         }
     }
