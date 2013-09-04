@@ -2,9 +2,7 @@ TEMPLATE = app
 TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
 VERSION = 0.3.68
-!win32 {
 INCLUDEPATH += src src/json src/qt
-}
 QT += network
 DEFINES += GUI QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
