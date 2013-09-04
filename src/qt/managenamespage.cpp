@@ -25,7 +25,7 @@ extern std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFi
 // NameFilterProxyModel
 //
 
-NameFilterProxyModel::NameFilterProxyModel(QObject *parent /*= 0*/)
+NameFilterProxyModel::NameFilterProxyModel(QObject *parent /* = 0*/)
     : QSortFilterProxyModel(parent)
 {
 }

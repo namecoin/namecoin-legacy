@@ -78,9 +78,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             {
                 // Check whether transaction input is name_* operation - in this case consider it ours
                 CTransaction txPrev;
-                uint256 hash = 0;
+                uint256 hashBlock = 0;
                 CTxDestination address;
-                if (GetTransaction(txin.prevout.hash, txPrev, hash) &&
+                if (GetTransaction(txin.prevout.hash, txPrev, hashBlock) &&
                         txin.prevout.n < txPrev.vout.size() &&
                         hooks->ExtractAddress(txPrev.vout[txin.prevout.n].scriptPubKey, address)
                    )

@@ -195,7 +195,7 @@ void WalletModel::sendPendingNameFirstUpdates()
 // This is needed because of wallet encryption (otherwise we could store just hash+rand+value and create transaction
 // on-the-fly after 12 blocks).
 // Must hold cs_main lock.
-std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /* = NULL*/)
 {
     LOCK(wallet->cs_wallet);
 
@@ -206,7 +206,7 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
     return nameFirstUpdateCreateTx(wtx, vchName, it->second, rand, vchValue, pnFeeRet);
 }
 
-std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, CWalletTx &wtxIn, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, CWalletTx &wtxIn, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /* = NULL*/)
 {
     if (pnFeeRet)
         *pnFeeRet = 0;

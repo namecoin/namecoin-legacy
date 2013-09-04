@@ -69,6 +69,7 @@ public:
 
         std::map< std::vector<unsigned char>, NameTableEntry > vNamesO;
 
+        CRITICAL_BLOCK(cs_main)
         CRITICAL_BLOCK(wallet->cs_mapWallet)
         {
             CTxIndex txindex;
@@ -149,10 +150,9 @@ public:
 
     void refreshName(const std::vector<unsigned char> &inName)
     {
-        LOCK(cs_main);
-
         NameTableEntry nameObj(stringFromVch(inName), std::string(), std::string(), NameTableEntry::NAME_NON_EXISTING);
 
+        CRITICAL_BLOCK(cs_main)
         CRITICAL_BLOCK(wallet->cs_mapWallet)
         {
             CTxIndex txindex;
@@ -432,13 +432,13 @@ void NameTableModel::updateTransaction(const QString &hash, int status)
     priv->refreshName(vchName);
 }
 
-int NameTableModel::rowCount(const QModelIndex &parent /*= QModelIndex()*/) const
+int NameTableModel::rowCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return priv->size();
 }
 
-int NameTableModel::columnCount(const QModelIndex &parent /*= QModelIndex()*/) const
+int NameTableModel::columnCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return columns.length();
@@ -538,7 +538,7 @@ QModelIndex NameTableModel::index(int row, int column, const QModelIndex &parent
     }
 }
 
-void NameTableModel::updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex /*= NULL*/)
+void NameTableModel::updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex /* = NULL*/)
 {
     priv->updateEntry(name, value, address, nHeight, status, outNewRowIndex);
 }
