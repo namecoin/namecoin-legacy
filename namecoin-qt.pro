@@ -119,7 +119,7 @@ QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wform
 DEPENDPATH += src src/json src/cryptopp src/qt
 
 NAMECOIN_HEADERS = headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h rpc.h uibase.h ui.h noui.h init.h auxpow.h 
+    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h 
     
 NAMECOIN_SOURCES = \
     auxpow.cpp \
@@ -134,7 +134,7 @@ NAMECOIN_SOURCES = \
     keystore.cpp \
     main.cpp \
     wallet.cpp \
-    rpc.cpp \
+    bitcoinrpc.cpp \
     init.cpp \
     cryptopp/sha.cpp \
     cryptopp/cpu.cpp \

@@ -1252,9 +1252,13 @@ void ThreadOpenConnections2(void* parg)
     int64 nStart = GetTime();
     loop
     {
-        // Limit outbound connections
         vnThreadsRunning[1]--;
         Sleep(500);
+        vnThreadsRunning[1]++;
+        if (fShutdown)
+            return;
+
+        // Limit outbound connections	    
         loop
         {
             int nOutbound = 0;
@@ -1266,13 +1270,12 @@ void ThreadOpenConnections2(void* parg)
             nMaxOutboundConnections = min(nMaxOutboundConnections, (int)GetArg("-maxconnections", 125));
             if (nOutbound < nMaxOutboundConnections)
                 break;
+	        vnThreadsRunning[1]--;	    
             Sleep(2000);
+            vnThreadsRunning[1]++;	    
             if (fShutdown)
                 return;
         }
-        vnThreadsRunning[1]++;
-        if (fShutdown)
-            return;
 
         CRITICAL_BLOCK(cs_mapAddresses)
         {

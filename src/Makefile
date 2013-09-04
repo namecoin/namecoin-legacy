@@ -72,7 +72,7 @@ namecoind: USE_UPNP:=0
 
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEFS) $(INCLUDEPATHS)
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h rpc.h uibase.h ui.h noui.h init.h auxpow.h
+    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
 
 OBJS= \
     obj/auxpow.o \
@@ -87,7 +87,7 @@ OBJS= \
     obj/keystore.o \
     obj/main.o \
     obj/wallet.o \
-    obj/rpc.o \
+    obj/bitcoinrpc.o \
     obj/init.o \
     cryptopp/obj/sha.o \
     cryptopp/obj/cpu.o

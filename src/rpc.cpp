@@ -37,7 +37,7 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 // a certain size around 145MB.  If we need access to json_spirit outside this
 // file, we could use the compiled json_spirit option.
 
-#include "rpc.h"
+#include "bitcoinrpc.h"
 
 using namespace std;
 using namespace boost;
