@@ -283,7 +283,15 @@ public:
 
     bool SetString(const char* pszSecret)
     {
-        return CBase58Data::SetString(pszSecret) && IsValid();
+        if (!CBase58Data::SetString(pszSecret))
+            return false;
+        // We use Bitcoin privkey format (nVersion = 128) as the default one,
+        // though also accept vanitygen addresses for importing, which
+        // use nVersion = address_version + 128 = 52 + 128 = 180.
+        if (nVersion == 180)
+            nVersion = 128;
+
+        return IsValid();
     }
 
     bool SetString(const std::string& strSecret)
