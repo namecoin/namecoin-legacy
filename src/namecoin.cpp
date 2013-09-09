@@ -1086,9 +1086,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-        vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
         CScript scriptPubKeyOrig;
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
         CScript scriptPubKey;
         scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
         scriptPubKey += scriptPubKeyOrig;
@@ -1144,7 +1144,6 @@ Value name_update(const Array& params, bool fHelp)
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
 
     if (params.size() == 3)
@@ -1158,7 +1157,8 @@ Value name_update(const Array& params, bool fHelp)
     }
     else
     {
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     }
 
     CScript scriptPubKey;
@@ -1220,9 +1220,9 @@ Value name_new(const Array& params, bool fHelp)
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
     uint160 hash =  Hash160(vchToHash);
 
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+    vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_NEW << hash << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -1979,11 +1979,9 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     {
         if (fBlock && op != OP_NAME_NEW)
         {
-            if (mapNamePending[vvchArgs[0]].count(tx.GetHash()))
-                mapNamePending[vvchArgs[0]].erase(tx.GetHash());
-            else
-                printf("ConnectInputsHook() : connecting inputs on %s which was not in pending - must be someone elses\n",
-                        tx.GetHash().GetHex().c_str());
+            std::map<std::vector<unsigned char>, std::set<uint256> >::iterator mi = mapNamePending.find(vvchArgs[0]);
+            if (mi != mapNamePending.end())
+                mi->second.erase(tx.GetHash());
         }
     }
 
