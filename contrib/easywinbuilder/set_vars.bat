@@ -1,5 +1,8 @@
 @set PATH=c:\mingw\msys\1.0\bin;c:\mingw\bin
 
+@set LANG=en_US.UTF8
+@set LC_ALL=en_US.UTF8
+
 @set MINGWINSTALLER=mingw-get-inst-20120426
 
 @set OPENSSL=openssl-1.0.1e

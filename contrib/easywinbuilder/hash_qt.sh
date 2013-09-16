@@ -1,6 +1,6 @@
 echo Hash of Qt binary [experimental]...
 bash dahash.sh $ROOTPATHSH/release/${COINNAME}-qt.exe
-echo phelix got: 6ebd7bb9ff0bb85a2328527e99357ada89cd2ed57726395188ea7b5ea453284b
+echo phelix got: 924b34d99151e2b58f2be1a74e18c76915b5ef12e5479f58b3a6117b8280129f (v3.70)
 echo
 echo
 
