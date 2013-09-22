@@ -142,6 +142,15 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
                 json_spirit::Value starVal = json_spirit::find_value(map, "*");
                 if (map.size() == 1 && starVal.type() == json_spirit::str_type)
                     ok = starVal.get_str() == ipVal.get_str();
+                else if (map.size() == 1 && starVal.type() == json_spirit::obj_type)
+                {
+                    json_spirit::Object starMap = starVal.get_obj();
+                    json_spirit::Value starIp = json_spirit::find_value(starMap, "ip");
+                    if (starMap.size() == 1 && starIp.type() == json_spirit::str_type)
+                        ok = starIp.get_str() == ipVal.get_str();
+                    else
+                        ok = false;
+                }
                 else
                     ok = false;
             }
@@ -305,8 +314,9 @@ void ConfigureNameDialog::SetIP()
 {
     json_spirit::Object data;
     data.push_back(json_spirit::Pair("ip", ui->ipEdit->text().trimmed().toStdString()));
-    json_spirit::Object map;
-    map.push_back(json_spirit::Pair("*", ui->ipEdit->text().trimmed().toStdString()));
+    json_spirit::Object map, submap;
+    submap.push_back(json_spirit::Pair("ip", ui->ipEdit->text().trimmed().toStdString()));
+    map.push_back(json_spirit::Pair("*", submap));
     data.push_back(json_spirit::Pair("map", map));
     QString ipFingerprint = ui->ipFingerprintEdit->text().trimmed();
     if (!ipFingerprint.isEmpty())
