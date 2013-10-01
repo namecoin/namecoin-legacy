@@ -16,6 +16,7 @@ extern std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFi
 static int column_alignments[] = {
         Qt::AlignLeft|Qt::AlignVCenter,     // Name
         Qt::AlignLeft|Qt::AlignVCenter,     // Value
+        Qt::AlignLeft|Qt::AlignVCenter,     // Address
         Qt::AlignRight|Qt::AlignVCenter     // Expires in
     };
 
@@ -68,6 +69,7 @@ public:
 
         std::map< std::vector<unsigned char>, NameTableEntry > vNamesO;
 
+        CRITICAL_BLOCK(cs_main)
         CRITICAL_BLOCK(wallet->cs_mapWallet)
         {
             CTxIndex txindex;
@@ -122,7 +124,10 @@ public:
                 if (mi != vNamesO.end() && !NameTableEntry::CompareHeight(mi->second.nHeight, nHeight))
                     continue;
 
-                vNamesO[vchName] = NameTableEntry(stringFromVch(vchName), stringFromVch(vchValue), nHeight, fTransferred);
+                std::string strAddress = "";
+                GetNameAddress(tx, strAddress);
+
+                vNamesO[vchName] = NameTableEntry(stringFromVch(vchName), stringFromVch(vchValue), strAddress, nHeight, fTransferred);
             }
         }        
 
@@ -133,7 +138,11 @@ public:
 
         // Add pending names (name_new)
         BOOST_FOREACH(const PAIRTYPE(std::vector<unsigned char>, PreparedNameFirstUpdate)& item, mapMyNameFirstUpdate)
-            cachedNameTable.append(NameTableEntry(stringFromVch(item.first), stringFromVch(item.second.vchData), NameTableEntry::NAME_NEW));
+        {
+            std::string strAddress = "";
+            GetNameAddress(item.second.wtx, strAddress);
+            cachedNameTable.append(NameTableEntry(stringFromVch(item.first), stringFromVch(item.second.vchData), strAddress, NameTableEntry::NAME_NEW));
+        }
 
         // qLowerBound() and qUpperBound() require our cachedNameTable list to be sorted in asc order
         qSort(cachedNameTable.begin(), cachedNameTable.end(), NameTableEntryLessThan());
@@ -141,10 +150,9 @@ public:
 
     void refreshName(const std::vector<unsigned char> &inName)
     {
-        LOCK(cs_main);
+        NameTableEntry nameObj(stringFromVch(inName), std::string(), std::string(), NameTableEntry::NAME_NON_EXISTING);
 
-        NameTableEntry nameObj(stringFromVch(inName), std::string(""), NameTableEntry::NAME_NON_EXISTING);
-
+        CRITICAL_BLOCK(cs_main)
         CRITICAL_BLOCK(wallet->cs_mapWallet)
         {
             CTxIndex txindex;
@@ -179,49 +187,32 @@ public:
 
                 // value
                 if (!GetValueOfNameTx(tx, vchValue))
-                {
-                    printf("refreshName(%s): skipping tx %s (GetValueOfNameTx returned false)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     continue;
-                }
 
                 if (!hooks->IsMine(wallet->mapWallet[tx.GetHash()]))
-                {
-                    printf("refreshName(%s): tx %s - transferred\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     fTransferred = true;
-                }
 
                 // height
                 if (fConfirmed)
                 {
                     nHeight = GetTxPosHeight(txindex.pos);
                     if (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-                    {
-                        printf("refreshName(%s): tx %s, nHeight = %d - expired\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
                         continue;  // Expired
-                    }
-                    else
-                    {
-                        printf("refreshName(%s): tx %s, nHeight = %d\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nHeight);
-                    }
                 }
                 else
-                {
-                    printf("refreshName(%s): tx %s - unconfirmed\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     nHeight = NameTableEntry::NAME_UNCONFIRMED;
-                }
 
                 // get last active name only
                 if (!NameTableEntry::CompareHeight(nameObj.nHeight, nHeight))
-                {
-                    printf("refreshName(%s): tx %s - skipped (more recent transaction exists)\n", qPrintable(nameObj.name), hash.GetHex().c_str());
                     continue;
-                }
+                
+                std::string strAddress = "";
+                GetNameAddress(tx, strAddress);
 
                 nameObj.value = QString::fromStdString(stringFromVch(vchValue));
+                nameObj.address = QString::fromStdString(strAddress);
                 nameObj.nHeight = nHeight;
                 nameObj.transferred = fTransferred;
-
-                printf("refreshName(%s) found tx %s, nHeight=%d, value: %s\n", qPrintable(nameObj.name), hash.GetHex().c_str(), nameObj.nHeight, qPrintable(nameObj.value));
             }
         }
 
@@ -241,33 +232,25 @@ public:
             // In model - update or delete
 
             if (nameObj.nHeight != NameTableEntry::NAME_NON_EXISTING)
-            {
-                printf("refreshName result : %s - refreshed in the table\n", qPrintable(nameObj.name));
-                updateEntry(nameObj.name, nameObj.value, nameObj.nHeight, CT_UPDATED);
-            }
+                updateEntry(nameObj, CT_UPDATED);
             else
-            {
-                printf("refreshName result : %s - deleted from the table\n", qPrintable(nameObj.name));
-                updateEntry(nameObj.name, nameObj.value, nameObj.nHeight, CT_DELETED);
-            }
+                updateEntry(nameObj, CT_DELETED);
         }
         else
         {
             // Not in model - add or do nothing
 
             if (nameObj.nHeight != NameTableEntry::NAME_NON_EXISTING)
-            {
-                printf("refreshName result : %s - added to the table\n", qPrintable(nameObj.name));
-                updateEntry(nameObj.name, nameObj.value, nameObj.nHeight, CT_NEW);
-            }
-            else
-            {
-                printf("refreshName result : %s - ignored (not in the table)\n", qPrintable(nameObj.name));
-            }
+                updateEntry(nameObj, CT_NEW);
         }
     }
 
-    void updateEntry(const QString &name, const QString &value, int nHeight, int status, int *outNewRowIndex = NULL)
+    void updateEntry(const NameTableEntry &nameObj, int status, int *outNewRowIndex = NULL)
+    {
+        updateEntry(nameObj.name, nameObj.value, nameObj.address, nameObj.nHeight, status, outNewRowIndex);
+    }
+
+    void updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex = NULL)
     {
         // Find name in model
         QList<NameTableEntry>::iterator lower = qLowerBound(
@@ -294,7 +277,7 @@ public:
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
-            cachedNameTable.insert(lowerIndex, NameTableEntry(name, value, nHeight));
+            cachedNameTable.insert(lowerIndex, NameTableEntry(name, value, address, nHeight));
             parent->endInsertRows();
             if (outNewRowIndex)
                 *outNewRowIndex = parent->index(lowerIndex, 0).row();
@@ -307,6 +290,7 @@ public:
             }
             lower->name = name;
             lower->value = value;
+            lower->address = address;
             lower->nHeight = nHeight;
             parent->emitDataChanged(lowerIndex);
             break;
@@ -344,7 +328,7 @@ public:
 NameTableModel::NameTableModel(CWallet *wallet, WalletModel *parent) :
     QAbstractTableModel(parent), walletModel(parent), wallet(wallet), priv(0), cachedNumBlocks(0)
 {
-    columns << tr("Name") << tr("Value") << tr("Expires in");
+    columns << tr("Name") << tr("Value") << tr("Address") << tr("Expires in");
     priv = new NameTablePriv(wallet, this);
     priv->refreshNameTable();
     
@@ -375,11 +359,11 @@ void NameTableModel::updateExpiration()
             int nHeight = item->nHeight;
             if (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
             {
-                priv->updateEntry(item->name, item->value, item->nHeight, CT_DELETED);
+                priv->updateEntry(item->name, item->value, item->address, item->nHeight, CT_DELETED);
                 // Data array changed - restart scan
                 n = priv->size();
                 i = -1;
-            }            
+            }
         }
         // Invalidate expiration counter for all rows.
         // Qt is smart enough to only actually request the data for the
@@ -409,18 +393,16 @@ void NameTableModel::updateTransaction(const QString &hash, int status)
     if (!GetNameOfTx(tx, vchName))
         return;   // Non-name transaction
 
-    printf("updateTransaction (%s, status=%d) calls refreshName (%s)\n", qPrintable(hash), status, stringFromVch(vchName).c_str());
-
     priv->refreshName(vchName);
 }
 
-int NameTableModel::rowCount(const QModelIndex &parent /*= QModelIndex()*/) const
+int NameTableModel::rowCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return priv->size();
 }
 
-int NameTableModel::columnCount(const QModelIndex &parent /*= QModelIndex()*/) const
+int NameTableModel::columnCount(const QModelIndex &parent /* = QModelIndex()*/) const
 {
     Q_UNUSED(parent);
     return columns.length();
@@ -435,21 +417,35 @@ QVariant NameTableModel::data(const QModelIndex &index, int role) const
 
     if (role == Qt::DisplayRole || role == Qt::EditRole)
     {
-        switch(index.column())
+        switch (index.column())
         {
         case Name:
             return rec->name;
         case Value:
             return rec->value;
+        case Address:
+            return rec->address;
         case ExpiresIn:
             if (!rec->HeightValid())
-                return QVariant();
+            {
+                if (rec->nHeight == NameTableEntry::NAME_NEW)
+                    return QString("pending (new)");
+                return QString("pending (update)");
+            }
             else
                 return rec->nHeight + GetDisplayExpirationDepth(rec->nHeight) - pindexBest->nHeight;
         }
     }
     else if (role == Qt::TextAlignmentRole)
         return column_alignments[index.column()];
+    else if (role == Qt::FontRole)
+    {
+        QFont font;
+        if (index.column() == Address)
+            font = GUIUtil::bitcoinAddressFont();
+        return font;
+    }
+
     return QVariant();
 }
 
@@ -467,14 +463,16 @@ QVariant NameTableModel::headerData(int section, Qt::Orientation orientation, in
         }
         else if (role == Qt::ToolTipRole)
         {
-            switch(section)
+            switch (section)
             {
             case Name:
                 return tr("Name registered using Namecoin.");
             case Value:
                 return tr("Data associated with the name.");
+            case Address:
+                return tr("Namecoin address to which the name is registered.");
             case ExpiresIn:
-                return tr("Number of blocks, after which the name will expire. Update name to renew it.\nEmpty cell means pending (awaiting automatic name_firstupdate or awaiting network confirmation).");
+                return tr("Number of blocks, after which the name will expire. Update name to renew it.");
             }
         } 
     }
@@ -504,9 +502,9 @@ QModelIndex NameTableModel::index(int row, int column, const QModelIndex &parent
     }
 }
 
-void NameTableModel::updateEntry(const QString &name, const QString &value, int nHeight, int status, int *outNewRowIndex /*= NULL*/)
+void NameTableModel::updateEntry(const QString &name, const QString &value, const QString &address, int nHeight, int status, int *outNewRowIndex /* = NULL*/)
 {
-    priv->updateEntry(name, value, nHeight, status, outNewRowIndex);
+    priv->updateEntry(name, value, address, nHeight, status, outNewRowIndex);
 }
 
 void NameTableModel::emitDataChanged(int idx)

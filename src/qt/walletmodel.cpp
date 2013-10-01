@@ -150,7 +150,7 @@ void WalletModel::sendPendingNameFirstUpdates()
                     mapMyNameFirstUpdate.erase(mi++);
                     fSkip = true;
                 }
-                if (it2->second.GetDepthInMainChain() < MIN_FIRSTUPDATE_DEPTH)
+                else if (it2->second.GetDepthInMainChain() < MIN_FIRSTUPDATE_DEPTH)
                 {
                     mi++;
                     fSkip = true;
@@ -195,7 +195,7 @@ void WalletModel::sendPendingNameFirstUpdates()
 // This is needed because of wallet encryption (otherwise we could store just hash+rand+value and create transaction
 // on-the-fly after 12 blocks).
 // Must hold cs_main lock.
-std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, uint256 wtxInHash, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /* = NULL*/)
 {
     LOCK(wallet->cs_wallet);
 
@@ -206,7 +206,7 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
     return nameFirstUpdateCreateTx(wtx, vchName, it->second, rand, vchValue, pnFeeRet);
 }
 
-std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, CWalletTx &wtxIn, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /*= NULL*/)
+std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vector<unsigned char> &vchName, CWalletTx &wtxIn, uint64 rand, const std::vector<unsigned char> &vchValue, int64 *pnFeeRet /* = NULL*/)
 {
     if (pnFeeRet)
         *pnFeeRet = 0;
@@ -234,9 +234,9 @@ std::string WalletModel::nameFirstUpdateCreateTx(CWalletTx &wtx, const std::vect
 
     std::vector<unsigned char> vchRand = CBigNum(rand).getvch();
 
-    std::vector<unsigned char> strPubKey = wallet->GetKeyFromKeyPool();
+    std::vector<unsigned char> vchPubKey = wallet->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -496,9 +496,10 @@ WalletModel::NameNewReturn WalletModel::nameNew(const QString &name)
     vchToHash.insert(vchToHash.end(), ret.vchName.begin(), ret.vchName.end());
     uint160 hash = Hash160(vchToHash);
 
-    std::vector<unsigned char> strPubKey = wallet->GetKeyFromKeyPool();
+    std::vector<unsigned char> vchPubKey = wallet->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
+    ret.address = QString::fromStdString(scriptPubKeyOrig.GetBitcoinAddress());
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_NEW << hash << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -644,8 +645,8 @@ QString WalletModel::nameUpdate(const QString &name, const QString &data, const 
     }
     else
     {
-        std::vector<unsigned char> strPubKey = wallet->GetKeyFromKeyPool();
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        std::vector<unsigned char> vchPubKey = wallet->GetKeyFromKeyPool();
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     }
 
     CScript scriptPubKey;
@@ -781,6 +782,8 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet, 
 
 static void NotifyTransactionChanged(WalletModel *walletmodel, CWallet *wallet, const uint256 &hash, ChangeType status)
 {
+    if (!hash)
+        return;     // Ignore coinbase transactions
     OutputDebugStringF("NotifyTransactionChanged %s status=%i\n", hash.GetHex().c_str(), status);
     QMetaObject::invokeMethod(walletmodel, "updateTransaction", Qt::QueuedConnection,
                               Q_ARG(QString, QString::fromStdString(hash.GetHex())),

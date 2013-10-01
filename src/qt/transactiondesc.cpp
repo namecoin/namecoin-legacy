@@ -144,22 +144,52 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
         else
         {
             bool fAllFromMe = true;
+            int64 nCarriedOverCoin = 0;
             BOOST_FOREACH(const CTxIn& txin, wtx.vin)
-                fAllFromMe = fAllFromMe && wallet->IsMine(txin);
+            {
+                if (!wallet->IsMine(txin))
+                {
+                    // Check whether transaction input is name_* operation - in this case consider it ours
+                    CTransaction txPrev;
+                    uint256 hash = 0;
+                    CTxDestination address;
+                    if (GetTransaction(txin.prevout.hash, txPrev, hash) &&
+                            txin.prevout.n < txPrev.vout.size() &&
+                            hooks->ExtractAddress(txPrev.vout[txin.prevout.n].scriptPubKey, address)
+                       )
+                    {
+                        // This is our name transaction
+                        // Accumulate the coin carried from name_new, because it is not actually spent
+                        nCarriedOverCoin += txPrev.vout[txin.prevout.n].nValue;
+                    }
+                    else
+                    {
+                        fAllFromMe = false;
+                        break;
+                    }
+                }
+            }
 
             bool fAllToMe = true;
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
-                fAllToMe = fAllToMe && wallet->IsMine(txout);
+                if (!wallet->IsMine(txout))
+                {
+                    fAllToMe = false;
+                    break;
+                }
 
             if (fAllFromMe)
             {
                 //
                 // Debit
                 //
+                int64 nTxFee = nDebit - (wtx.GetValueOut() - nCarriedOverCoin);
                 BOOST_FOREACH(const CTxOut& txout, wtx.vout)
                 {
                     if (wallet->IsMine(txout))
                         continue;
+
+                    int64 nValue = txout.nValue;
 
                     if (!wtx.mapValue.count("to") || wtx.mapValue["to"].empty())
                     {
@@ -173,9 +203,49 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
                             strHTML += GUIUtil::HtmlEscape(CBitcoinAddress(address).ToString());
                             strHTML += "<br>";
                         }
+                        else if (hooks->ExtractAddress(txout.scriptPubKey, address))
+                        {
+                            strHTML += "<b>" + tr("Name operation") + ":</b> " + GUIUtil::HtmlEscape(address) + "<br>";
+
+                            // Add carried coin (from name_new)
+                            if (nCarriedOverCoin > 0)
+                            {
+                                // Note: we subtract nCarriedOverCoin equally from all name operations,
+                                // until it becomes zero. It may fail for complex transactions, which
+                                // update multiple names simultaneously (standard client never creates such transactions).
+                                if (nValue >= nCarriedOverCoin)
+                                {
+                                    nValue -= nCarriedOverCoin;
+                                    nCarriedOverCoin = 0;
+                                }
+                                else
+                                {
+                                    nCarriedOverCoin -= nValue;
+                                    nValue = 0;
+                                }
+                            }
+                        }
+
+                        // Carried over coin can be used to pay fee, if it the required
+                        // amount was reserved in OP_NAME_NEW
+                        if (nCarriedOverCoin > 0)
+                        {
+                            if (nTxFee >= nCarriedOverCoin)
+                            {
+                                nTxFee -= nCarriedOverCoin;
+                                nCarriedOverCoin = 0;
+                            }
+                            else
+                            {
+                                nCarriedOverCoin -= nTxFee;
+                                nTxFee = 0;
+                            }
+                        }
+
+
                     }
 
-                    strHTML += "<b>" + tr("Debit") + ":</b> " + BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, -txout.nValue) + "<br>";
+                    strHTML += "<b>" + tr("Debit") + ":</b> " + BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, -nValue) + "<br>";
                 }
 
                 if (fAllToMe)
@@ -187,7 +257,6 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
                     strHTML += "<b>" + tr("Credit") + ":</b> " + BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, nValue) + "<br>";
                 }
 
-                int64 nTxFee = nDebit - wtx.GetValueOut();
                 if (nTxFee > 0)
                     strHTML += "<b>" + tr("Transaction fee") + ":</b> " + BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, -nTxFee) + "<br>";
             }

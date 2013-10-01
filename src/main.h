@@ -104,6 +104,7 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
+CBlockIndex* FindBlockByHeight(int nHeight);
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
@@ -1632,8 +1633,6 @@ public:
 
 
 extern std::map<uint256, CTransaction> mapTransactions;
-extern std::map<uint160, std::vector<unsigned char> > mapPubKeys;
-extern CCriticalSection cs_mapPubKeys;
 extern CHooks* hooks;
 
 

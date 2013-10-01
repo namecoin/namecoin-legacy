@@ -17,7 +17,7 @@ class ConfigureNameDialog : public QDialog
 
 public:
 
-    explicit ConfigureNameDialog(const QString &_name, const QString &data, bool _firstUpdate, QWidget *parent = 0);
+    explicit ConfigureNameDialog(const QString &name_, const QString &data, const QString &address_, bool firstUpdate_, QWidget *parent = 0);
     ~ConfigureNameDialog();
 
     void setModel(WalletModel *walletModel);
@@ -27,6 +27,7 @@ public slots:
     void accept();
     void reject();
     void on_addressBookButton_clicked();
+    void on_copyButton_clicked();
     void on_pasteButton_clicked();
     void on_nsEdit_textChanged()                              { if (initialized) SetDNS(); }
     void on_nsTranslateEdit_textChanged(const QString &text)  { if (initialized) SetDNS(); }
@@ -39,7 +40,7 @@ private:
     QString returnData;
     Ui::ConfigureNameDialog *ui;
     WalletModel *walletModel;
-    QString name;
+    QString name, address;
     bool firstUpdate;
     bool initialized;
 

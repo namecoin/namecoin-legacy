@@ -78,9 +78,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             {
                 // Check whether transaction input is name_* operation - in this case consider it ours
                 CTransaction txPrev;
-                uint256 hash = 0;
+                uint256 hashBlock = 0;
                 CTxDestination address;
-                if (GetTransaction(txin.prevout.hash, txPrev, hash) &&
+                if (GetTransaction(txin.prevout.hash, txPrev, hashBlock) &&
                         txin.prevout.n < txPrev.vout.size() &&
                         hooks->ExtractAddress(txPrev.vout[txin.prevout.n].scriptPubKey, address)
                    )
@@ -120,9 +120,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             int64 nTxFee = nDebit - (wtx.GetValueOut() - nCarriedOverCoin);
 
-            for (unsigned int nOut = 0; nOut < wtx.vout.size(); nOut++)
+            BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             {
-                const CTxOut& txout = wtx.vout[nOut];
                 TransactionRecord sub(hash, nTime);
                 sub.idx = parts.size();
 

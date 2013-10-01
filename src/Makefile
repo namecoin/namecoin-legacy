@@ -1,6 +1,6 @@
 CXX=g++
 
-DEFS=-DNOPCH -DFOURWAYSSE2 -DUSE_SSL 
+DEFS=-D_MT -DNOPCH -DFOURWAYSSE2 -DUSE_SSL 
 
 # Detect MinGW
 MINGW=$(shell uname -s|grep -i mingw32)
@@ -59,7 +59,7 @@ namecoind: USE_UPNP:=0
 	ifneq "$(MINGW)" ""
 		# MinGW-specific
 		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
-		LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
+		LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 	else
 		# Linux-specific
 		LIBS+= \
@@ -72,9 +72,9 @@ namecoind: USE_UPNP:=0
 
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEFS) $(INCLUDEPATHS)
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h rpc.h uibase.h ui.h noui.h init.h auxpow.h
+    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
 
-BASE_OBJS= \
+OBJS= \
     obj/auxpow.o \
     obj/util.o \
     obj/key.o \
@@ -87,14 +87,10 @@ BASE_OBJS= \
     obj/keystore.o \
     obj/main.o \
     obj/wallet.o \
-    obj/rpc.o \
+    obj/bitcoinrpc.o \
     obj/init.o \
     cryptopp/obj/sha.o \
     cryptopp/obj/cpu.o
-
-OBJS = \
-    $(BASE_OBJS) \
-    obj/hook.o
 
 all: namecoind
 
@@ -113,7 +109,7 @@ obj/test/%.o: test/%.cpp $(HEADERS)
 
 obj/nogui/namecoin.o: namecoin.h
 
-namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
+namecoind: $(OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
 	$(CXX) $(CXXFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
 clean:

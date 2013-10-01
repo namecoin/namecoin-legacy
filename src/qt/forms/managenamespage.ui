@@ -175,6 +175,22 @@ to the network and creates a pending name_firstupdate transaction.</string>
           </widget>
          </item>
          <item>
+          <widget class="QValidatedLineEdit" name="addressFilter">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="toolTip">
+            <string>Enter Namecoin address (or prefix of it)</string>
+           </property>
+           <property name="text">
+            <string notr="true"/>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer_ExpiresIn">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>

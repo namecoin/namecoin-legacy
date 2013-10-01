@@ -37,7 +37,7 @@ typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
 // a certain size around 145MB.  If we need access to json_spirit outside this
 // file, we could use the compiled json_spirit option.
 
-#include "rpc.h"
+#include "bitcoinrpc.h"
 
 using namespace std;
 using namespace boost;
@@ -252,6 +252,20 @@ Value getblockcount(const Array& params, bool fHelp)
     return nBestHeight;
 }
 
+Value getblockhash(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "getblockhash <index>\n"
+            "Returns hash of block in best-block-chain at <index>.");
+
+    int nHeight = params[0].get_int();
+    if (nHeight < 0 || nHeight > nBestHeight)
+        throw runtime_error("Block number out of range.");
+
+    CBlockIndex* pblockindex = FindBlockByHeight(nHeight);
+    return pblockindex->phashBlock->GetHex();
+}
 
 Value getblocknumber(const Array& params, bool fHelp)
 {
@@ -269,8 +283,8 @@ Value BlockToValue(CBlock &block)
     Object obj;
     obj.push_back(Pair("hash", block.GetHash().ToString().c_str()));
     obj.push_back(Pair("version", block.nVersion));
-    obj.push_back(Pair("prev_block", block.hashPrevBlock.ToString().c_str()));
-    obj.push_back(Pair("mrkl_root", block.hashMerkleRoot.ToString().c_str()));
+    obj.push_back(Pair("previousblockhash", block.hashPrevBlock.ToString().c_str()));
+    obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
     obj.push_back(Pair("time", (uint64_t)block.nTime));
     obj.push_back(Pair("bits", (uint64_t)block.nBits));
     obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
@@ -279,55 +293,7 @@ Value BlockToValue(CBlock &block)
 
     Array tx;
     for (int i = 0; i < block.vtx.size(); i++) {
-    	Object txobj;
-
-	txobj.push_back(Pair("hash", block.vtx[i].GetHash().ToString().c_str()));
-	txobj.push_back(Pair("version", block.vtx[i].nVersion));
-	txobj.push_back(Pair("lock_time", (uint64_t)block.vtx[i].nLockTime));
-	txobj.push_back(Pair("size",
-		(int)::GetSerializeSize(block.vtx[i], SER_NETWORK)));
-
-	Array tx_vin;
-	for (int j = 0; j < block.vtx[i].vin.size(); j++) {
-	    Object vino;
-
-	    Object vino_outpt;
-
-	    vino_outpt.push_back(Pair("hash",
-	    	block.vtx[i].vin[j].prevout.hash.ToString().c_str()));
-	    vino_outpt.push_back(Pair("n", (uint64_t)block.vtx[i].vin[j].prevout.n));
-
-	    vino.push_back(Pair("prev_out", vino_outpt));
-
-	    if (block.vtx[i].vin[j].prevout.IsNull())
-	    	vino.push_back(Pair("coinbase", HexStr(
-			block.vtx[i].vin[j].scriptSig.begin(),
-			block.vtx[i].vin[j].scriptSig.end(), false).c_str()));
-	    else
-	    	vino.push_back(Pair("scriptSig", 
-			block.vtx[i].vin[j].scriptSig.ToString().c_str()));
-	    if (block.vtx[i].vin[j].nSequence != UINT_MAX)
-	    	vino.push_back(Pair("sequence", (uint64_t)block.vtx[i].vin[j].nSequence));
-
-	    tx_vin.push_back(vino);
-	}
-
-	Array tx_vout;
-	for (int j = 0; j < block.vtx[i].vout.size(); j++) {
-	    Object vouto;
-
-	    vouto.push_back(Pair("value",
-	    	(double)block.vtx[i].vout[j].nValue / (double)COIN));
-	    vouto.push_back(Pair("scriptPubKey", 
-		block.vtx[i].vout[j].scriptPubKey.ToString().c_str()));
-
-	    tx_vout.push_back(vouto);
-	}
-
-	txobj.push_back(Pair("in", tx_vin));
-	txobj.push_back(Pair("out", tx_vout));
-
-	tx.push_back(txobj);
+        tx.push_back(block.vtx[i].GetHash().ToString().c_str());
     }
 
     obj.push_back(Pair("tx", tx));
@@ -382,11 +348,11 @@ Value getblockbycount(const Array& params, bool fHelp)
 }
 
 
-Value getblockbyhash(const Array& params, bool fHelp)
+Value getblock(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-            "getblockbyhash hash\n"
+            "getblock hash\n"
             "Dumps the block with specified hash");
 
     uint256 hash;
@@ -975,7 +941,8 @@ Value getbalance(const Array& params, bool fHelp)
             string strSentAccount;
             list<pair<string, int64> > listReceived;
             list<pair<string, int64> > listSent;
-            wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount);
+            bool fNameTx;
+            wtx.GetAmounts(allGeneratedImmature, allGeneratedMature, listReceived, listSent, allFee, strSentAccount, fNameTx);
             if (wtx.GetDepthInMainChain() >= nMinDepth)
                 BOOST_FOREACH(const PAIRTYPE(string,int64)& r, listReceived)
                     nBalance += r.second;
@@ -1180,6 +1147,7 @@ Value ListReceived(const Array& params, bool fByAccounts)
     // Tally
     map<uint160, tallyitem> mapTally;
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
+    CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
     {
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
@@ -1193,9 +1161,10 @@ Value ListReceived(const Array& params, bool fByAccounts)
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             {
-                // Only counting our own bitcoin addresses and not ip addresses
+                // -------------- Only counting our own bitcoin addresses and not ip addresses
+                // Now counting all addresses, because name tx can send change to pubkey, rather than hash160
                 uint160 hash160 = txout.scriptPubKey.GetBitcoinAddressHash160();
-                if (hash160 == 0 || !mapPubKeys.count(hash160)) // IsMine
+                if (hash160 == 0 || !pwalletMain->mapPubKeys.count(hash160)) // IsMine
                     continue;
 
                 tallyitem& item = mapTally[hash160];
@@ -1303,7 +1272,8 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     string strSentAccount;
     list<pair<string, int64> > listReceived;
     list<pair<string, int64> > listSent;
-    wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+    bool fNameTx;
+    wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount, fNameTx);
 
     bool fAllAccounts = (strAccount == string("*"));
 
@@ -1328,19 +1298,41 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
     }
 
     // Sent
-    if ((!listSent.empty() || nFee != 0) && (fAllAccounts || strAccount == strSentAccount))
+    if ((!listSent.empty() || nFee != 0 || fNameTx) && (fAllAccounts || strAccount == strSentAccount))
     {
-        BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
+        if (listSent.empty() || fNameTx)
         {
+            // Name transaction, or some non-standard transaction with non-zero fee
             Object entry;
             entry.push_back(Pair("account", strSentAccount));
-            entry.push_back(Pair("address", s.first));
+            string strAddress;
+            if (fNameTx)
+            {
+                int nTxOut = IndexOfNameOutput(wtx);
+                hooks->ExtractAddress(wtx.vout[nTxOut].scriptPubKey, strAddress);
+            }
+            entry.push_back(Pair("address", strAddress));
             entry.push_back(Pair("category", "send"));
-            entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
+            entry.push_back(Pair("amount", ValueFromAmount(0)));
             entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
             if (fLong)
                 WalletTxToJSON(wtx, entry);
             ret.push_back(entry);
+        }
+        else
+        {
+            BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
+            {
+                Object entry;
+                entry.push_back(Pair("account", strSentAccount));
+                entry.push_back(Pair("address", s.first));
+                entry.push_back(Pair("category", "send"));
+                entry.push_back(Pair("amount", ValueFromAmount(-s.second)));
+                entry.push_back(Pair("fee", ValueFromAmount(-nFee)));
+                if (fLong)
+                    WalletTxToJSON(wtx, entry);
+                ret.push_back(entry);
+            }
         }
     }
 
@@ -1467,10 +1459,11 @@ Value listaccounts(const Array& params, bool fHelp)
     map<string, int64> mapAccountBalances;
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
     CRITICAL_BLOCK(pwalletMain->cs_mapAddressBook)
+    CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
     {
         BOOST_FOREACH(const PAIRTYPE(string, string)& entry, pwalletMain->mapAddressBook) {
             uint160 hash160;
-            if(AddressToHash160(entry.first, hash160) && mapPubKeys.count(hash160)) // This address belongs to me
+            if(AddressToHash160(entry.first, hash160) && pwalletMain->mapPubKeys.count(hash160)) // This address belongs to me
                 mapAccountBalances[entry.second] = 0;
         }
 
@@ -1481,7 +1474,8 @@ Value listaccounts(const Array& params, bool fHelp)
             string strSentAccount;
             list<pair<string, int64> > listReceived;
             list<pair<string, int64> > listSent;
-            wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount);
+            bool fNameTx;
+            wtx.GetAmounts(nGeneratedImmature, nGeneratedMature, listReceived, listSent, nFee, strSentAccount, fNameTx);
             mapAccountBalances[strSentAccount] -= nFee;
             BOOST_FOREACH(const PAIRTYPE(string, int64)& s, listSent)
                 mapAccountBalances[strSentAccount] -= s.second;
@@ -1746,7 +1740,8 @@ Value validateaddress(const Array& params, bool fHelp)
         // version of the address:
         string currentAddress = Hash160ToAddress(hash160);
         ret.push_back(Pair("address", currentAddress));
-        ret.push_back(Pair("ismine", (mapPubKeys.count(hash160) > 0)));
+        CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
+            ret.push_back(Pair("ismine", (pwalletMain->mapPubKeys.count(hash160) > 0)));
         CRITICAL_BLOCK(pwalletMain->cs_mapAddressBook)
         {
             if (pwalletMain->mapAddressBook.count(currentAddress))
@@ -2367,8 +2362,8 @@ Value dumpprivkey(const Array& params, bool fHelp)
     {
         EnsureWalletIsUnlocked();
 
-        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
-        if (mi != mapPubKeys.end() && pwalletMain->GetPrivKey(mi->second, privKey))
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = pwalletMain->mapPubKeys.find(hash160);
+        if (mi != pwalletMain->mapPubKeys.end() && pwalletMain->GetPrivKey(mi->second, privKey))
             found = true;
     }
 
@@ -2402,8 +2397,8 @@ Value signmessage(const Array& params, bool fHelp)
     CPrivKey privKey;
     CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
     {
-        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
-        if (mi == mapPubKeys.end())
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = pwalletMain->mapPubKeys.find(hash160);
+        if (mi == pwalletMain->mapPubKeys.end())
             throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
 
         if (!pwalletMain->GetPrivKey(mi->second, privKey))
@@ -3000,7 +2995,26 @@ Value sendrawtransaction(const Array& params, bool fHelp)
     return hashTx.GetHex();
 }
 
+extern CCriticalSection cs_mapTransactions;
 
+Value getrawmempool(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getrawmempool\n"
+            "Returns all transaction ids in memory pool.");
+
+    Array a;
+
+    CRITICAL_BLOCK(cs_mapTransactions)
+    {
+        a.reserve(mapTransactions.size());
+        BOOST_FOREACH(const PAIRTYPE(uint256, CTransaction) &mi, mapTransactions)
+            a.push_back(mi.first.ToString());
+    }
+
+    return a;
+}
 
 
 
@@ -3013,8 +3027,9 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("help",                  &help),
     make_pair("stop",                  &stop),
     make_pair("getblockbycount",       &getblockbycount),
-    make_pair("getblockbyhash",        &getblockbyhash),
+    make_pair("getblock",              &getblock),
     make_pair("getblockcount",         &getblockcount),
+    make_pair("getblockhash",          &getblockhash),
     make_pair("getblocknumber",        &getblocknumber),
     make_pair("getconnectioncount",    &getconnectioncount),
     make_pair("getdifficulty",         &getdifficulty),
@@ -3071,6 +3086,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("decoderawtransaction",  &decoderawtransaction),
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
+    make_pair("getrawmempool",         &getrawmempool),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -3101,6 +3117,8 @@ string pAllowInSafeMode[] =
     "getworkaux",
     "getauxblock",
     "getmemorypool",
+    "dumpprivkey",
+    "getrawmempool"
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
@@ -3739,6 +3757,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "getworkaux"             && n > 2) ConvertTo<boost::int64_t>(params[2]);
     if (strMethod == "listaccounts"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
     if (strMethod == "getblockbycount"        && n > 0) ConvertTo<boost::int64_t>(params[0]);
+    if (strMethod == "getblockhash"           && n > 0) ConvertTo<boost::int64_t>(params[0]);
     if (strMethod == "sendmany"               && n > 1)
     {
         string s = params[1].get_str();

@@ -97,7 +97,7 @@ public:
     void ResendWalletTransactions();
     int64 GetBalance() const;
     int64 GetUnconfirmedBalance() const;
-    int64 GetImmatureBalance() const { return 0; }
+    int64 GetImmatureBalance() const;
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
@@ -165,7 +165,7 @@ public:
     }
     bool IsFromMe(const CTransaction& tx) const
     {
-        return (GetDebit(tx) > 0);
+        return (GetDebitInclName(tx) > 0);
     }
     int64 GetDebit(const CTransaction& tx) const
     {
@@ -327,19 +327,21 @@ public:
     std::vector<char> vfSpent;
 
     // memory only
-    mutable char fDebitCached, fDebitInclNameCached;
-    mutable char fCreditCached;
-    mutable char fAvailableCreditCached;
-    mutable char fChangeCached;
+    mutable bool fDebitCached, fDebitInclNameCached;
+    mutable bool fCreditCached;
+    mutable bool fAvailableCreditCached;
+    mutable bool fChangeCached;
     mutable int64 nDebitCached, nDebitInclNameCached;
     mutable int64 nCreditCached;
     mutable int64 nAvailableCreditCached;
     mutable int64 nChangeCached;
+    mutable bool fImmatureCreditCached;
+    mutable int64 nImmatureCreditCached;
 
     // memory only UI hints
     mutable unsigned int nTimeDisplayed;
     mutable int nLinesDisplayed;
-    mutable char fConfirmedDisplayed;
+    mutable bool fConfirmedDisplayed;
 
     CWalletTx()
     {
@@ -377,10 +379,12 @@ public:
         fCreditCached = false;
         fAvailableCreditCached = false;
         fChangeCached = false;
+        fImmatureCreditCached = false;
         nDebitCached = 0;
         nDebitInclNameCached = 0;
         nCreditCached = 0;
         nAvailableCreditCached = 0;
+        nImmatureCreditCached = 0;
         nChangeCached = 0;
         nTimeDisplayed = 0;
         nLinesDisplayed = 0;
@@ -459,6 +463,7 @@ public:
         fAvailableCreditCached = false;
         fDebitCached = false;
         fDebitInclNameCached = false;
+        fImmatureCreditCached = false;
         fChangeCached = false;
     }
 
@@ -519,6 +524,20 @@ public:
         return nCreditCached;
     }
 
+    int64 GetImmatureCredit(bool fUseCache=true) const
+    {
+        if (IsCoinBase() && GetBlocksToMaturity() > 0 && IsInMainChain())
+        {
+            if (fUseCache && fImmatureCreditCached)
+                return nImmatureCreditCached;
+            nImmatureCreditCached = pwallet->GetCredit(*this);
+            fImmatureCreditCached = true;
+            return nImmatureCreditCached;
+        }
+
+        return 0;
+    }
+
     int64 GetAvailableCredit(bool fUseCache=true) const
     {
         // Must wait until coinbase is safely deep enough in the chain before valuing it
@@ -556,14 +575,14 @@ public:
     }
 
     void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, std::list<std::pair<std::string /* address */, int64> >& listReceived,
-                    std::list<std::pair<std::string /* address */, int64> >& listSent, int64& nFee, std::string& strSentAccount) const;
+                    std::list<std::pair<std::string /* address */, int64> >& listSent, int64& nFee, std::string& strSentAccount, bool &fNameTx) const;
 
     void GetAccountAmounts(const std::string& strAccount, int64& nGenerated, int64& nReceived, 
                            int64& nSent, int64& nFee) const;
 
     bool IsFromMe() const
     {
-        return (GetDebit() > 0);
+        return (GetDebitInclName() > 0);
     }
 
     bool IsConfirmed() const

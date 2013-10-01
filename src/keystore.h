@@ -26,6 +26,8 @@ private:
 
 public:
 
+    std::map<uint160, std::vector<unsigned char> > mapPubKeys;
+
     CKeyStore()
         : fUseCrypto(false)
     {

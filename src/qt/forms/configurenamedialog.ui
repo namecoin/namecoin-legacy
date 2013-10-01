@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>687</width>
-    <height>371</height>
+    <height>369</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -323,7 +323,7 @@ p, li { white-space: pre-wrap; }
        </widget>
       </widget>
      </item>
-     <item row="7" column="1">
+     <item row="5" column="1">
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -336,7 +336,17 @@ p, li { white-space: pre-wrap; }
        </property>
       </spacer>
      </item>
-     <item row="8" column="0">
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelCurrentAddress">
+       <property name="text">
+        <string>&amp;Address:</string>
+       </property>
+       <property name="buddy">
+        <cstring>copyButton</cstring>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
       <widget class="QLabel" name="labelTransferTo">
        <property name="text">
         <string>&amp;Transfer to:</string>
@@ -346,7 +356,7 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </item>
-     <item row="8" column="1">
+     <item row="7" column="1">
       <layout class="QHBoxLayout" name="transferToLayout">
        <property name="spacing">
         <number>0</number>
@@ -357,9 +367,14 @@ p, li { white-space: pre-wrap; }
        <item>
         <widget class="QValidatedLineEdit" name="transferTo">
          <property name="toolTip">
-          <string>The Namecoin address to transfer domain to
-(e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9).
+          <string>The Namecoin address to transfer
+the domain to, e.g.
+N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9
+
 Leave empty, if not needed.</string>
+         </property>
+         <property name="text">
+          <string notr="true"/>
          </property>
          <property name="maxLength">
           <number>34</number>
@@ -402,12 +417,74 @@ Leave empty, if not needed.</string>
        </item>
       </layout>
      </item>
-     <item row="9" column="1">
+     <item row="8" column="1">
       <widget class="QLabel" name="labelTransferToHint">
        <property name="text">
         <string>(can be left empty)</string>
        </property>
       </widget>
+     </item>
+     <item row="6" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="labelAddress">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Namecoin address to which the name is assigned</string>
+         </property>
+         <property name="text">
+          <string notr="true">N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9</string>
+         </property>
+         <property name="indent">
+          <number>3</number>
+         </property>
+         <property name="buddy">
+          <cstring>transferTo</cstring>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="copyButton">
+         <property name="toolTip">
+          <string>Copy address to clipboard</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset resource="../bitcoin.qrc">
+           <normaloff>:/icons/editcopy</normaloff>:/icons/editcopy</iconset>
+         </property>
+         <property name="shortcut">
+          <string>Alt+P</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

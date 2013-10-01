@@ -125,8 +125,8 @@ void SignVerifyMessageDialog::on_signMessageButton_SM_clicked()
     bool found = false;
     CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
     {
-        std::map<uint160, std::vector<unsigned char> >::iterator mi = mapPubKeys.find(hash160);
-        if (mi != mapPubKeys.end() && pwalletMain->GetPrivKey(mi->second, privKey))
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = pwalletMain->mapPubKeys.find(hash160);
+        if (mi != pwalletMain->mapPubKeys.end() && pwalletMain->GetPrivKey(mi->second, privKey))
             found = true;
     }
     if (!found)

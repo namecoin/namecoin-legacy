@@ -3,7 +3,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 #include "headers.h"
 #include "db.h"
-#include "rpc.h"
+#include "bitcoinrpc.h"
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
@@ -207,7 +207,7 @@ bool AppInit2(int argc, char* argv[])
     fDebug = GetBoolArg("-debug");
     fAllowDNS = GetBoolArg("-dns");
 
-#ifndef __WXMSW__
+#if !defined(WIN32) && !defined(QT_GUI)
     fDaemon = GetBoolArg("-daemon");
 #else
     fDaemon = false;
@@ -413,7 +413,7 @@ bool AppInit2(int argc, char* argv[])
     printf("nBestHeight = %d\n",            nBestHeight);
     pwalletMain->DebugPrint();
     printf("setKeyPool.size() = %d\n",      pwalletMain->setKeyPool.size());
-    printf("mapPubKeys.size() = %d\n",      mapPubKeys.size());
+    printf("mapPubKeys.size() = %d\n",      pwalletMain->mapPubKeys.size());
     printf("mapWallet.size() = %d\n",       pwalletMain->mapWallet.size());
     printf("mapAddressBook.size() = %d\n",  pwalletMain->mapAddressBook.size());
 
@@ -585,7 +585,7 @@ std::string HelpMessage()
 #ifdef GUI
         "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
 #endif
-#ifndef __WXMSW__
+#if !defined(WIN32) && !defined(QT_GUI)
         "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
 #endif
         "  -testnet         \t\t  " + _("Use the test network\n") +

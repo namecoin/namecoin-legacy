@@ -10,7 +10,7 @@
 #include "auxpow.h"
 #include "namecoin.h"
 
-#include "rpc.h"
+#include "bitcoinrpc.h"
 
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
@@ -343,7 +343,8 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                     vector<unsigned char> vchPubKey = reservekey.GetReservedKey();
                     assert(pwalletMain->HaveKey(vchPubKey));
 
-                    // Fill a vout to ourself, using same address type as the payment
+                    // -------------- Fill a vout to ourself, using same address type as the payment
+                    // Now sending always to hash160 (GetBitcoinAddressHash160 will return hash160, even if pubkey is used)
                     CScript scriptChange;
                     if (vecSend[0].first.GetBitcoinAddressHash160() != 0)
                         scriptChange.SetBitcoinAddress(vchPubKey);
@@ -1085,9 +1086,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-        vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
         CScript scriptPubKeyOrig;
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
         CScript scriptPubKey;
         scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
         scriptPubKey += scriptPubKeyOrig;
@@ -1143,7 +1144,6 @@ Value name_update(const Array& params, bool fHelp)
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
 
     if (params.size() == 3)
@@ -1157,7 +1157,8 @@ Value name_update(const Array& params, bool fHelp)
     }
     else
     {
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     }
 
     CScript scriptPubKey;
@@ -1219,9 +1220,9 @@ Value name_new(const Array& params, bool fHelp)
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
     uint160 hash =  Hash160(vchToHash);
 
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+    vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_NEW << hash << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
@@ -1680,14 +1681,14 @@ bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value)
     }
 }
 
-int IndexOfNameOutput(CWalletTx& wtx)
+int IndexOfNameOutput(const CTransaction& tx)
 {
     vector<vector<unsigned char> > vvch;
 
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(wtx, op, nOut, vvch);
+    bool good = DecodeNameTx(tx, op, nOut, vvch);
 
     if (!good)
         throw runtime_error("IndexOfNameOutput() : name output not found");
@@ -1725,7 +1726,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     return false;
 }
 
-bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new /*= false*/)
+bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new /* = false*/)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return false;
@@ -1916,12 +1917,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
                 // Check that no other pending txs on this name are already in the block to be mined
                 set<uint256>& setPending = mapNamePending[vvchArgs[0]];
-#ifdef MAC_OSX
-                // The STL implementation that ships with the Mac llvm compiler doesn't like reference types in pairs.
-                BOOST_FOREACH(const PAIRTYPE(uint256, const CTxIndex)& s, mapTestPool)
-#else
-                BOOST_FOREACH(const PAIRTYPE(uint256, const CTxIndex&)& s, mapTestPool)
-#endif
+                BOOST_FOREACH(const PAIRTYPE(uint256, CTxIndex)& s, mapTestPool)
                 {
                     if (setPending.count(s.first))
                     {
@@ -1983,11 +1979,9 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     {
         if (fBlock && op != OP_NAME_NEW)
         {
-            if (mapNamePending[vvchArgs[0]].count(tx.GetHash()))
-                mapNamePending[vvchArgs[0]].erase(tx.GetHash());
-            else
-                printf("ConnectInputsHook() : connecting inputs on %s which was not in pending - must be someone elses\n",
-                        tx.GetHash().GetHex().c_str());
+            std::map<std::vector<unsigned char>, std::set<uint256> >::iterator mi = mapNamePending.find(vvchArgs[0]);
+            if (mi != mapNamePending.end())
+                mi->second.erase(tx.GetHash());
         }
     }
 
