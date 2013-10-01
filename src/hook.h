@@ -2,6 +2,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+#ifndef BITCOIN_HOOKS_H
+#define BITCOIN_HOOKS_H
+
 class CHooks
 {
 public:
@@ -33,7 +36,7 @@ public:
     /* These are for display and wallet management purposes.  Not for use to decide
      * whether to spend a coin. */
     virtual bool IsMine(const CTransaction& tx) = 0;
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout) = 0;
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false) = 0;
     virtual int GetOurChainID() = 0;
 
     virtual int GetAuxPowStartBlock() = 0;
@@ -49,3 +52,5 @@ public:
 
 extern CHooks* InitHook();
 extern std::string GetDefaultDataDirSuffix();
+
+#endif

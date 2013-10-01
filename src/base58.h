@@ -302,8 +302,161 @@ public:
 };
 
 
+#if 0
+/** Base class for all base58-encoded data */
+class CBase58Data
+{
+protected:
+    // the version byte
+    unsigned char nVersion;
+
+    // the actually encoded data
+    typedef std::vector<unsigned char, zero_after_free_allocator<unsigned char> > vector_uchar;
+    vector_uchar vchData;
+
+    CBase58Data()
+    {
+        nVersion = 0;
+        vchData.clear();
+    }
+
+    void SetData(int nVersionIn, const void* pdata, size_t nSize)
+    {
+        nVersion = nVersionIn;
+        vchData.resize(nSize);
+        if (!vchData.empty())
+            memcpy(&vchData[0], pdata, nSize);
+    }
+
+    void SetData(int nVersionIn, const unsigned char *pbegin, const unsigned char *pend)
+    {
+        SetData(nVersionIn, (void*)pbegin, pend - pbegin);
+    }
+
+public:
+    bool SetString(const char* psz)
+    {
+        std::vector<unsigned char> vchTemp;
+        DecodeBase58Check(psz, vchTemp);
+        if (vchTemp.empty())
+        {
+            vchData.clear();
+            nVersion = 0;
+            return false;
+        }
+        nVersion = vchTemp[0];
+        vchData.resize(vchTemp.size() - 1);
+        if (!vchData.empty())
+            memcpy(&vchData[0], &vchTemp[1], vchData.size());
+        OPENSSL_cleanse(&vchTemp[0], vchData.size());
+        return true;
+    }
+
+    bool SetString(const std::string& str)
+    {
+        return SetString(str.c_str());
+    }
+
+    std::string ToString() const
+    {
+        std::vector<unsigned char> vch(1, nVersion);
+        vch.insert(vch.end(), vchData.begin(), vchData.end());
+        return EncodeBase58Check(vch);
+    }
+
+    int CompareTo(const CBase58Data& b58) const
+    {
+        if (nVersion < b58.nVersion) return -1;
+        if (nVersion > b58.nVersion) return  1;
+        if (vchData < b58.vchData)   return -1;
+        if (vchData > b58.vchData)   return  1;
+        return 0;
+    }
+
+    bool operator==(const CBase58Data& b58) const { return CompareTo(b58) == 0; }
+    bool operator<=(const CBase58Data& b58) const { return CompareTo(b58) <= 0; }
+    bool operator>=(const CBase58Data& b58) const { return CompareTo(b58) >= 0; }
+    bool operator< (const CBase58Data& b58) const { return CompareTo(b58) <  0; }
+    bool operator> (const CBase58Data& b58) const { return CompareTo(b58) >  0; }
+};
+// CSecret32 is a 32- or 33-byte secret, from which the private key can be reconstructed. In Bitcoin it is used
+// everywhere (and called just CSecret); in the current Namecoin implementation it is only used for
+// dumpprivkey / importprivkey, while the full private key is used in other cases.
+typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret32;
+
+/** A base58-encoded secret key */
+// Note: Namecoin implementation uses a hack: CSecret32 is used here, everywhere else
+// a dummy CSecret is used, which contains the whole priv key (not just secret).
+// In Bitcoin, a proper CSecret is used everywhere.
+class CBitcoinSecret : public CBase58Data
+{
+public:
+    void SetSecret(const CSecret32& vchSecret, bool fCompressed)
+    {
+        assert(vchSecret.size() == 32);
+        SetData(fTestNet ? 239 : 128, &vchSecret[0], vchSecret.size());
+        if (fCompressed)
+            vchData.push_back(1);
+    }
+
+    CSecret32 GetSecret(bool &fCompressedOut)
+    {
+        CSecret32 vchSecret;
+        vchSecret.resize(32);
+        memcpy(&vchSecret[0], &vchData[0], 32);
+        fCompressedOut = vchData.size() == 33;
+        return vchSecret;
+    }
+
+    bool IsValid() const
+    {
+        bool fExpectTestNet = false;
+        switch(nVersion)
+        {
+            case 128:
+                break;
+
+            case 239:
+                fExpectTestNet = true;
+                break;
+
+            default:
+                return false;
+        }
+        return fExpectTestNet == fTestNet && (vchData.size() == 32 || (vchData.size() == 33 && vchData[32] == 1));
+    }
+
+    bool SetString(const char* pszSecret)
+    {
+        if (!CBase58Data::SetString(pszSecret))
+            return false;
+        // We use Bitcoin privkey format (nVersion = 128) as the default one,
+        // though also accept vanitygen addresses for importing, which
+        // use nVersion = address_version + 128 = 52 + 128 = 180.
+        if (nVersion == 180)
+            nVersion = 128;
+
+        return IsValid();
+    }
+
+    bool SetString(const std::string& strSecret)
+    {
+        return SetString(strSecret.c_str());
+    }
+
+    CBitcoinSecret(const CSecret32& vchSecret, bool fCompressed)
+    {
+        SetSecret(vchSecret, fCompressed);
+    }
+
+    CBitcoinSecret()
+    {
+    }
+};
 
 
+
+#endif
 
 /*#define ADDRESSVERSION   ((unsigned char)(fTestNet ? 111 : 0))*/
 extern unsigned char GetAddressVersion();

@@ -8,50 +8,86 @@
 #include "key.h"
 #include "script.h"
 
+#ifdef GUI
+#include "qt/ui_interface.h"  // For ChangeType
+#endif
+
 class CWalletTx;
 class CReserveKey;
 class CWalletDB;
+class COutput;
 
 class CWallet : public CKeyStore
 {
 private:
     bool SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfTheirs, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
+    CWalletDB *pwalletdbEncryption;
 
 public:
     // visible for NAMECOIN
     bool SelectCoins(int64 nTargetValue, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64& nValueRet) const;
 
+    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true) const;
 
 public:
     bool fFileBacked;
     std::string strWalletFile;
 
     std::set<int64> setKeyPool;
-    CCriticalSection cs_setKeyPool;
+    
+    typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
+    MasterKeyMap mapMasterKeys;
+    unsigned int nMasterKeyMaxID;
 
-    CWallet()
+    mutable CCriticalSection cs_wallet;
+
+    // Synonyms for cs_wallet
+    CCriticalSection &cs_setKeyPool;
+    CCriticalSection &cs_mapWallet;
+    CCriticalSection &cs_mapRequestCount;
+    CCriticalSection &cs_mapAddressBook;
+
+    CWallet() :
+        cs_setKeyPool(cs_wallet),
+        cs_mapWallet(cs_wallet),
+        cs_mapRequestCount(cs_wallet),
+        cs_mapAddressBook(cs_wallet)
     {
         fFileBacked = false;
+        nMasterKeyMaxID = 0;
+        pwalletdbEncryption = NULL;
     }
-    CWallet(std::string strWalletFileIn)
+
+    CWallet(std::string strWalletFileIn) :
+        cs_setKeyPool(cs_wallet),
+        cs_mapWallet(cs_wallet),
+        cs_mapRequestCount(cs_wallet),
+        cs_mapAddressBook(cs_wallet)
     {
         strWalletFile = strWalletFileIn;
         fFileBacked = true;
+        nMasterKeyMaxID = 0;
+        pwalletdbEncryption = NULL;
     }
 
-    mutable CCriticalSection cs_mapWallet;
     std::map<uint256, CWalletTx> mapWallet;
-    std::vector<uint256> vWalletUpdated;
+    //std::vector<uint256> vWalletUpdated;
 
     std::map<uint256, int> mapRequestCount;
-    mutable CCriticalSection cs_mapRequestCount;
 
     std::map<std::string, std::string> mapAddressBook;
-    mutable CCriticalSection cs_mapAddressBook;
 
     std::vector<unsigned char> vchDefaultKey;
 
+    // Adds a key to the store, and saves it to disk.
     bool AddKey(const CKey& key);
+    // Adds a watching address to the store, saves it to disk. 
+    bool AddAddress(const uint160& hash160);
+    // Adds a key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadKey(const CKey& key) { return CKeyStore::AddKey(key); }
+    // Adds a watching address to the store, without saving it to disk (used by LoadWallet) 
+    bool LoadAddress(const uint160& hash160) { return CKeyStore::AddAddress(hash160); }
+    void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn);
     bool AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pblock, bool fUpdate = false);
     bool EraseFromWallet(uint256 hash);
@@ -60,12 +96,17 @@ public:
     void ReacceptWalletTransactions();
     void ResendWalletTransactions();
     int64 GetBalance() const;
+    int64 GetUnconfirmedBalance() const;
+    int64 GetImmatureBalance() const;
     bool CreateTransaction(const std::vector<std::pair<CScript, int64> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CreateTransaction(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet);
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
     bool BroadcastTransaction(CWalletTx& wtxNew);
     std::string SendMoney(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
     std::string SendMoneyToBitcoinAddress(std::string strAddress, int64 nValue, CWalletTx& wtxNew, bool fAskFee=false);
+    std::string SendMoneyPrepare(CScript scriptPubKey, int64 nValue, CWalletTx& wtxNew, CReserveKey& reservekey, bool fAskFee=false);
+
+    bool NewKeyPool();
 
     void ReserveKeyFromKeyPool(int64& nIndex, CKeyPool& keypool);
     void KeepKey(int64 nIndex);
@@ -73,12 +114,23 @@ public:
     std::vector<unsigned char> GetKeyFromKeyPool();
     int64 GetOldestKeyPoolTime();
 
+    std::set< std::set<std::string> > GetAddressGroupings();
+    std::map<std::string, int64> GetAddressBalances();
+
     bool IsMine(const CTxIn& txin) const;
     int64 GetDebit(const CTxIn& txin) const;
+    int64 GetDebitInclName(const CTxIn& txin) const;
     bool IsMine(const CTxOut& txout) const
     {
         return ::IsMine(*this, txout.scriptPubKey);
     }
+
+    // importaddress-friendly version of IsMine (ignores watch-only addresses)
+    bool IsSpendable(const CTxOut& txout) const
+    {
+        return ::IsSpendable(*this, txout.scriptPubKey);
+    }
+
     int64 GetCredit(const CTxOut& txout) const
     {
         if (!MoneyRange(txout.nValue))
@@ -113,7 +165,7 @@ public:
     }
     bool IsFromMe(const CTransaction& tx) const
     {
-        return (GetDebit(tx) > 0);
+        return (GetDebitInclName(tx) > 0);
     }
     int64 GetDebit(const CTransaction& tx) const
     {
@@ -123,6 +175,17 @@ public:
             nDebit += GetDebit(txin);
             if (!MoneyRange(nDebit))
                 throw std::runtime_error("CWallet::GetDebit() : value out of range");
+        }
+        return nDebit;
+    }
+    int64 GetDebitInclName(const CTransaction& tx) const
+    {
+        int64 nDebit = 0;
+        BOOST_FOREACH(const CTxIn& txin, tx.vin)
+        {
+            nDebit += GetDebitInclName(txin);
+            if (!MoneyRange(nDebit))
+                throw std::runtime_error("CWallet::GetDebitInclName() : value out of range");
         }
         return nDebit;
     }
@@ -162,11 +225,25 @@ public:
 
     // requires cs_mapAddressBook lock
     bool DelAddressBookName(const std::string& strAddress);
+    
+#ifdef GUI
+    bool WriteNameFirstUpdate(const std::vector<unsigned char>& vchName,
+                              const uint256& hex,
+                              const uint64& rand,
+                              const std::vector<unsigned char>& vchData,
+                              const CWalletTx &wtx);
+    bool EraseNameFirstUpdate(const std::vector<unsigned char>& vchName);
+#endif
 
     void UpdatedTransaction(const uint256 &hashTx)
     {
+#ifdef GUI
         CRITICAL_BLOCK(cs_mapWallet)
-            vWalletUpdated.push_back(hashTx);
+        {
+            //vWalletUpdated.push_back(hashTx);
+            NotifyTransactionChanged(this, hashTx, CT_UPDATED);
+        }
+#endif
     }
 
     void PrintWallet(const CBlock& block);
@@ -181,8 +258,27 @@ public:
         }
     }
 
-    bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
+    int GetKeyPoolSize()
+    {
+        return setKeyPool.size();
+    }
 
+    bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
+    
+    bool Unlock(const SecureString& strWalletPassphrase);
+    bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
+    bool EncryptWallet(const SecureString& strWalletPassphrase);
+    
+    // Adds an encrypted key to the store, and saves it to disk.
+    bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
+    // Adds an encrypted key to the store, without saving it to disk (used by LoadWallet)
+    bool LoadCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) { /*SetMinVersion(FEATURE_WALLETCRYPT);*/ return CKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret); }
+
+#ifdef GUI    
+    //boost::signals2::signal<void (CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
+    boost::signals2::signal<void (CWallet *wallet, const std::string &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
+    boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx, ChangeType status)> NotifyTransactionChanged;
+#endif
 };
 
 
@@ -231,19 +327,21 @@ public:
     std::vector<char> vfSpent;
 
     // memory only
-    mutable char fDebitCached;
-    mutable char fCreditCached;
-    mutable char fAvailableCreditCached;
-    mutable char fChangeCached;
-    mutable int64 nDebitCached;
+    mutable bool fDebitCached, fDebitInclNameCached;
+    mutable bool fCreditCached;
+    mutable bool fAvailableCreditCached;
+    mutable bool fChangeCached;
+    mutable int64 nDebitCached, nDebitInclNameCached;
     mutable int64 nCreditCached;
     mutable int64 nAvailableCreditCached;
     mutable int64 nChangeCached;
+    mutable bool fImmatureCreditCached;
+    mutable int64 nImmatureCreditCached;
 
     // memory only UI hints
     mutable unsigned int nTimeDisplayed;
     mutable int nLinesDisplayed;
-    mutable char fConfirmedDisplayed;
+    mutable bool fConfirmedDisplayed;
 
     CWalletTx()
     {
@@ -277,12 +375,16 @@ public:
         strFromAccount.clear();
         vfSpent.clear();
         fDebitCached = false;
+        fDebitInclNameCached = false;
         fCreditCached = false;
         fAvailableCreditCached = false;
         fChangeCached = false;
+        fImmatureCreditCached = false;
         nDebitCached = 0;
+        nDebitInclNameCached = 0;
         nCreditCached = 0;
         nAvailableCreditCached = 0;
+        nImmatureCreditCached = 0;
         nChangeCached = 0;
         nTimeDisplayed = 0;
         nLinesDisplayed = 0;
@@ -360,6 +462,8 @@ public:
         fCreditCached = false;
         fAvailableCreditCached = false;
         fDebitCached = false;
+        fDebitInclNameCached = false;
+        fImmatureCreditCached = false;
         fChangeCached = false;
     }
 
@@ -394,6 +498,17 @@ public:
         fDebitCached = true;
         return nDebitCached;
     }
+    
+    int64 GetDebitInclName() const
+    {
+        if (vin.empty())
+            return 0;
+        if (fDebitInclNameCached)
+            return nDebitInclNameCached;
+        nDebitInclNameCached = pwallet->GetDebitInclName(*this);
+        fDebitInclNameCached = true;
+        return nDebitInclNameCached;
+    }
 
     int64 GetCredit(bool fUseCache=true) const
     {
@@ -407,6 +522,20 @@ public:
         nCreditCached = pwallet->GetCredit(*this);
         fCreditCached = true;
         return nCreditCached;
+    }
+
+    int64 GetImmatureCredit(bool fUseCache=true) const
+    {
+        if (IsCoinBase() && GetBlocksToMaturity() > 0 && IsInMainChain())
+        {
+            if (fUseCache && fImmatureCreditCached)
+                return nImmatureCreditCached;
+            nImmatureCreditCached = pwallet->GetCredit(*this);
+            fImmatureCreditCached = true;
+            return nImmatureCreditCached;
+        }
+
+        return 0;
     }
 
     int64 GetAvailableCredit(bool fUseCache=true) const
@@ -446,14 +575,14 @@ public:
     }
 
     void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, std::list<std::pair<std::string /* address */, int64> >& listReceived,
-                    std::list<std::pair<std::string /* address */, int64> >& listSent, int64& nFee, std::string& strSentAccount) const;
+                    std::list<std::pair<std::string /* address */, int64> >& listSent, int64& nFee, std::string& strSentAccount, bool &fNameTx) const;
 
     void GetAccountAmounts(const std::string& strAccount, int64& nGenerated, int64& nReceived, 
                            int64& nSent, int64& nFee) const;
 
     bool IsFromMe() const
     {
-        return (GetDebit() > 0);
+        return (GetDebitInclName() > 0);
     }
 
     bool IsConfirmed() const
@@ -510,6 +639,32 @@ public:
     void RelayWalletTransaction(CTxDB& txdb);
     void RelayWalletTransaction();
 };
+
+
+class COutput
+{
+public:
+    const CWalletTx *tx;
+    int i;
+    int nDepth;
+
+    COutput(const CWalletTx *txIn, int iIn, int nDepthIn)
+    {
+        tx = txIn; i = iIn; nDepth = nDepthIn;
+    }
+
+    std::string ToString() const
+    {
+        return strprintf("COutput(%s, %d, %d) [%s]", tx->GetHash().ToString().substr(0,10).c_str(), i, nDepth, FormatMoney(tx->vout[i].nValue).c_str());
+    }
+
+    void print() const
+    {
+        printf("%s\n", ToString().c_str());
+    }
+};
+
+
 
 
 //
@@ -616,5 +771,15 @@ public:
 };
 
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
+
+#ifdef GUI
+// Editable transaction, which is not broadcasted immediately (only after 12 blocks)
+struct PreparedNameFirstUpdate
+{
+    uint64 rand;
+    std::vector<unsigned char> vchData;
+    CWalletTx wtx;
+};
+#endif
 
 #endif

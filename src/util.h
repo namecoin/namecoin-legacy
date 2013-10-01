@@ -63,8 +63,28 @@ typedef unsigned long long  uint64;
 #endif
 #endif
 
+/* Format characters for (s)size_t and ptrdiff_t */
+#if defined(_MSC_VER) || defined(__MSVCRT__)
+  /* (s)size_t and ptrdiff_t have the same size specifier in MSVC:
+     http://msdn.microsoft.com/en-us/library/tcxf1dw6%28v=vs.100%29.aspx
+   */
+  #define PRIszx    "Ix"
+  #define PRIszu    "Iu"
+  #define PRIszd    "Id"
+  #define PRIpdx    "Ix"
+  #define PRIpdu    "Iu"
+  #define PRIpdd    "Id"
+#else /* C99 standard */
+  #define PRIszx    "zx"
+  #define PRIszu    "zu"
+  #define PRIszd    "zd"
+  #define PRIpdx    "tx"
+  #define PRIpdu    "tu"
+  #define PRIpdd    "td"
+#endif
+
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
-#define PAIRTYPE(t1, t2)    pair<t1, t2>
+#define PAIRTYPE(t1, t2)    std::pair<t1, t2>
 
 // Used to bypass the rule against non-const reference to temporary
 // where it makes sense with wrappers such as CFlatData or CTxDB
@@ -89,6 +109,10 @@ T* alignup(T* p)
 }
 
 #ifdef __WXMSW__
+#include <windows.h>
+#include <winsock2.h>
+#include <mswsock.h> 
+
 #define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
 #ifndef UINT64_MAX
@@ -176,7 +200,16 @@ void RandAddSeed();
 void RandAddSeedPerfmon();
 int OutputDebugStringF(const char* pszFormat, ...);
 int my_snprintf(char* buffer, size_t limit, const char* format, ...);
-std::string strprintf(const char* format, ...);
+
+/** Overload strprintf for char*, so that GCC format type warnings can be given */
+std::string real_strprintf(const char *format, int dummy, ...);
+/** Overload strprintf for std::string, to be able to use it with _ (translation).
+ * This will not support GCC format type warnings (-Wformat) so be careful.
+ */
+std::string real_strprintf(const std::string &format, int dummy, ...);
+#define strprintf(format, ...) real_strprintf(format, 0, __VA_ARGS__)
+std::string vstrprintf(const char *format, va_list ap);
+
 bool error(const char* format, ...);
 void LogException(std::exception* pex, const char* pszThread);
 void PrintException(std::exception* pex, const char* pszThread);
@@ -187,6 +220,7 @@ bool ParseMoney(const std::string& str, int64& nRet);
 bool ParseMoney(const char* pszIn, int64& nRet);
 std::vector<unsigned char> ParseHex(const char* psz);
 std::vector<unsigned char> ParseHex(const std::string& str);
+bool IsHex(const std::string& str);
 void ParseParameters(int argc, char* argv[]);
 const char* wxGetTranslation(const char* psz);
 bool WildcardMatch(const char* psz, const char* mask);
@@ -208,6 +242,7 @@ uint64 GetRand(uint64 nMax);
 int64 GetTime();
 int64 GetAdjustedTime();
 void AddTimeData(unsigned int ip, int64 nTime);
+int64 GetTimeOffset();
 std::string FormatFullVersion();
 
 
@@ -445,7 +480,7 @@ inline int64 GetArg(const std::string& strArg, int64 nDefault)
     return nDefault;
 }
 
-inline bool GetBoolArg(const std::string& strArg)
+inline bool GetBoolArg(const std::string& strArg, bool fDefault=false)
 {
     if (mapArgs.count(strArg))
     {
@@ -453,7 +488,7 @@ inline bool GetBoolArg(const std::string& strArg)
             return true;
         return (atoi(mapArgs[strArg]) != 0);
     }
-    return false;
+    return fDefault;
 }
 
 
@@ -465,14 +500,69 @@ inline bool GetBoolArg(const std::string& strArg)
 
 
 
-inline void heapchk()
+
+/** Median filter over a stream of values.
+ * Returns the median of the last N numbers
+ */
+template <typename T> class CMedianFilter
 {
-#ifdef __WXMSW__
-    /// for debugging
-    //if (_heapchk() != _HEAPOK)
-    //    DebugBreak();
-#endif
-}
+private:
+    std::vector<T> vValues;
+    std::vector<T> vSorted;
+    unsigned int nSize;
+public:
+    CMedianFilter(unsigned int size, T initial_value):
+        nSize(size)
+    {
+        vValues.reserve(size);
+        vValues.push_back(initial_value);
+        vSorted = vValues;
+    }
+
+    void input(T value)
+    {
+        if(vValues.size() == nSize)
+        {
+            vValues.erase(vValues.begin());
+        }
+        vValues.push_back(value);
+
+        vSorted.resize(vValues.size());
+        std::copy(vValues.begin(), vValues.end(), vSorted.begin());
+        std::sort(vSorted.begin(), vSorted.end());
+    }
+
+    T median() const
+    {
+        int size = vSorted.size();
+        assert(size>0);
+        if(size & 1) // Odd number of elements
+        {
+            return vSorted[size/2];
+        }
+        else // Even number of elements
+        {
+            return (vSorted[size/2-1] + vSorted[size/2]) / 2;
+        }
+    }
+
+    int size() const
+    {
+        return vValues.size();
+    }
+
+    std::vector<T> sorted () const
+    {
+        return vSorted;
+    }
+};
+
+
+
+
+
+
+
 
 // Randomize the stack to help protect against buffer overrun exploits
 #define IMPLEMENT_RANDOMIZE_STACK(ThreadFn)     \
@@ -569,9 +659,8 @@ inline uint160 Hash160(const std::vector<unsigned char>& vch)
     return hash2;
 }
 
-
-
-
+std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid = NULL);
+std::string EncodeBase64(const unsigned char* pch, size_t len);
 
 
 
@@ -648,7 +737,7 @@ inline bool TerminateThread(pthread_t hthread, unsigned int nExitCode)
     return (pthread_cancel(hthread) == 0);
 }
 
-inline void ExitThread(unsigned int nExitCode)
+inline void ExitThread(size_t nExitCode)
 {
     pthread_exit((void*)nExitCode);
 }
@@ -677,5 +766,8 @@ inline bool AffinityBugWorkaround(void(*pfn)(void*))
 #endif
     return false;
 }
+
+bool SoftSetArg(const std::string& strArg, const std::string& strValue);
+bool SoftSetBoolArg(const std::string& strArg, bool fValue);
 
 #endif

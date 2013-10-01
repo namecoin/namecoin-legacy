@@ -18,6 +18,8 @@
 #include <boost/tuple/tuple_comparison.hpp>
 #include <boost/tuple/tuple_io.hpp>
 
+#include "allocators.h"
+
 #if defined(_MSC_VER) || defined(__BORLANDC__)
 typedef __int64  int64;
 typedef unsigned __int64  uint64;
@@ -33,7 +35,7 @@ class CDataStream;
 class CAutoFile;
 static const unsigned int MAX_SIZE = 0x02000000;
 
-static const int VERSION = 35000;
+static const int VERSION = 37100;
 static const char* pszSubVer = "";
 static const bool VERSION_IS_BETA = false;
 
@@ -749,41 +751,6 @@ struct ser_streamplaceholder
 
 
 
-
-
-
-
-
-//
-// Allocator that clears its contents before deletion
-//
-template<typename T>
-struct secure_allocator : public std::allocator<T>
-{
-    // MSVC8 default copy constructor is broken
-    typedef std::allocator<T> base;
-    typedef typename base::size_type size_type;
-    typedef typename base::difference_type  difference_type;
-    typedef typename base::pointer pointer;
-    typedef typename base::const_pointer const_pointer;
-    typedef typename base::reference reference;
-    typedef typename base::const_reference const_reference;
-    typedef typename base::value_type value_type;
-    secure_allocator() throw() {}
-    secure_allocator(const secure_allocator& a) throw() : base(a) {}
-    template <typename U>
-    secure_allocator(const secure_allocator<U>& a) throw() : base(a) {}
-    ~secure_allocator() throw() {}
-    template<typename _Other> struct rebind
-    { typedef secure_allocator<_Other> other; };
-
-    void deallocate(T* p, std::size_t n)
-    {
-        if (p != NULL)
-            memset(p, 0, sizeof(T) * n);
-        std::allocator<T>::deallocate(p, n);
-    }
-};
 
 
 

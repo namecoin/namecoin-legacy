@@ -8,10 +8,16 @@
 #include "net.h"
 #include "key.h"
 #include "script.h"
-#include "db.h"
+#include "walletdb.h"
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+
+#ifdef __WXMSW__
+#include <io.h> /* for _commit */
+#elif !defined(MAC_OSX)
+#include <sys/prctl.h>
+#endif
 
 class CBlock;
 class CBlockIndex;
@@ -64,6 +70,7 @@ extern uint256 hashBestChain;
 extern CBlockIndex* pindexBest;
 extern unsigned int nTransactionsUpdated;
 extern double dHashesPerSec;
+extern const std::string strMessageMagic;
 extern int64 nHPSTimerStart;
 extern int64 nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
@@ -89,12 +96,15 @@ class CTxIndex;
 
 void RegisterWallet(CWallet* pwalletIn);
 void UnregisterWallet(CWallet* pwalletIn);
+/** Push an updated transaction to all registered wallets */
+void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false);
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64 nAdditionalBytes=0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
+CBlockIndex* FindBlockByHeight(int nHeight);
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
@@ -105,10 +115,11 @@ void FormatHashBuffers(CBlock* pblock, char* pmidstate, char* pdata, char* phash
 bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey);
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
 int GetTotalBlocksEstimate();
+int GetNumBlocksOfPeers();
 bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
-
-
+/** Retrieve a transaction (from memory pool, or from disk, if possible) */
+bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock /*, bool fAllowSlow = false*/  );
 
 
 
@@ -174,7 +185,7 @@ public:
     std::string ToString() const
     {
         if (IsNull())
-            return strprintf("null");
+            return "null";
         else
             return strprintf("(nFile=%d, nBlockPos=%d, nTxPos=%d)", nFile, nBlockPos, nTxPos);
     }
@@ -328,7 +339,7 @@ public:
     std::string ToString() const
     {
         std::string str;
-        str += strprintf("CTxIn(");
+        str += "CTxIn(";
         str += prevout.ToString();
         if (prevout.IsNull())
             str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
@@ -417,7 +428,7 @@ public:
 };
 
 
-
+typedef std::map<uint256, std::pair<CTxIndex, CTransaction> > MapPrevTx;
 
 //
 // The basic transaction that is broadcasted on the network and contained in
@@ -660,12 +671,26 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
     bool DisconnectInputs(CTxDB& txdb, CBlockIndex* pindex);
+    
+    /** Fetch from memory and/or disk. inputsRet keys are transaction hashes.
+
+     @param[in] txdb	Transaction database
+     @param[in] mapTestPool	List of pending changes to the transaction index database
+     @param[in] fBlock	True if being called to add a new best-block to the chain
+     @param[in] fMiner	True if being called by CreateNewBlock
+     @param[out] inputsRet	Pointers to this transaction's inputs
+     @param[out] fInvalid	returns true if transaction is invalid
+     @return	Returns true if all inputs are in txdb or mapTestPool
+     */
+    bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
+                     bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
+
     bool ConnectInputs(CTxDB& txdb, std::map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
                        CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
-    bool AcceptToMemoryPool(bool fCheckInputs=true, bool* pfMissingInputs=NULL);
+    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
+    bool AcceptToMemoryPool(bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
 protected:
     bool AddToMemoryPoolUnchecked();
 public:
@@ -1608,8 +1633,6 @@ public:
 
 
 extern std::map<uint256, CTransaction> mapTransactions;
-extern std::map<uint160, std::vector<unsigned char> > mapPubKeys;
-extern CCriticalSection cs_mapPubKeys;
 extern CHooks* hooks;
 
 

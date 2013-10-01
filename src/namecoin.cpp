@@ -10,6 +10,8 @@
 #include "auxpow.h"
 #include "namecoin.h"
 
+#include "bitcoinrpc.h"
+
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
@@ -23,33 +25,22 @@ typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
 extern map<string, rpcfn_type> mapCallTable;
 extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
-template<typename T> void ConvertTo(Value& value);
-
-static const int NAMECOIN_TX_VERSION = 0x7100;
-static const int64 MIN_AMOUNT = CENT;
-static const int MAX_NAME_LENGTH = 255;
-static const int MAX_VALUE_LENGTH = 1023;
-static const int OP_NAME_INVALID = 0x00;
-static const int OP_NAME_NEW = 0x01;
-static const int OP_NAME_FIRSTUPDATE = 0x02;
-static const int OP_NAME_UPDATE = 0x03;
-static const int OP_NAME_NOP = 0x04;
-static const int MIN_FIRSTUPDATE_DEPTH = 12;
+template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
+
+#ifdef GUI
+extern std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
+#endif
+
 extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 
 // forward decls
-extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch);
 extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc);
-extern int IndexOfNameOutput(CWalletTx& wtx);
 extern bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet);
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
-extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
-extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
-bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
 extern void rescanfornames();
 extern Value sendtoaddress(const Array& params, bool fHelp);
 
@@ -89,7 +80,7 @@ public:
         pchMessageStart[3] = 0xfe;
     }
     virtual bool IsMine(const CTransaction& tx);
-    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout);
+    virtual bool IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new = false);
     virtual int GetOurChainID()
     {
         return 0x0001;
@@ -126,7 +117,7 @@ int64 getAmount(Value value)
     double dAmount = value.get_real();
     int64 nAmount = roundint64(dAmount * COIN);
     if (!MoneyRange(nAmount))
-        throw JSONRPCError(-3, "Invalid amount");
+        throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
     return nAmount;
 }
 
@@ -136,14 +127,14 @@ vector<unsigned char> vchFromValue(const Value& value) {
     return vector<unsigned char>(strbeg, strbeg + strName.size());
 }
 
-vector<unsigned char> vchFromString(string str) {
+std::vector<unsigned char> vchFromString(const std::string &str) {
     unsigned char *strbeg = (unsigned char*)str.c_str();
     return vector<unsigned char>(strbeg, strbeg + str.size());
 }
 
-string stringFromVch(vector<unsigned char> vch) {
+string stringFromVch(const vector<unsigned char> &vch) {
     string res;
-    vector<unsigned char>::iterator vi = vch.begin();
+    vector<unsigned char>::const_iterator vi = vch.begin();
     while (vi != vch.end()) {
         res += (char)(*vi);
         vi++;
@@ -203,6 +194,7 @@ int GetTxPosHeight(const CDiskTxPos& txPos)
         return 0;
     return pindex->nHeight;
 }
+
 int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
 {
     nHeight = GetTxPosHeight(txPos);
@@ -301,7 +293,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 wtxNew.fFromMe = true;
 
                 int64 nTotalValue = nValue + nFeeRet;
-                printf("total value = %d\n", nTotalValue);
+                printf("CreateTransactionWithInputTx: total value = %d\n", nTotalValue);
                 double dPriority = 0;
                 // vouts to the payees
                 BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -312,8 +304,14 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 // Choose coins to use
                 set<pair<const CWalletTx*, unsigned int> > setCoins;
                 int64 nValueIn = 0;
-                if (!pwalletMain->SelectCoins(nTotalValue - nWtxinCredit, setCoins, nValueIn))
-                    return false;
+                printf("CreateTransactionWithInputTx: SelectCoins(%s), nTotalValue = %s, nWtxinCredit = %s\n", FormatMoney(nTotalValue - nWtxinCredit).c_str(), FormatMoney(nTotalValue).c_str(), FormatMoney(nWtxinCredit).c_str());
+                if (nTotalValue - nWtxinCredit > 0)
+                {
+                    if (!pwalletMain->SelectCoins(nTotalValue - nWtxinCredit, setCoins, nValueIn))
+                        return false;
+                }
+
+                printf("CreateTransactionWithInputTx: selected %d tx outs, nValueIn = %s\n", setCoins.size(), FormatMoney(nValueIn).c_str());
 
                 vector<pair<const CWalletTx*, unsigned int> >
                     vecCoins(setCoins.begin(), setCoins.end());
@@ -343,9 +341,10 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
                     // Reserve a new key pair from key pool
                     vector<unsigned char> vchPubKey = reservekey.GetReservedKey();
-                    assert(pwalletMain->mapKeys.count(vchPubKey));
+                    assert(pwalletMain->HaveKey(vchPubKey));
 
-                    // Fill a vout to ourself, using same address type as the payment
+                    // -------------- Fill a vout to ourself, using same address type as the payment
+                    // Now sending always to hash160 (GetBitcoinAddressHash160 will return hash160, even if pubkey is used)
                     CScript scriptChange;
                     if (vecSend[0].first.GetBitcoinAddressHash160() != 0)
                         scriptChange.SetBitcoinAddress(vchPubKey);
@@ -392,6 +391,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 if (nFeeRet < max(nPayFee, nMinFee))
                 {
                     nFeeRet = max(nPayFee, nMinFee);
+                    printf("CreateTransactionWithInputTx: re-iterating (nFreeRet = %s)\n", FormatMoney(nFeeRet).c_str());
                     continue;
                 }
 
@@ -403,6 +403,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
             }
         }
     }
+    printf("CreateTransactionWithInputTx succeeded:\n%s", wtxNew.ToString().c_str()); 
     return true;
 }
 
@@ -434,13 +435,17 @@ string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, C
         return strError;
     }
 
-    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, _("Sending..."), NULL))
+#ifdef GUI
+    if (fAskFee && !uiInterface.ThreadSafeAskFee(nFeeRequired))
         return "ABORTED";
+#else
+    if (fAskFee && !ThreadSafeAskFee(nFeeRequired, "Namecoin", NULL))
+        return "ABORTED";
+#endif
 
     if (!pwalletMain->CommitTransaction(wtxNew, reservekey))
         return _("Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
 
-    MainFrameRepaint();
     return "";
 }
 
@@ -467,7 +472,7 @@ bool GetValueOfTxPos(const CDiskTxPos& txPos, vector<unsigned char>& vchValue, u
     return true;
 }
 
-bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsigned char>& vchValue, int& nHeight)
+bool GetValueOfName(CNameDB& dbName, const vector<unsigned char> &vchName, vector<unsigned char>& vchValue, int& nHeight)
 {
     //vector<CDiskTxPos> vtxPos;
     vector<CNameIndex> vtxPos;
@@ -485,7 +490,7 @@ bool GetValueOfName(CNameDB& dbName, vector<unsigned char> vchName, vector<unsig
     return true;
 }
 
-bool GetTxOfName(CNameDB& dbName, vector<unsigned char> vchName, CTransaction& tx)
+bool GetTxOfName(CNameDB& dbName, const vector<unsigned char> &vchName, CTransaction& tx)
 {
     //vector<CDiskTxPos> vtxPos;
     vector<CNameIndex> vtxPos;
@@ -533,12 +538,13 @@ Value sendtoname(const Array& params, bool fHelp)
     if (fHelp || params.size() < 2 || params.size() > 4)
         throw runtime_error(
             "sendtoname <namecoinname> <amount> [comment] [comment-to]\n"
-            "<amount> is a real and is rounded to the nearest 0.01");
+            "<amount> is a real and is rounded to the nearest 0.01"
+            + HelpRequiringPassphrase());
     
     vector<unsigned char> vchName = vchFromValue(params[0]);
     CNameDB dbName("r");
     if (!dbName.ExistsName(vchName))
-        throw JSONRPCError(-5, "Name not found");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Name not found");
     
     string strAddress;
     CTransaction tx;
@@ -547,7 +553,7 @@ Value sendtoname(const Array& params, bool fHelp)
     
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
-        throw JSONRPCError(-5, "No valid namecoin address");
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No valid namecoin address");
 
     // Amount
     int64 nAmount = AmountFromValue(params[1]);
@@ -561,9 +567,11 @@ Value sendtoname(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {  
+        EnsureWalletIsUnlocked();
+
         string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
 
     return wtx.GetHash().GetHex();
@@ -670,19 +678,19 @@ Value name_debug(const Array& params, bool fHelp)
     pair<vector<unsigned char>, set<uint256> > pairPending;
 
     CRITICAL_BLOCK(cs_main)
-    BOOST_FOREACH(pairPending, mapNamePending)
-    {
-        string name = stringFromVch(pairPending.first);
-        printf("%s :\n", name.c_str());
-        uint256 hash;
-        BOOST_FOREACH(hash, pairPending.second)
+        BOOST_FOREACH(pairPending, mapNamePending)
         {
-            printf("    ");
-            if (!pwalletMain->mapWallet.count(hash))
-                printf("foreign ");
-            printf("    %s\n", hash.GetHex().c_str());
+            string name = stringFromVch(pairPending.first);
+            printf("%s :\n", name.c_str());
+            uint256 hash;
+            BOOST_FOREACH(hash, pairPending.second)
+            {
+                printf("    ");
+                if (!pwalletMain->mapWallet.count(hash))
+                    printf("foreign ");
+                printf("    %s\n", hash.GetHex().c_str());
+            }
         }
-    }
     printf("----------------------------\n");
     return true;
 }
@@ -740,15 +748,15 @@ Value name_show(const Array& params, bool fHelp)
         vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
-            throw JSONRPCError(-4, "failed to read from name DB");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
        
         if (vtxPos.size() < 1)
-            throw JSONRPCError(-4, "no result returned");
+            throw JSONRPCError(RPC_WALLET_ERROR, "no result returned");
 
         CDiskTxPos txPos = vtxPos[vtxPos.size() - 1].txPos;
         CTransaction tx;
         if (!tx.ReadFromDisk(txPos))
-            throw JSONRPCError(-4, "failed to read from from disk");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from from disk");
 
         Object oName;
         vector<unsigned char> vchValue;
@@ -790,7 +798,7 @@ Value name_history(const Array& params, bool fHelp)
         vector<CNameIndex> vtxPos;
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
-            throw JSONRPCError(-4, "failed to read from name DB");
+            throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
         
         CNameIndex txPos2;
         CDiskTxPos txPos;
@@ -868,7 +876,7 @@ Value name_filter(const Array& params, bool fHelp)
     vector<unsigned char> vchName;
     vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
     if (!dbName.ScanNames(vchName, 100000000, nameScan))
-        throw JSONRPCError(-4, "scan failed");
+        throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
     pair<vector<unsigned char>, CNameIndex> pairScan;
     BOOST_FOREACH(pairScan, nameScan)
@@ -964,7 +972,7 @@ Value name_scan(const Array& params, bool fHelp)
     //vector<pair<vector<unsigned char>, CDiskTxPos> > nameScan;
     vector<pair<vector<unsigned char>, CNameIndex> > nameScan;
     if (!dbName.ScanNames(vchName, nMax, nameScan))
-        throw JSONRPCError(-4, "scan failed");
+        throw JSONRPCError(RPC_WALLET_ERROR, "scan failed");
 
     //pair<vector<unsigned char>, CDiskTxPos> pairScan;
     pair<vector<unsigned char>, CNameIndex> pairScan;
@@ -1014,7 +1022,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
                 "name_firstupdate <name> <rand> [<tx>] <value>\n"
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
-                );
+                + HelpRequiringPassphrase());
     vector<unsigned char> vchName = vchFromValue(params[0]);
     vector<unsigned char> vchRand = ParseHex(params[1].get_str());
     vector<unsigned char> vchValue;
@@ -1028,10 +1036,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
         vchValue = vchFromValue(params[3]);
     }
 
-
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-
+    
     CRITICAL_BLOCK(cs_main)
     {
         if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
@@ -1056,6 +1063,8 @@ Value name_firstupdate(const Array& params, bool fHelp)
 
     CRITICAL_BLOCK(cs_main)
     {
+        EnsureWalletIsUnlocked();
+
         // Make sure there is a previous NAME_NEW tx on this name
         // and that the random value matches
         uint256 wtxInHash;
@@ -1077,9 +1086,9 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-        vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
         CScript scriptPubKeyOrig;
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
         CScript scriptPubKey;
         scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
         scriptPubKey += scriptPubKeyOrig;
@@ -1118,7 +1127,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
         nNetFee = (nNetFee / CENT) * CENT;
         string strError = SendMoneyWithInputTx(scriptPubKey, MIN_AMOUNT, nNetFee, wtxIn, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     return wtx.GetHash().GetHex();
 }
@@ -1127,15 +1136,14 @@ Value name_update(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 3)
         throw runtime_error(
-                "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name\n"
-                );
+                "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name"
+                + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
     vector<unsigned char> vchValue = vchFromValue(params[1]);
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
 
     if (params.size() == 3)
@@ -1144,12 +1152,13 @@ Value name_update(const Array& params, bool fHelp)
         uint160 hash160;
         bool isValid = AddressToHash160(strAddress, hash160);
         if (!isValid)
-            throw JSONRPCError(-5, "Invalid namecoin address");
+            throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid namecoin address");
         scriptPubKeyOrig.SetBitcoinAddress(strAddress);
     }
     else
     {
-        scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
+        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     }
 
     CScript scriptPubKey;
@@ -1166,6 +1175,8 @@ Value name_update(const Array& params, bool fHelp)
                     mapNamePending[vchName].begin()->GetHex().c_str());
             throw runtime_error("there are pending operations on that name");
         }
+        
+        EnsureWalletIsUnlocked();
 
         CNameDB dbName("r");
         CTransaction tx;
@@ -1186,7 +1197,7 @@ Value name_update(const Array& params, bool fHelp)
         CWalletTx& wtxIn = pwalletMain->mapWallet[wtxInHash];
         string strError = SendMoneyWithInputTx(scriptPubKey, MIN_AMOUNT, 0, wtxIn, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
     }
     return wtx.GetHash().GetHex();
 }
@@ -1195,8 +1206,8 @@ Value name_new(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
-                "name_new <name>\n"
-                );
+                "name_new <name>"
+                + HelpRequiringPassphrase());
 
     vector<unsigned char> vchName = vchFromValue(params[0]);
 
@@ -1204,26 +1215,25 @@ Value name_new(const Array& params, bool fHelp)
     wtx.nVersion = NAMECOIN_TX_VERSION;
 
     uint64 rand = GetRand((uint64)-1);
-    vector<unsigned char> seedRand = CBigNum(rand).getvch();
-    string strRand = Hash(seedRand.begin(), seedRand.end()).ToString();
-    strRand.resize(16);
-    vector<unsigned char> vchRand = ParseHex(strRand);
+    vector<unsigned char> vchRand = CBigNum(rand).getvch();
     vector<unsigned char> vchToHash(vchRand);
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
     uint160 hash =  Hash160(vchToHash);
 
-    vector<unsigned char> strPubKey = pwalletMain->GetKeyFromKeyPool();
+    vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
-    scriptPubKeyOrig.SetBitcoinAddress(strPubKey);
+    scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     CScript scriptPubKey;
     scriptPubKey << OP_NAME_NEW << hash << OP_2DROP;
     scriptPubKey += scriptPubKeyOrig;
 
     CRITICAL_BLOCK(cs_main)
     {
+        EnsureWalletIsUnlocked();
+
         string strError = pwalletMain->SendMoney(scriptPubKey, MIN_AMOUNT, wtx, false);
         if (strError != "")
-            throw JSONRPCError(-4, strError);
+            throw JSONRPCError(RPC_WALLET_ERROR, strError);
         mapMyNames[vchName] = wtx.GetHash();
     }
 
@@ -1259,7 +1269,11 @@ void UnspendInputs(CWalletTx& wtx)
             prev.fAvailableCreditCached = false;
             prev.WriteToDisk();
         }
-        pwalletMain->vWalletUpdated.push_back(prev.GetHash());
+#ifdef GUI
+        //pwalletMain->vWalletUpdated.push_back(prev.GetHash());
+        pwalletMain->NotifyTransactionChanged(pwalletMain, prev.GetHash(), CT_DELETED);
+
+#endif
     }
 }
 
@@ -1281,7 +1295,13 @@ Value deletetransaction(const Array& params, bool fHelp)
         throw runtime_error("transaction not in wallet");
 
       if (!mapTransactions.count(hash))
-        throw runtime_error("transaction not in memory - is already in blockchain?");
+      {
+        //throw runtime_error("transaction not in memory - is already in blockchain?");
+        CTransaction tx;
+        uint256 hashBlock = 0;
+        if (GetTransaction(hash, tx, hashBlock /*, true*/) && hashBlock != 0)
+          throw runtime_error("transaction is already in blockchain");
+      }
       CWalletTx wtx = pwalletMain->mapWallet[hash];
       UnspendInputs(wtx);
 
@@ -1661,14 +1681,14 @@ bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value)
     }
 }
 
-int IndexOfNameOutput(CWalletTx& wtx)
+int IndexOfNameOutput(const CTransaction& tx)
 {
     vector<vector<unsigned char> > vvch;
 
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(wtx, op, nOut, vvch);
+    bool good = DecodeNameTx(tx, op, nOut, vvch);
 
     if (!good)
         throw runtime_error("IndexOfNameOutput() : name output not found");
@@ -1706,7 +1726,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     return false;
 }
 
-bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
+bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ignore_name_new /* = false*/)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return false;
@@ -1717,6 +1737,9 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout)
     int nOut;
  
     if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
+        return false;
+        
+    if (ignore_name_new && op == OP_NAME_NEW)
         return false;
 
     if (IsMyName(tx, txout))
@@ -1894,7 +1917,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     return error("ConnectInputsHook() : name_firstupdate cannot be mined if name_new is not already in chain and unexpired");
                 // Check that no other pending txs on this name are already in the block to be mined
                 set<uint256>& setPending = mapNamePending[vvchArgs[0]];
-                BOOST_FOREACH(const PAIRTYPE(uint256, const CTxIndex&)& s, mapTestPool)
+                BOOST_FOREACH(const PAIRTYPE(uint256, CTxIndex)& s, mapTestPool)
                 {
                     if (setPending.count(s.first))
                     {
@@ -1956,11 +1979,9 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     {
         if (fBlock && op != OP_NAME_NEW)
         {
-            if (mapNamePending[vvchArgs[0]].count(tx.GetHash()))
-                mapNamePending[vvchArgs[0]].erase(tx.GetHash());
-            else
-                printf("ConnectInputsHook() : connecting inputs on %s which was not in pending - must be someone elses\n",
-                        tx.GetHash().GetHex().c_str());
+            std::map<std::vector<unsigned char>, std::set<uint256> >::iterator mi = mapNamePending.find(vvchArgs[0]);
+            if (mi != mapNamePending.end())
+                mi->second.erase(tx.GetHash());
         }
     }
 
@@ -2086,9 +2107,21 @@ bool CNamecoinHooks::ExtractAddress(const CScript& script, string& address)
         return false;
 
     string strOp = nameFromOp(op);
-    string strName = stringFromVch(vvch[0]);
+    string strName;
     if (op == OP_NAME_NEW)
-        strName = HexStr(vvch[0]);
+    {
+#ifdef GUI
+        LOCK(cs_main);
+
+        std::map<uint160, std::vector<unsigned char> >::const_iterator mi = mapMyNameHashes.find(uint160(vvch[0]));
+        if (mi != mapMyNameHashes.end())
+            strName = stringFromVch(mi->second);
+        else
+#endif
+            strName = HexStr(vvch[0]);
+    }
+    else
+        strName = stringFromVch(vvch[0]);
 
     address = strOp + ": " + strName;
     return true;
@@ -2182,7 +2215,7 @@ string GetDefaultDataDirSuffix() {
     // Windows
     return string("Namecoin");
 #else
-#ifdef __WXMAC_OSX__
+#ifdef MAC_OSX
     return string("Namecoin");
 #else
     return string(".namecoin");

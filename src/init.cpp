@@ -3,7 +3,7 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 #include "headers.h"
 #include "db.h"
-#include "rpc.h"
+#include "bitcoinrpc.h"
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
@@ -28,6 +28,17 @@ void ExitTimeout(void* parg)
 #ifdef __WXMSW__
     Sleep(5000);
     ExitProcess(0);
+#endif
+}
+
+void StartShutdown()
+{
+#ifdef GUI
+    // ensure we leave the Qt main loop for a clean GUI exit (Shutdown() is called in bitcoin.cpp afterwards)
+    uiInterface.QueueShutdown();
+#else
+    // Without UI, Shutdown() can simply be started in a new thread
+    CreateThread(Shutdown, NULL);
 #endif
 }
 
@@ -56,7 +67,10 @@ void Shutdown(void* parg)
         Sleep(50);
         printf("namecoin exiting\n\n");
         fExit = true;
+#ifndef GUI
+        // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
         exit(0);
+#endif
     }
     else
     {
@@ -107,7 +121,7 @@ bool AppInit(int argc, char* argv[])
         PrintException(NULL, "AppInit()");
     }
     if (!fRet)
-        Shutdown(NULL);
+        StartShutdown();
     return fRet;
 }
 
@@ -139,24 +153,33 @@ bool AppInit2(int argc, char* argv[])
     //
     // Parameters
     //
-    ParseParameters(argc, argv);
-
-    if (mapArgs.count("-datadir"))
+    if (argc >= 0) // GUI sets argc to -1, because it parses the parameters itself
     {
-        if (filesystem::is_directory(filesystem::system_complete(mapArgs["-datadir"])))
+        ParseParameters(argc, argv);
+
+        if (mapArgs.count("-datadir"))
         {
-            filesystem::path pathDataDir = filesystem::system_complete(mapArgs["-datadir"]);
-            strlcpy(pszSetDataDir, pathDataDir.string().c_str(), sizeof(pszSetDataDir));
-        }
-        else
-        {
-            fprintf(stderr, "Error: Specified directory does not exist\n");
-            Shutdown(NULL);
+            if (filesystem::is_directory(filesystem::system_complete(mapArgs["-datadir"])))
+            {
+                filesystem::path pathDataDir = filesystem::system_complete(mapArgs["-datadir"]);
+                strlcpy(pszSetDataDir, pathDataDir.string().c_str(), sizeof(pszSetDataDir));
+            }
+            else
+            {
+                fprintf(stderr, "Error: Specified directory does not exist\n");
+                Shutdown(NULL);
+            }
         }
     }
 
+    // Set testnet flag first to determine the default datadir correctly
+    fTestNet = GetBoolArg("-testnet");
 
     ReadConfigFile(mapArgs, mapMultiArgs); // Must be done after processing datadir
+
+    // Note: at this point the default datadir may change, so the user either must not provide -testnet in the .conf file
+    // or provide -datadir explicitly on the command line
+    fTestNet = GetBoolArg("-testnet");
 
     if (mapArgs.count("-?") || mapArgs.count("--help"))
     {
@@ -164,61 +187,15 @@ bool AppInit2(int argc, char* argv[])
           _("namecoin version") + " " + FormatFullVersion() + "\n\n" +
           _("Usage:") + "\t\t\t\t\t\t\t\t\t\t\n" +
             "  namecoin [options]                   \t  " + "\n" +
-            "  namecoin [options] <command> [params]\t  " + _("Send command to -server or namecoind\n") +
-            "  namecoin [options] help              \t\t  " + _("List commands\n") +
-            "  namecoin [options] help <command>    \t\t  " + _("Get help for a command\n") +
-          _("Options:\n") +
-            "  -conf=<file>     \t\t  " + _("Specify configuration file (default: namecoin.conf)\n") +
-            "  -pid=<file>      \t\t  " + _("Specify pid file (default: namecoind.pid)\n") +
-            "  -gen             \t\t  " + _("Generate coins\n") +
-            "  -gen=0           \t\t  " + _("Don't generate coins\n") +
-            "  -min             \t\t  " + _("Start minimized\n") +
-            "  -datadir=<dir>   \t\t  " + _("Specify data directory\n") +
-            "  -timeout=<n>     \t  "   + _("Specify connection timeout (in milliseconds)\n") +
-            "  -proxy=<ip:port> \t  "   + _("Connect through socks4 proxy\n") +
-            "  -dns             \t  "   + _("Allow DNS lookups for addnode and connect\n") +
-            "  -addnode=<ip>    \t  "   + _("Add a node to connect to\n") +
-            "  -connect=<ip>    \t\t  " + _("Connect only to the specified node\n") +
-            "  -nolisten        \t  "   + _("Don't accept connections from outside\n") +
-#ifdef USE_UPNP
-#if USE_UPNP
-            "  -noupnp          \t  "   + _("Don't attempt to use UPnP to map the listening port\n") +
-#else
-            "  -upnp            \t  "   + _("Attempt to use UPnP to map the listening port\n") +
-#endif
-#endif
-            "  -paytxfee=<amt>  \t  "   + _("Fee per KB to add to transactions you send\n") +
-            "  -mininput=<amt>  \t  "   + _("When creating transactions, ignore inputs with value less than this (default: 0.0001)\n") +
-#ifdef GUI
-            "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
-#endif
-#ifndef __WXMSW__
-            "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
-#endif
-            "  -testnet         \t\t  " + _("Use the test network\n") +
-            "  -rpcuser=<user>  \t  "   + _("Username for JSON-RPC connections\n") +
-            "  -rpcpassword=<pw>\t  "   + _("Password for JSON-RPC connections\n") +
-            "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 8336)\n") +
-            "  -rpcallowip=<ip> \t\t  " + _("Allow JSON-RPC connections from specified IP address\n") +
-            "  -rpcconnect=<ip> \t  "   + _("Send commands to node running on <ip> (default: 127.0.0.1)\n") +
-            "  -keypool=<n>     \t  "   + _("Set key pool size to <n> (default: 100)\n") +
-            "  -rescan          \t  "   + _("Rescan the block chain for missing wallet transactions\n");
-
-#ifdef USE_SSL
-        strUsage += string() +
-            _("\nSSL options: (see the namecoin Wiki for SSL setup instructions)\n") +
-            "  -rpcssl                                \t  " + _("Use OpenSSL (https) for JSON-RPC connections\n") +
-            "  -rpcsslcertificatechainfile=<file.cert>\t  " + _("Server certificate file (default: server.cert)\n") +
-            "  -rpcsslprivatekeyfile=<file.pem>       \t  " + _("Server private key (default: server.pem)\n") +
-            "  -rpcsslciphers=<ciphers>               \t  " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)\n");
-#endif
-
-        strUsage += string() +
-            "  -?               \t\t  " + _("This help message\n");
+            "  namecoin [options] <command> [params]\t  " + _("Send command to -server or namecoind") + "\n" +
+            "  namecoin [options] help              \t\t  " + _("List commands") + "\n" +
+            "  namecoin [options] help <command>    \t\t  " + _("Get help for a command") + "\n";
+            
+        strUsage += "\n" + HelpMessage();
 
 #if defined(__WXMSW__) && defined(GUI)
         // Tabs make the columns line up in the message box
-        wxMessageBox(strUsage, "Bitcoin", wxOK);
+        wxMessageBox(strUsage, "Namecoin", wxOK);
 #else
         // Remove tabs
         strUsage.erase(std::remove(strUsage.begin(), strUsage.end(), '\t'), strUsage.end());
@@ -230,7 +207,7 @@ bool AppInit2(int argc, char* argv[])
     fDebug = GetBoolArg("-debug");
     fAllowDNS = GetBoolArg("-dns");
 
-#ifndef __WXMSW__
+#if !defined(WIN32) && !defined(QT_GUI)
     fDaemon = GetBoolArg("-daemon");
 #else
     fDaemon = false;
@@ -249,7 +226,6 @@ bool AppInit2(int argc, char* argv[])
     fPrintToConsole = GetBoolArg("-printtoconsole");
     fPrintToDebugger = GetBoolArg("-printtodebugger");
 
-    fTestNet = GetBoolArg("-testnet");
     fNoListen = GetBoolArg("-nolisten");
     fLogTimestamps = GetBoolArg("-logtimestamps");
 
@@ -289,7 +265,8 @@ bool AppInit2(int argc, char* argv[])
         ShrinkDebugFile();
     printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     printf("namecoin version %s\n", FormatFullVersion().c_str());
-#ifdef GUI
+//#ifdef GUI
+#if 0
     printf("OS version %s\n", ((string)wxGetOsDescription()).c_str());
     printf("System default language is %d %s\n", g_locale.GetSystemLanguage(), ((string)g_locale.GetSysName()).c_str());
     printf("Language file %s (%s)\n", (string("locale/") + (string)g_locale.GetCanonicalName() + "/LC_MESSAGES/bitcoin.mo").c_str(), ((string)g_locale.GetLocale()).c_str());
@@ -308,7 +285,8 @@ bool AppInit2(int argc, char* argv[])
     // Limit to single instance per user
     // Required to protect the database files if we're going to keep deleting log.*
     //
-#if defined(__WXMSW__) && defined(GUI)
+//#if defined(__WXMSW__) && defined(GUI)
+#if 0
     // wxSingleInstanceChecker doesn't work on Linux
     wxString strMutexName = wxString("bitcoin_running.") + getenv("HOMEPATH");
     for (int i = 0; i < strMutexName.size(); i++)
@@ -322,7 +300,7 @@ bool AppInit2(int argc, char* argv[])
         loop
         {
             // Show the previous instance and exit
-            HWND hwndPrev = FindWindowA("wxWindowClassNR", "Bitcoin");
+            HWND hwndPrev = FindWindowA("wxWindowClassNR", "Namecoin");
             if (hwndPrev)
             {
                 if (IsIconic(hwndPrev))
@@ -351,7 +329,7 @@ bool AppInit2(int argc, char* argv[])
     static boost::interprocess::file_lock lock(strLockFile.c_str());
     if (!lock.try_lock())
     {
-        wxMessageBox(strprintf(_("Cannot obtain a lock on data directory %s.  namecoin is probably already running."), GetDataDir().c_str()), "Bitcoin");
+        wxMessageBox(strprintf(_("Cannot obtain a lock on data directory %s.  namecoin is probably already running."), GetDataDir().c_str()), "Namecoin");
         return false;
     }
 
@@ -361,7 +339,7 @@ bool AppInit2(int argc, char* argv[])
     {
         if (!BindListenPort(strErrors))
         {
-            wxMessageBox(strErrors, "Bitcoin");
+            wxMessageBox(strErrors, "Namecoin");
             return false;
         }
     }
@@ -397,6 +375,18 @@ bool AppInit2(int argc, char* argv[])
     printf(" wallet      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);
+    
+    // Read -mininput before -rescan, otherwise rescan will skip transactions
+    // lower than the default mininput
+    if (mapArgs.count("-mininput"))
+    {
+        if (!ParseMoney(mapArgs["-mininput"], nMinimumInputValue))
+        {
+            wxMessageBox(_("Invalid amount for -mininput=<amount>"), "Namecoin");
+            return false;
+        }
+    }
+
 
     CBlockIndex *pindexRescan = pindexBest;
     if (GetBoolArg("-rescan"))
@@ -418,18 +408,18 @@ bool AppInit2(int argc, char* argv[])
 
     printf("Done loading\n");
 
-        //// debug print
-        printf("mapBlockIndex.size() = %d\n",   mapBlockIndex.size());
-        printf("nBestHeight = %d\n",            nBestHeight);
-        printf("mapKeys.size() = %d\n",         pwalletMain->mapKeys.size());
-        printf("setKeyPool.size() = %d\n",      pwalletMain->setKeyPool.size());
-        printf("mapPubKeys.size() = %d\n",      mapPubKeys.size());
-        printf("mapWallet.size() = %d\n",       pwalletMain->mapWallet.size());
-        printf("mapAddressBook.size() = %d\n",  pwalletMain->mapAddressBook.size());
+    //// debug print
+    printf("mapBlockIndex.size() = %d\n",   mapBlockIndex.size());
+    printf("nBestHeight = %d\n",            nBestHeight);
+    pwalletMain->DebugPrint();
+    printf("setKeyPool.size() = %d\n",      pwalletMain->setKeyPool.size());
+    printf("mapPubKeys.size() = %d\n",      pwalletMain->mapPubKeys.size());
+    printf("mapWallet.size() = %d\n",       pwalletMain->mapWallet.size());
+    printf("mapAddressBook.size() = %d\n",  pwalletMain->mapAddressBook.size());
 
     if (!strErrors.empty())
     {
-        wxMessageBox(strErrors, "Bitcoin", wxOK | wxICON_ERROR);
+        wxMessageBox(strErrors, "Namecoin", wxOK | wxICON_ERROR);
         return false;
     }
 
@@ -483,7 +473,7 @@ bool AppInit2(int argc, char* argv[])
         addrProxy = CAddress(mapArgs["-proxy"]);
         if (!addrProxy.IsValid())
         {
-            wxMessageBox(_("Invalid -proxy address"), "Bitcoin");
+            wxMessageBox(_("Invalid -proxy address"), "Namecoin");
             return false;
         }
     }
@@ -508,20 +498,11 @@ bool AppInit2(int argc, char* argv[])
     {
         if (!ParseMoney(mapArgs["-paytxfee"], nTransactionFee))
         {
-            wxMessageBox(_("Invalid amount for -paytxfee=<amount>"), "Bitcoin");
+            wxMessageBox(_("Invalid amount for -paytxfee=<amount>"), "Namecoin");
             return false;
         }
         if (nTransactionFee > 0.25 * COIN)
-            wxMessageBox(_("Warning: -paytxfee is set very high.  This is the transaction fee you will pay if you send a transaction."), "Bitcoin", wxOK | wxICON_EXCLAMATION);
-    }
-
-    if (mapArgs.count("-mininput"))
-    {
-        if (!ParseMoney(mapArgs["-mininput"], nMinimumInputValue))
-        {
-            wxMessageBox(_("Invalid amount for -mininput=<amount>"), "Litecoin");
-            return false;
-        }
+            wxMessageBox(_("Warning: -paytxfee is set very high.  This is the transaction fee you will pay if you send a transaction."), "Namecoin", wxOK | wxICON_EXCLAMATION);
     }
 
     if (fHaveUPnP)
@@ -557,7 +538,7 @@ bool AppInit2(int argc, char* argv[])
     }
 
     if (!CreateThread(StartNode, NULL))
-        wxMessageBox("Error: CreateThread(StartNode) failed", "Bitcoin");
+        wxMessageBox("Error: CreateThread(StartNode) failed", "Namecoin");
 
     if (fServer)
         CreateThread(ThreadRPCServer, NULL);
@@ -573,4 +554,59 @@ bool AppInit2(int argc, char* argv[])
 #endif
 
     return true;
+}
+
+// Core-specific options shared between UI and daemon
+std::string HelpMessage()
+{
+    std::string strUsage = std::string(_("Options:\n")) +
+        "  -conf=<file>     \t\t  " + _("Specify configuration file (default: namecoin.conf)\n") +
+        "  -pid=<file>      \t\t  " + _("Specify pid file (default: namecoind.pid)\n") +
+        "  -gen             \t\t  " + _("Generate coins\n") +
+        "  -gen=0           \t\t  " + _("Don't generate coins\n") +
+        "  -min             \t\t  " + _("Start minimized\n") +
+        "  -datadir=<dir>   \t\t  " + _("Specify data directory\n") +
+        "  -dbcache=<n>     \t\t  " + _("Set database cache size in megabytes (default: 25)") + "\n" +
+        "  -timeout=<n>     \t  "   + _("Specify connection timeout (in milliseconds)\n") +
+        "  -proxy=<ip:port> \t  "   + _("Connect through socks4 proxy\n") +
+        "  -dns             \t  "   + _("Allow DNS lookups for addnode and connect\n") +
+        "  -addnode=<ip>    \t  "   + _("Add a node to connect to\n") +
+        "  -connect=<ip>    \t\t  " + _("Connect only to the specified node\n") +
+        "  -nolisten        \t  "   + _("Don't accept connections from outside\n") +
+#ifdef USE_UPNP
+#if USE_UPNP
+        "  -noupnp          \t  "   + _("Don't attempt to use UPnP to map the listening port\n") +
+#else
+        "  -upnp            \t  "   + _("Attempt to use UPnP to map the listening port\n") +
+#endif
+#endif
+        "  -paytxfee=<amt>  \t  "   + _("Fee per KB to add to transactions you send\n") +
+        "  -mininput=<amt>  \t  "   + _("When creating transactions, ignore inputs with value less than this (default: 0.0001)\n") +
+#ifdef GUI
+        "  -server          \t\t  " + _("Accept command line and JSON-RPC commands\n") +
+#endif
+#if !defined(WIN32) && !defined(QT_GUI)
+        "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
+#endif
+        "  -testnet         \t\t  " + _("Use the test network\n") +
+        "  -rpcuser=<user>  \t  "   + _("Username for JSON-RPC connections\n") +
+        "  -rpcpassword=<pw>\t  "   + _("Password for JSON-RPC connections\n") +
+        "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 8336)\n") +
+        "  -rpcallowip=<ip> \t\t  " + _("Allow JSON-RPC connections from specified IP address\n") +
+        "  -rpcconnect=<ip> \t  "   + _("Send commands to node running on <ip> (default: 127.0.0.1)\n") +
+        "  -keypool=<n>     \t  "   + _("Set key pool size to <n> (default: 100)\n") +
+        "  -rescan          \t  "   + _("Rescan the block chain for missing wallet transactions\n");
+
+#ifdef USE_SSL
+    strUsage += std::string() +
+        _("\nSSL options: (see the namecoin Wiki for SSL setup instructions)\n") +
+        "  -rpcssl                                \t  " + _("Use OpenSSL (https) for JSON-RPC connections\n") +
+        "  -rpcsslcertificatechainfile=<file.cert>\t  " + _("Server certificate file (default: server.cert)\n") +
+        "  -rpcsslprivatekeyfile=<file.pem>       \t  " + _("Server private key (default: server.pem)\n") +
+        "  -rpcsslciphers=<ciphers>               \t  " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)\n");
+#endif
+
+    strUsage += std::string() +
+        "  -?               \t\t  " + _("This help message\n");
+    return strUsage;
 }

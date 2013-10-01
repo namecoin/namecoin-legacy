@@ -2,6 +2,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
+#ifndef BITCOIN_HEADERS_H
+#define BITCOIN_HEADERS_H
+
 #ifdef _MSC_VER
 #pragma warning(disable:4786)
 #pragma warning(disable:4804)
@@ -26,7 +29,8 @@
 #define BSD 1
 #endif
 #endif
-#ifdef GUI
+//#ifdef GUI
+#if 0
 #include <wx/wx.h>
 #include <wx/stdpaths.h>
 #include <wx/snglinst.h>
@@ -102,17 +106,4 @@
 #include "noui.h"
 #endif
 
-#ifdef GUI
-#include "xpm/addressbook16.xpm"
-#include "xpm/addressbook20.xpm"
-#include "xpm/bitcoin16.xpm"
-#include "xpm/bitcoin20.xpm"
-#include "xpm/bitcoin32.xpm"
-#include "xpm/bitcoin48.xpm"
-#include "xpm/bitcoin80.xpm"
-#include "xpm/check.xpm"
-#include "xpm/send16.xpm"
-#include "xpm/send16noshadow.xpm"
-#include "xpm/send20.xpm"
-#include "xpm/about.xpm"
 #endif

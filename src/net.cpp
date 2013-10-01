@@ -805,7 +805,9 @@ void ThreadSocketHandler2(void* parg)
         if (vNodes.size() != nPrevNodeCount)
         {
             nPrevNodeCount = vNodes.size();
-            MainFrameRepaint();
+#ifdef GUI
+            uiInterface.NotifyNumConnectionsChanged(vNodes.size());
+#endif
         }
 
 
@@ -1073,7 +1075,14 @@ void ThreadMapPort2(void* parg)
     struct UPNPDev * devlist = 0;
     char lanaddr[64];
 
+#ifndef UPNPDISCOVER_SUCCESS
+    /* miniupnpc 1.5 */
     devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0);
+#else
+    /* miniupnpc 1.6 */
+    int error = 0;
+    devlist = upnpDiscover(2000, multicastif, minissdpdpath, 0, 0, &error);
+#endif
 
     struct UPNPUrls urls;
     struct IGDdatas data;
@@ -1085,7 +1094,7 @@ void ThreadMapPort2(void* parg)
         char intClient[16];
         char intPort[6];
 
-#ifndef __WXMSW__
+#if !defined(__WXMSW__) && !defined(MAC_OSX)
         r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
 	                        port, port, lanaddr, 0, "TCP", 0);
 #else
@@ -1243,9 +1252,13 @@ void ThreadOpenConnections2(void* parg)
     int64 nStart = GetTime();
     loop
     {
-        // Limit outbound connections
         vnThreadsRunning[1]--;
         Sleep(500);
+        vnThreadsRunning[1]++;
+        if (fShutdown)
+            return;
+
+        // Limit outbound connections	    
         loop
         {
             int nOutbound = 0;
@@ -1257,13 +1270,12 @@ void ThreadOpenConnections2(void* parg)
             nMaxOutboundConnections = min(nMaxOutboundConnections, (int)GetArg("-maxconnections", 125));
             if (nOutbound < nMaxOutboundConnections)
                 break;
+	        vnThreadsRunning[1]--;	    
             Sleep(2000);
+            vnThreadsRunning[1]++;	    
             if (fShutdown)
                 return;
         }
-        vnThreadsRunning[1]++;
-        if (fShutdown)
-            return;
 
         CRITICAL_BLOCK(cs_mapAddresses)
         {
@@ -1483,7 +1495,7 @@ void ThreadMessageHandler2(void* parg)
         vnThreadsRunning[2]--;
         Sleep(100);
         if (fRequestShutdown)
-            Shutdown(NULL);
+            StartShutdown();
         vnThreadsRunning[2]++;
         if (fShutdown)
             return;
@@ -1556,7 +1568,7 @@ bool BindListenPort(string& strError)
     {
         int nErr = WSAGetLastError();
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to port %d on this computer.  Bitcoin is probably already running."), ntohs(sockaddr.sin_port));
+            strError = strprintf(_("Unable to bind to port %d on this computer.  Namecoin is probably already running."), ntohs(sockaddr.sin_port));
         else
             strError = strprintf("Error: Unable to bind to port %d on this computer (bind returned error %d)", ntohs(sockaddr.sin_port), nErr);
         printf("%s\n", strError.c_str());
@@ -1647,9 +1659,11 @@ void StartNode(void* parg)
     // Start threads
     //
 
+#ifdef USE_UPNP
     // Map ports with UPnP
     if (fHaveUPnP)
         MapPort(fUseUPnP);
+#endif
 
     // Get addresses from IRC and advertise ours
     if (!CreateThread(ThreadIRCSeed, NULL))
