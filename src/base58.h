@@ -303,8 +303,6 @@ public:
 
 
 
-
-
 /*#define ADDRESSVERSION   ((unsigned char)(fTestNet ? 111 : 0))*/
 extern unsigned char GetAddressVersion();
 
