@@ -1,17 +1,26 @@
 CXX=g++
 
-DEFS=-D_MT -DNOPCH -DFOURWAYSSE2 -DUSE_SSL 
+DEFS=-D_MT -DNOPCH -DUSE_SSL 
 
 # Detect MinGW
 MINGW=$(shell uname -s|grep -i mingw32)
 
+# Detect Mac OS X
+MACOSX=$(shell uname -s|grep -i darwin)
+
 # Link boost statically
-DEFS += -DBOOST_THREAD_USE_LIB
+DEFS += -DFOURWAYSSE2 
+
+# C++ compiler to use for cryptopp
+CXX2=$(CXX)
 
 LIBBOOST_SUFFIX=-mt
 
+ifeq "$(MACOSX)" ""
+	LIBS=-Wl,-Bstatic
+endif
+
 LIBS= \
- -Wl,-Bstatic \
    -l boost_system$(LIBBOOST_SUFFIX) \
    -l boost_filesystem$(LIBBOOST_SUFFIX) \
    -l boost_program_options$(LIBBOOST_SUFFIX) \
@@ -28,13 +37,21 @@ namecoin: USE_UPNP:=1
 	endif
 	ifneq "$(MINGW)" ""
 		# MinGW-specific
-		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
+		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__ -DFOURWAYSSE2 -DBOOST_THREAD_USE_LIB 
 		LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 		LIBBOOST_SUFFIX=-mgw46-mt-1_50
 	else
+                ifneq "$(MACOSX)" ""
+                	# Mac OS X specific
+			DEFS += -DMAC_OSX -DMSG_NOSIGNAL=SO_NOSIGPIPE -Wno-deprecated
+			CXX2=gcc-4.2
+		else
+			DEFS+=-DBOOST_THREAD_USE_LIB 
+			LIBS+= -Wl,-Bdynamic
+		endif
+                
 		# Linux-specific
 		LIBS+= \
-			-Wl,-Bdynamic \
 			-l gthread-2.0 \
 			-l z \
 			-l dl \
@@ -48,12 +65,20 @@ namecoind: USE_UPNP:=0
 	endif
 	ifneq "$(MINGW)" ""
 		# MinGW-specific
-		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
+		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__ -DBOOST_THREAD_USE_LIB 
 		LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 	else
+                ifneq "$(MACOSX)" ""
+                	# Mac OS X specific
+			DEFS += -DMAC_OSX -DMSG_NOSIGNAL=SO_NOSIGPIPE -Wno-deprecated
+			CXX2=gcc-4.2
+		else
+			DEFS += -DBOOST_THREAD_USE_LIB 
+			LIBS+= -Wl,-Bdynamic
+		endif
+        
 		# Linux-specific
 		LIBS+= \
-			-Wl,-Bdynamic \
 			-l gthread-2.0 \
 			-l z \
 			-l dl \
@@ -89,7 +114,7 @@ obj/%.o: %.cpp $(HEADERS)
 	$(CXX) -c $(CXXFLAGS) -DGUI -o $@ $<
 
 cryptopp/obj/%.o: cryptopp/%.cpp
-	$(CXX) -c $(CXXFLAGS) -O3 -o $@ $<
+	$(CXX2) -c $(CXXFLAGS) -O3 -o $@ $<
 
 obj/nogui/%.o: %.cpp $(HEADERS)
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
