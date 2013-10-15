@@ -548,12 +548,26 @@ bool AppInit2(int argc, char* argv[])
 
     RandAddSeedPerfmon();
 
-    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    const char *name_db_file = "nameindexfull.dat";
+    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / name_db_file;
     if (!filesystem::exists(nameindexfile))
     {   
         //PrintConsole("Scanning blockchain for names to create fast index...");
         rescanfornames();
         //PrintConsole("\n");
+    }
+    else   // Name bug workaround
+    {
+        CDB dbName(name_db_file, "r");
+        int nVersion;
+        if (!dbName.ReadVersion(nVersion) || nVersion < 37200)
+        {
+            dbName.Close();
+            CDB::CloseDb(name_db_file);
+            filesystem::remove(nameindexfile);
+            printf("Name DB is of old version containing a bug. Forcing rescan.\n");
+            rescanfornames();
+        }
     }
 
     if (!CreateThread(StartNode, NULL))

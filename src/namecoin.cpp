@@ -36,6 +36,9 @@ static const int OP_NAME_UPDATE = 0x03;
 static const int OP_NAME_NOP = 0x04;
 static const int MIN_FIRSTUPDATE_DEPTH = 12;
 
+static const int BUG_WORKAROUND_BLOCK_START = 139750;   // Bug was not exploited before block 139872, so skip checking earlier blocks
+static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
+
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
 extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
@@ -1541,6 +1544,71 @@ bool CNameDB::ScanNames(
     return true;
 }
 
+// true - accept, false - reject
+bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb)
+{
+    // Find previous name tx
+    bool found = false;
+    int prevOp;
+    vector<vector<unsigned char> > vvchPrevArgs;
+
+    for (int i = 0; i < tx.vin.size(); i++)
+    {
+        COutPoint prevout = tx.vin[i].prevout;
+        CTxIndex txindex;
+        if (!txdb.ReadTxIndex(prevout.hash, txindex))
+        {
+            printf("NameBugWorkaround WARNING: cannot read tx index of previous tx (hash: %s)\n", prevout.hash.ToString().c_str());
+            continue;
+        }
+        CTransaction txPrev;
+        if (!txPrev.ReadFromDisk(txindex.pos))
+        {
+            printf("NameBugWorkaround WARNING: cannot read previous tx from disk (hash: %s)\n", prevout.hash.ToString().c_str());
+            continue;
+        }
+
+        CTxOut& out = txPrev.vout[tx.vin[i].prevout.n];
+        if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgs))
+        {
+            if (found)
+                return error("NameBugWorkaround WARNING: multiple previous name transactions");
+            found = true;
+        }
+    }
+
+    if (!found)
+        return error("NameBugWorkaround WARNING: prev tx not found");
+
+    vector<vector<unsigned char> > vvchArgs;
+    int op;
+    int nOut;
+
+    if (!DecodeNameTx(tx, op, nOut, vvchArgs))
+        return error("NameBugWorkaround WARNING: cannot decode name tx\n");
+
+    if (op == OP_NAME_FIRSTUPDATE)
+    {
+        // Check hash
+        const vector<unsigned char> &vchHash = vvchPrevArgs[0];
+        const vector<unsigned char> &vchName = vvchArgs[0];
+        const vector<unsigned char> &vchRand = vvchArgs[1];
+        vector<unsigned char> vchToHash(vchRand);
+        vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
+        uint160 hash = Hash160(vchToHash);
+        if (uint160(vchHash) != hash)
+            return false;
+    }
+    else if (op == OP_NAME_UPDATE)
+    {
+        // Check name
+        if (vvchPrevArgs[0] != vvchArgs[0])
+            return false;
+    }
+
+    return true;
+}
+
 bool CNameDB::ReconstructNameIndex()
 {
     CTxDB txdb("r");
@@ -1573,13 +1641,21 @@ bool CNameDB::ReconstructNameIndex()
                     continue;
 
                 nHeight = GetTxPosHeight(txindex.pos);
+                // Bug workaround
+                if (nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK)
+                    if (!NameBugWorkaround(tx, txdb))
+                    {
+                        printf("NameBugWorkaround rejected tx %s at height %d (name %s)\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str());
+                        continue;
+                    }
 
-               vector<CNameIndex> vtxPos;
+                vector<CNameIndex> vtxPos;
                 if (ExistsName(vchName))
                 {   
                     if (!ReadName(vchName, vtxPos))
                         return error("Rescanfornames() : failed to read from name DB");
                 }
+
                 CNameIndex txPos2;
                 txPos2.nHeight = nHeight;
                 txPos2.vValue = vchValue;
@@ -1933,6 +2009,8 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     int nDepth;
     int64 nNetFee;
 
+    bool fBugWorkaround = false;
+
     switch (op)
     {
         case OP_NAME_NEW:
@@ -1945,6 +2023,28 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                 return error("ConnectInputsHook() : got tx %s with fee too low %d", tx.GetHash().GetHex().c_str(), nNetFee);
             if (!found || prevOp != OP_NAME_NEW)
                 return error("ConnectInputsHook() : name_firstupdate tx without previous name_new tx");
+
+            {
+                // Check hash
+                const vector<unsigned char> &vchHash = vvchPrevArgs[0];
+                const vector<unsigned char> &vchName = vvchArgs[0];
+                const vector<unsigned char> &vchRand = vvchArgs[1];
+                vector<unsigned char> vchToHash(vchRand);
+                vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
+                uint160 hash = Hash160(vchToHash);
+                if (uint160(vchHash) != hash)
+                {
+                    if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                        return error("ConnectInputsHook() : name_firstupdate hash mismatch");
+                    else
+                    {
+                        // Accept bad transactions before the hard-fork point, but do not write them to name DB
+                        printf("ConnectInputsHook() : name_firstupdate mismatch bug workaround");
+                        fBugWorkaround = true;
+                    }
+                }
+            }
+
             nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
             if (nPrevHeight >= 0 && pindexBlock->nHeight - nPrevHeight < GetExpirationDepth(pindexBlock->nHeight))
                 return error("ConnectInputsHook() : name_firstupdate on an unexpired name");
@@ -1978,6 +2078,20 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
         case OP_NAME_UPDATE:
             if (!found || (prevOp != OP_NAME_FIRSTUPDATE && prevOp != OP_NAME_UPDATE))
                 return error("name_update tx without previous update tx");
+
+            // Check name
+            if (vvchPrevArgs[0] != vvchArgs[0])
+            {
+                if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                    return error("ConnectInputsHook() : name_update name mismatch");
+                else
+                {
+                    // Accept bad transactions before the hard-fork point, but do not write them to name DB
+                    printf("ConnectInputsHook() : name_update mismatch bug workaround");
+                    fBugWorkaround = true;
+                }
+            }
+
             // TODO CPU intensive
             nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], GetExpirationDepth(pindexBlock->nHeight));
             if ((fBlock || fMiner) && nDepth < 0)
@@ -1987,50 +2101,55 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
             return error("ConnectInputsHook() : name transaction has unknown op");
     }
 
-    if (fBlock)
+    // If fBugWorkaround is in action, do not update name DB (i.e. just silently accept bad tx to avoid early hard-fork)
+    // Also disallow mining bad txes
+
+    if (fMiner && fBugWorkaround)
+        return error("ConnectInputsHook(): mismatch bug workaround - should not mine this tx");
+
+    if (!fBugWorkaround)
     {
-        CNameDB dbName("cr+", txdb);
-
-        dbName.TxnBegin();
-
-        if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
+        if (fBlock)
         {
-            //vector<CDiskTxPos> vtxPos;
-            vector<CNameIndex> vtxPos;
-            if (dbName.ExistsName(vvchArgs[0]))
+            CNameDB dbName("cr+", txdb);
+
+            dbName.TxnBegin();
+
+            if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
             {
-                if (!dbName.ReadName(vvchArgs[0], vtxPos))
-                    return error("ConnectInputsHook() : failed to read from name DB");
+                //vector<CDiskTxPos> vtxPos;
+                vector<CNameIndex> vtxPos;
+                if (dbName.ExistsName(vvchArgs[0]))
+                {
+                    if (!dbName.ReadName(vvchArgs[0], vtxPos))
+                        return error("ConnectInputsHook() : failed to read from name DB");
+                }
+                vector<unsigned char> vchValue; // add
+                int nHeight;
+                uint256 hash;
+                GetValueOfTxPos(txPos, vchValue, hash, nHeight);
+                CNameIndex txPos2;
+                txPos2.nHeight = pindexBlock->nHeight;
+                txPos2.vValue = vchValue;
+                txPos2.txPos = txPos;
+                vtxPos.push_back(txPos2); // fin add
+                //vtxPos.push_back(txPos);
+                if (!dbName.WriteName(vvchArgs[0], vtxPos))
+                {
+                    return error("ConnectInputsHook() : failed to write to name DB");
+                }
             }
-            vector<unsigned char> vchValue; // add
-            int nHeight;
-            uint256 hash;
-            GetValueOfTxPos(txPos, vchValue, hash, nHeight);
-            CNameIndex txPos2;
-            txPos2.nHeight = pindexBlock->nHeight;
-            txPos2.vValue = vchValue;
-            txPos2.txPos = txPos;
-            vtxPos.push_back(txPos2); // fin add
-            //vtxPos.push_back(txPos);
-            if (!dbName.WriteName(vvchArgs[0], vtxPos))
-            {
-                return error("ConnectInputsHook() : failed to write to name DB");
-            }
+
+            dbName.TxnCommit();
         }
 
-        dbName.TxnCommit();
-    }
-
-    CRITICAL_BLOCK(cs_main)
-    {
         if (fBlock && op != OP_NAME_NEW)
-        {
-            if (mapNamePending[vvchArgs[0]].count(tx.GetHash()))
-                mapNamePending[vvchArgs[0]].erase(tx.GetHash());
-            else
-                printf("ConnectInputsHook() : connecting inputs on %s which was not in pending - must be someone elses\n",
-                        tx.GetHash().GetHex().c_str());
-        }
+            CRITICAL_BLOCK(cs_main)
+            {
+                std::map<std::vector<unsigned char>, std::set<uint256> >::iterator mi = mapNamePending.find(vvchArgs[0]);
+                if (mi != mapNamePending.end())
+                    mi->second.erase(tx.GetHash());
+            }
     }
 
     return true;

@@ -47,6 +47,7 @@ protected:
     ~CDB() { Close(); }
 public:
     void Close();
+    static void CloseDb(const std::string& strFile);
 private:
     CDB(const CDB&);
     void operator=(const CDB&);
