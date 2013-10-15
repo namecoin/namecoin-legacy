@@ -43,6 +43,7 @@ protected:
     std::vector<DbTxn*> vTxn;
     bool fReadOnly;
 
+public:    // FIXME: making consturctor/destructor public, so namedb can be loaded from init.cpp without dependency on namecoin.h
     explicit CDB(const char* pszFile, const char* pszMode="r+");
     ~CDB() { Close(); }
 public:
