@@ -157,7 +157,7 @@ void CDB::Close()
         --mapFileUseCount[strFile];
 }
 
-void static CloseDb(const string& strFile)
+void CDB::CloseDb(const string& strFile)
 {
     CRITICAL_BLOCK(cs_db)
     {
