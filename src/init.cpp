@@ -548,27 +548,20 @@ bool AppInit2(int argc, char* argv[])
 
     RandAddSeedPerfmon();
 
-    const char *name_db_file = "nameindexfull.dat";
-    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / name_db_file;
-    if (!filesystem::exists(nameindexfile))
-    {   
-        //PrintConsole("Scanning blockchain for names to create fast index...");
-        rescanfornames();
-        //PrintConsole("\n");
-    }
-    else   // Name bug workaround
+    filesystem::path nameindexfile_old = filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindex.dat";
+
+    if (filesystem::exists(nameindexfile_old))
     {
-        CDB dbName(name_db_file, "r");
-        int nVersion;
-        if (!dbName.ReadVersion(nVersion) || nVersion < 37200)
-        {
-            dbName.Close();
-            CDB::CloseDb(name_db_file);
+        // If old file exists - delete it and recan
+        filesystem::remove(nameindexfile_old);
+        // Also delete new file if it exists together with the old one, as it could be the one from a much older version
+        if (filesystem::exists(nameindexfile))
             filesystem::remove(nameindexfile);
-            printf("Name DB is of old version containing a bug. Forcing rescan.\n");
-            rescanfornames();
-        }
+        rescanfornames();
     }
+    else if (!filesystem::exists(nameindexfile))
+        rescanfornames();
 
     if (!CreateThread(StartNode, NULL))
         wxMessageBox("Error: CreateThread(StartNode) failed", "Bitcoin");
