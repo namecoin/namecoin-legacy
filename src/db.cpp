@@ -157,7 +157,7 @@ void CDB::Close()
         --mapFileUseCount[strFile];
 }
 
-void CDB::CloseDb(const string& strFile)
+static void CloseDb(const string& strFile)
 {
     CRITICAL_BLOCK(cs_db)
     {
@@ -291,7 +291,7 @@ void DBFlush(bool fShutdown)
             if (nRefCount == 0)
             {
                 // Move log data to the dat file
-                CDB::CloseDb(strFile);
+                CloseDb(strFile);
                 dbenv.txn_checkpoint(0, 0, 0);
                 printf("%s flush\n", strFile.c_str());
                 dbenv.lsn_reset(strFile.c_str(), 0);
@@ -753,7 +753,7 @@ void ThreadFlushWalletDB(void* parg)
                         int64 nStart = GetTimeMillis();
 
                         // Flush wallet.dat so it's self contained
-                        CDB::CloseDb(strFile);
+                        CloseDb(strFile);
                         dbenv.txn_checkpoint(0, 0, 0);
                         dbenv.lsn_reset(strFile.c_str(), 0);
 
@@ -777,7 +777,7 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
             if (!mapFileUseCount.count(wallet.strWalletFile) || mapFileUseCount[wallet.strWalletFile] == 0)
             {
                 // Flush log data to the dat file
-                CDB::CloseDb(wallet.strWalletFile);
+                CloseDb(wallet.strWalletFile);
                 dbenv.txn_checkpoint(0, 0, 0);
                 dbenv.lsn_reset(wallet.strWalletFile.c_str(), 0);
                 mapFileUseCount.erase(wallet.strWalletFile);
