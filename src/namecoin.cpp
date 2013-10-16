@@ -1319,6 +1319,8 @@ void rescanfornames()
     // scan blockchain
     dbName.ReconstructNameIndex();
 
+    dbName.Close();
+
     boost::filesystem::rename(tmpNameIndex, nameIndex);
 }
 
