@@ -13,6 +13,7 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
+#include <boost/filesystem.hpp>
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
 using namespace std;
@@ -1305,10 +1306,20 @@ void rescanfornames()
 {
     printf("Scanning blockchain for names to create fast index...\n");
 
-    CNameDB dbName("cr+");
+    const char* tmpNameIndexName = "nameindexfull.tmp";
+    boost::filesystem::path tmpNameIndex = boost::filesystem::path(GetDataDir()) / tmpNameIndexName;
+    boost::filesystem::path nameIndex = boost::filesystem::path(GetDataDir()) / "nameindexfull.dat";
+
+    if (!boost::filesystem::exists(tmpNameIndex)) {
+        boost::filesystem::remove(tmpNameIndex);
+    }
+
+    CNameDB dbName(tmpNameIndexName, "cr+");
 
     // scan blockchain
     dbName.ReconstructNameIndex();
+
+    boost::filesystem::rename(tmpNameIndex, nameIndex);
 }
 
 Value name_clean(const Array& params, bool fHelp)
@@ -1620,12 +1631,14 @@ bool CNameDB::ReconstructNameIndex()
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
     {
         //CNameDB dbName("cr+", txdb);
-        TxnBegin();
 
         while (pindex)
-        {  
+        {
+            TxnBegin();
             CBlock block;
             block.ReadFromDisk(pindex, true);
+            int names = 0;
+            nHeight = pindex->nHeight;
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (tx.nVersion != NAMECOIN_TX_VERSION)
@@ -1640,7 +1653,6 @@ bool CNameDB::ReconstructNameIndex()
                 if(!txdb.ReadDiskTx(tx.GetHash(), tx, txindex))
                     continue;
 
-                nHeight = GetTxPosHeight(txindex.pos);
                 // Bug workaround
                 if (nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK)
                     if (!NameBugWorkaround(tx, txdb))
@@ -1666,13 +1678,19 @@ bool CNameDB::ReconstructNameIndex()
                     return error("Rescanfornames() : failed to write to name DB");
                 }
 
+                names++;
+
                 //if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
                 //    ret++;
             }
             pindex = pindex->pnext;
-        }
+            TxnCommit();
 
-        TxnCommit();
+            printf("Scanning block [%d] [%s] With [%d] names\n",
+                   nHeight,
+                   block.GetHash().ToString().substr(0,20).c_str(),
+                   names);
+        }
     }
 }
 
