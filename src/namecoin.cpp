@@ -1308,7 +1308,7 @@ void rescanfornames()
 
     const char* tmpNameIndexName = "nameindexfull.tmp";
     boost::filesystem::path tmpNameIndex = boost::filesystem::path(GetDataDir()) / tmpNameIndexName;
-    boost::filesystem::path nameIndex = boost::filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    boost::filesystem::path nameIndex = boost::filesystem::path(GetDataDir()) / "nameindex.dat";
 
     if (!boost::filesystem::exists(tmpNameIndex)) {
         boost::filesystem::remove(tmpNameIndex);
