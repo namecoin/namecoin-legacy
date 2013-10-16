@@ -1676,8 +1676,8 @@ bool CNameDB::ReconstructNameIndex()
 
                 if (op == OP_NAME_NEW)
                     continue;
-                const vector<unsigned char> &vchName = vvchArgs[0];
-                const vector<unsigned char> &vchValue = vvchArgs[op == OP_NAME_FIRSTUPDATE ? 2 : 1];
+                vector<unsigned char> &vchName = vvchArgs[0];
+                vector<unsigned char> &vchValue = vvchArgs[op == OP_NAME_FIRSTUPDATE ? 2 : 1];
 
                 if(!txdb.ReadDiskTx(tx.GetHash(), tx, txindex))
                     continue;
