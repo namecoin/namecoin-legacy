@@ -53,7 +53,7 @@ extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, 
 extern bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
 extern bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name);
-bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch);
+bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch, int nHeight);
 extern void rescanfornames();
 extern Value sendtoaddress(const Array& params, bool fHelp);
 
@@ -516,7 +516,8 @@ bool GetNameAddress(const CTransaction& tx, std::string& strAddress)
     int op;
     int nOut;
     vector<vector<unsigned char> > vvch;
-    DecodeNameTx(tx, op, nOut, vvch);
+    if (!DecodeNameTx(tx, op, nOut, vvch, BUG_WORKAROUND_BLOCK))
+        return false;
     const CTxOut& txout = tx.vout[nOut];
     const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
     strAddress = scriptPubKey.GetBitcoinAddress();
@@ -1558,7 +1559,7 @@ bool CNameDB::ScanNames(
 }
 
 // true - accept, false - reject
-bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb, CTransaction *pTxPrev = NULL)
+bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb, CDiskTxPos *pPrevTxPos = NULL)
 {
     // Find previous name tx
     bool found = false;
@@ -1587,8 +1588,8 @@ bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb, CTransaction *pTxPre
             if (found)
                 return error("NameBugWorkaround WARNING: multiple previous name transactions");
             found = true;
-            if (pTxPrev)
-                *pTxPrev = txPrev;
+            if (pPrevTxPos)
+                *pPrevTxPos = txindex.pos;
         }
     }
 
@@ -1599,7 +1600,9 @@ bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb, CTransaction *pTxPre
     int op;
     int nOut;
 
-    if (!DecodeNameTx(tx, op, nOut, vvchArgs))
+    // NameBugWorkaround is always called for the buggy interval only (before block BUG_WORKAROUND_BLOCK),
+    // so we provide height as zero
+    if (!DecodeNameTx(tx, op, nOut, vvchArgs, 0))
         return error("NameBugWorkaround WARNING: cannot decode name tx\n");
 
     if (op == OP_NAME_FIRSTUPDATE)
@@ -1624,31 +1627,18 @@ bool NameBugWorkaround(const CTransaction& tx, CTxDB &txdb, CTransaction *pTxPre
     return true;
 }
 
-// Checks that the last transaction in vtxPos is equal to tx
-// The test is optimistic, i.e. it is assumed that tx is correct,
-// unless name bug is in action (so outside of the buggy block range
-// the test is skipped). This function must be called only if op == OP_NAME_UPDATE,
-// becauseduring firstupdate there is no entry in vtxPos
-bool CheckNameTxPos(const vector<CNameIndex> &vtxPos, const CTransaction& tx)
+// Check that the last entry in name history matches the given tx pos
+bool CheckNameTxPos(const vector<CNameIndex> &vtxPos, const CDiskTxPos& txPos)
 {
     if (vtxPos.empty())
         return false;
-    if (vtxPos.back().nHeight < BUG_WORKAROUND_BLOCK_START || vtxPos.back().nHeight >= BUG_WORKAROUND_BLOCK)
-        return true;
 
-    // During the name bug period we must check that tx was really used,
-    // as it could have been rejected - in this case do not disconnect
-    const CDiskTxPos &txPos = vtxPos.back().txPos;
-    CTransaction prevTx;
-    if (prevTx.ReadFromDisk(txPos) && prevTx == tx)
-        return true;
-    return false;
+    return vtxPos.back().txPos == txPos;
 }
 
 bool CNameDB::ReconstructNameIndex()
 {
     CTxDB txdb("r");
-    int nHeight;
     CTxIndex txindex;
     CBlockIndex* pindex = pindexGenesisBlock;
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
@@ -1661,7 +1651,8 @@ bool CNameDB::ReconstructNameIndex()
             CBlock block;
             block.ReadFromDisk(pindex, true);
             int names = 0;
-            nHeight = pindex->nHeight;
+            int nHeight = pindex->nHeight;
+
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (tx.nVersion != NAMECOIN_TX_VERSION)
@@ -1671,7 +1662,7 @@ bool CNameDB::ReconstructNameIndex()
                 int op;
                 int nOut;
 
-                if (!DecodeNameTx(tx, op, nOut, vvchArgs))
+                if (!DecodeNameTx(tx, op, nOut, vvchArgs, nHeight))
                     continue;
 
                 if (op == OP_NAME_NEW)
@@ -1683,9 +1674,9 @@ bool CNameDB::ReconstructNameIndex()
                     continue;
 
                 // Bug workaround
-                CTransaction txPrev;
+                CDiskTxPos prevTxPos;
                 if (nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK)
-                    if (!NameBugWorkaround(tx, txdb, &txPrev))
+                    if (!NameBugWorkaround(tx, txdb, &prevTxPos))
                     {
                         printf("NameBugWorkaround rejected tx %s at height %d (name %s)\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str());
                         continue;
@@ -1698,9 +1689,9 @@ bool CNameDB::ReconstructNameIndex()
                         return error("Rescanfornames() : failed to read from name DB");
                 }
 
-                if (op == OP_NAME_UPDATE && nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK && !CheckNameTxPos(vtxPos, txPrev))
+                if (op == OP_NAME_UPDATE && nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK && !CheckNameTxPos(vtxPos, prevTxPos))
                 {
-                    printf("NameBugWorkaround rejected tx %s at height %d (name %s), because previous tx %s was also rejected\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str(), txPrev.GetHash().ToString().c_str());
+                    printf("NameBugWorkaround rejected tx %s at height %d (name %s), because previous tx was also rejected\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str());
                     continue;
                 }
 
@@ -1799,21 +1790,77 @@ bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned cha
     return error("invalid number of arguments for name op");
 }
 
-bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch)
+bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsigned char> >& vvch, int nHeight)
 {
     bool found = false;
 
-    for (int i = 0 ; i < tx.vout.size() ; i++)
+    if (nHeight < 0)
     {
-        const CTxOut& out = tx.vout[i];
-        if (DecodeNameScript(out.scriptPubKey, op, vvch))
+        nHeight = pindexBest->nHeight;
+        /*
+        CTxDB txdb("r");
+        CTxIndex txindex;
+        if (txdb.ReadTxIndex(tx.GetHash(), txindex))
         {
-            // If more than one name op, fail
-            if (found)
-                return false;
-            nOut = i;
-            found = true;
+            nHeight = GetTxPosHeight(txindex.pos);
+            if (nHeight == 0)
+                nHeight = BUG_WORKAROUND_BLOCK;
         }
+        else
+            nHeight = BUG_WORKAROUND_BLOCK;
+        */
+    }
+    
+    // Bug workaround
+    if (nHeight >= BUG_WORKAROUND_BLOCK)
+    {
+        // Strict check - bug disallowed
+        for (int i = 0; i < tx.vout.size(); i++)
+        {
+            const CTxOut& out = tx.vout[i];
+
+            vector<vector<unsigned char> > vvchRead;
+
+            if (DecodeNameScript(out.scriptPubKey, op, vvchRead))
+            {
+                // If more than one name op, fail
+                if (found)
+                {
+                    vvch.clear();
+                    return false;
+                }
+                nOut = i;
+                found = true;
+                vvch = vvchRead;
+            }
+        }
+
+        if (!found)
+            vvch.clear();
+    }
+    else
+    {
+        // Name bug: before hard-fork point, we reproduce the buggy behavior
+        // of concatenating args (vvchPrevArgs not cleared between calls)
+        bool fBug = false;
+        for (int i = 0; i < tx.vout.size(); i++)
+        {
+            const CTxOut& out = tx.vout[i];
+            
+            int nOldSize = vvch.size();
+            if (DecodeNameScript(out.scriptPubKey, op, vvch))
+            {
+                // If more than one name op, fail
+                if (found)
+                    return false;
+                nOut = i;
+                found = true;
+            }
+            if (nOldSize != 0 && vvch.size() != nOldSize)
+                fBug = true;
+        }
+        if (fBug)
+            printf("Name bug warning: argument concatenation happened in tx %s (block height %d)\n", tx.GetHash().GetHex().c_str(), nHeight);
     }
 
     return found;
@@ -1842,7 +1889,7 @@ bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value)
     int op;
     int nOut;
 
-    if (!DecodeNameTx(tx, op, nOut, vvch))
+    if (!DecodeNameTx(tx, op, nOut, vvch, -1))
         return false;
 
     switch (op)
@@ -1867,7 +1914,7 @@ int IndexOfNameOutput(CWalletTx& wtx)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(wtx, op, nOut, vvch);
+    bool good = DecodeNameTx(wtx, op, nOut, vvch, -1);
 
     if (!good)
         throw runtime_error("IndexOfNameOutput() : name output not found");
@@ -1888,7 +1935,8 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvch);
+    // We do the check under the correct rule set (post-hardfork)
+    bool good = DecodeNameTx(tx, op, nOut, vvch, BUG_WORKAROUND_BLOCK);
 
     if (!good)
     {
@@ -1942,7 +1990,7 @@ void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvch);
+    bool good = DecodeNameTx(tx, op, nOut, vvch, BUG_WORKAROUND_BLOCK);
 
     if (!good)
     {
@@ -1975,7 +2023,7 @@ bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs, -1);
     if (!good)
         return error("GetNameOfTx() : could not decode a namecoin tx");
 
@@ -1997,7 +2045,7 @@ bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& 
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs, pindexBest->nHeight);
     if (!good)
         return error("IsConflictedTx() : could not decode a namecoin tx");
     int nPrevHeight;
@@ -2031,16 +2079,49 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     int prevOp;
     vector<vector<unsigned char> > vvchPrevArgs;
 
-    for (int i = 0; i < tx.vin.size(); i++)
+    // Bug workaround
+    if (fMiner || !fBlock || pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
     {
-        CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
-        if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgs))
+        // Strict check - bug disallowed
+        for (int i = 0; i < tx.vin.size(); i++)
         {
-            if (found)
-                return error("ConnectInputHook() : multiple previous name transactions");
-            found = true;
-            nInput = i;
+            CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
+
+            vector<vector<unsigned char> > vvchPrevArgsRead;
+
+            if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgsRead))
+            {
+                if (found)
+                    return error("ConnectInputHook() : multiple previous name transactions");
+                found = true;
+                nInput = i;
+
+                vvchPrevArgs = vvchPrevArgsRead;
+            }
         }
+    }
+    else
+    {
+        // Name bug: before hard-fork point, we reproduce the buggy behavior
+        // of concatenating args (vvchPrevArgs not cleared between calls)
+        bool fBug = false;
+        for (int i = 0; i < tx.vin.size(); i++)
+        {
+            CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
+
+            int nOldSize = vvchPrevArgs.size();
+            if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgs))
+            {
+                if (found)
+                    return error("ConnectInputHook() : multiple previous name transactions");
+                found = true;
+                nInput = i;
+            }
+            if (nOldSize != 0 && vvchPrevArgs.size() != nOldSize)
+                fBug = true;
+        }
+        if (fBug)
+            printf("Name bug warning: argument concatenation happened in tx %s (block height %d)\n", tx.GetHash().GetHex().c_str(), pindexBlock->nHeight);
     }
 
     if (tx.nVersion != NAMECOIN_TX_VERSION)
@@ -2056,7 +2137,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs, pindexBlock->nHeight);
     if (!good)
         return error("ConnectInputsHook() : could not decode a namecoin tx");
 
@@ -2066,11 +2147,24 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
 
     bool fBugWorkaround = false;
 
+    // HACK: The following two checks are redundant after hard-fork at block 150000, because it is performed
+    // in CheckTransaction. However, before that, we do not know height during CheckTransaction
+    // and cannot apply the right set of rules
+    if (vvchArgs[0].size() > MAX_NAME_LENGTH)
+        return error("name transaction with name too long");
+
     switch (op)
     {
         case OP_NAME_NEW:
             if (found)
                 return error("ConnectInputsHook() : name_new tx pointing to previous namecoin tx");
+
+            // HACK: The following check is redundant after hard-fork at block 150000, because it is performed
+            // in CheckTransaction. However, before that, we do not know height during CheckTransaction
+            // and cannot apply the right set of rules
+            if (vvchArgs[0].size() != 20)
+                return error("name_new tx with incorrect hash length");
+
             break;
         case OP_NAME_FIRSTUPDATE:
             nNetFee = GetNameNetFee(tx);
@@ -2078,6 +2172,14 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                 return error("ConnectInputsHook() : got tx %s with fee too low %d", tx.GetHash().GetHex().c_str(), nNetFee);
             if (!found || prevOp != OP_NAME_NEW)
                 return error("ConnectInputsHook() : name_firstupdate tx without previous name_new tx");
+                
+            // HACK: The following two checks are redundant after hard-fork at block 150000, because it is performed
+            // in CheckTransaction. However, before that, we do not know height during CheckTransaction
+            // and cannot apply the right set of rules
+            if (vvchArgs[1].size() > 20)
+                return error("name_firstupdate tx with rand too big");
+            if (vvchArgs[2].size() > MAX_VALUE_LENGTH)
+                return error("name_firstupdate tx with value too long");
 
             {
                 // Check hash
@@ -2133,6 +2235,12 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
         case OP_NAME_UPDATE:
             if (!found || (prevOp != OP_NAME_FIRSTUPDATE && prevOp != OP_NAME_UPDATE))
                 return error("name_update tx without previous update tx");
+                
+            // HACK: The following check is redundant after hard-fork at block 150000, because it is performed
+            // in CheckTransaction. However, before that, we do not know height during CheckTransaction
+            // and cannot apply the right set of rules
+            if (vvchArgs[1].size() > MAX_VALUE_LENGTH)
+                return error("name_update tx with value too long");
 
             // Check name
             if (vvchPrevArgs[0] != vvchArgs[0])
@@ -2176,7 +2284,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     return error("ConnectInputsHook() : failed to read from name DB");
             }
             // Valid tx on top of buggy tx: if not in block, reject
-            if (!CheckNameTxPos(vtxPos, vTxPrev[nInput]))
+            if (!CheckNameTxPos(vtxPos, vTxindex[nInput].pos))
                 return error("ConnectInputsHook() : Name bug workaround: tx %s rejected, since previous tx (%s) is not in the name DB\n", tx.GetHash().ToString().c_str(), vTxPrev[nInput].GetHash().ToString().c_str());
         }
 
@@ -2191,32 +2299,30 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     if (!dbName.ReadName(vvchArgs[0], vtxPos))
                         return error("ConnectInputsHook() : failed to read from name DB");
                 }
-                if (op == OP_NAME_UPDATE)
+
+                if (op == OP_NAME_UPDATE && !CheckNameTxPos(vtxPos, vTxindex[nInput].pos))
                 {
-                    if (CheckNameTxPos(vtxPos, vTxPrev[nInput]))
-                    {
-                        vector<unsigned char> vchValue; // add
-                        int nHeight;
-                        uint256 hash;
-                        GetValueOfTxPos(txPos, vchValue, hash, nHeight);
-                        CNameIndex txPos2;
-                        txPos2.nHeight = pindexBlock->nHeight;
-                        txPos2.vValue = vchValue;
-                        txPos2.txPos = txPos;
-                        vtxPos.push_back(txPos2); // fin add
-                        //vtxPos.push_back(txPos);
-                        if (!dbName.WriteName(vvchArgs[0], vtxPos))
-                        {
-                            return error("ConnectInputsHook() : failed to write to name DB");
-                        }
-                    }
+                    printf("ConnectInputsHook() : Name bug workaround: tx %s rejected, since previous tx (%s) is not in the name DB\n", tx.GetHash().ToString().c_str(), vTxPrev[nInput].GetHash().ToString().c_str());
+                    // Valid tx on top of buggy tx: reject only after hard-fork
+                    if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                        return false;
                     else
-                    {
-                        printf("ConnectInputsHook() : Name bug workaround: tx %s rejected, since previous tx (%s) is not in the name DB\n", tx.GetHash().ToString().c_str(), vTxPrev[nInput].GetHash().ToString().c_str());
-                        // Valid tx on top of buggy tx: reject only after hard-fork
-                        if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
-                            return false;
-                    }
+                        fBugWorkaround = true;
+                }
+
+                if (!fBugWorkaround)
+                {
+                    vector<unsigned char> vchValue; // add
+                    int nHeight;
+                    uint256 hash;
+                    GetValueOfTxPos(txPos, vchValue, hash, nHeight);
+                    CNameIndex txPos2;
+                    txPos2.nHeight = pindexBlock->nHeight;
+                    txPos2.vValue = vchValue;
+                    txPos2.txPos = txPos;
+                    vtxPos.push_back(txPos2); // fin add
+                    if (!dbName.WriteName(vvchArgs[0], vtxPos))
+                        return error("ConnectInputsHook() : failed to write to name DB");
                 }
             }
 
@@ -2246,7 +2352,7 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvchArgs);
+    bool good = DecodeNameTx(tx, op, nOut, vvchArgs, pindexBlock->nHeight);
     if (!good)
         return error("DisconnectInputsHook() : could not decode namecoin tx");
     if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
@@ -2263,7 +2369,11 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
         // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
         if (vtxPos.size())
         {
-            if (op == OP_NAME_UPDATE && CheckNameTxPos(vtxPos, tx))
+            CTxIndex txindex;
+            if (!txdb.ReadTxIndex(tx.GetHash(), txindex))
+                return error("DisconnectInputsHook() : failed to read tx index");
+
+            if (vtxPos.back().txPos == txindex.pos)
                 vtxPos.pop_back();
 
             // TODO validate that the first pos is the current tx pos
@@ -2286,46 +2396,48 @@ bool CNamecoinHooks::CheckTransaction(const CTransaction& tx)
     int op;
     int nOut;
 
-    bool good = DecodeNameTx(tx, op, nOut, vvch);
-
-    if (!good)
+    // HACK: We do not know height here, so we check under both old and new rule sets (before/after hardfork)
+    // The correct check is duplicated in ConnectInputs.
+    bool ret[2];
+    for (int iter = 0; iter < 2; iter++)
     {
-        return error("name transaction has unknown script format");
-    }
+        ret[iter] = true;
 
-    if (vvch[0].size() > MAX_NAME_LENGTH)
-    {
-        return error("name transaction with name too long");
-    }
+        bool good = DecodeNameTx(tx, op, nOut, vvch, iter == 0 ? 0 : BUG_WORKAROUND_BLOCK);
 
-    switch (op)
-    {
-        case OP_NAME_NEW:
-            if (vvch[0].size() != 20)
-            {
-                return error("name_new tx with incorrect hash length");
-            }
-            break;
-        case OP_NAME_FIRSTUPDATE:
-            if (vvch[1].size() > 20)
-            {
-                return error("name_firstupdate tx with rand too big");
-            }
-            if (vvch[2].size() > MAX_VALUE_LENGTH)
-            {
-                return error("name_firstupdate tx with value too long");
-            }
-            break;
-        case OP_NAME_UPDATE:
-            if (vvch[1].size() > MAX_VALUE_LENGTH)
-            {
-                return error("name_update tx with value too long");
-            }
-            break;
-        default:
-            return error("name transaction has unknown op");
+        if (!good)
+        {
+            ret[iter] = error("name transaction has unknown script format");
+            continue;
+        }
+
+        if (vvch[0].size() > MAX_NAME_LENGTH)
+        {
+            ret[iter] = error("name transaction with name too long");
+            continue;
+        }
+
+        switch (op)
+        {
+            case OP_NAME_NEW:
+                if (vvch[0].size() != 20)
+                    ret[iter] = error("name_new tx with incorrect hash length");
+                break;
+            case OP_NAME_FIRSTUPDATE:
+                if (vvch[1].size() > 20)
+                    ret[iter] = error("name_firstupdate tx with rand too big");
+                if (vvch[2].size() > MAX_VALUE_LENGTH)
+                    ret[iter] = error("name_firstupdate tx with value too long");
+                break;
+            case OP_NAME_UPDATE:
+                if (vvch[1].size() > MAX_VALUE_LENGTH)
+                    ret[iter] = error("name_update tx with value too long");
+                break;
+            default:
+                ret[iter] = error("name transaction has unknown op");
+        }
     }
-    return true;
+    return ret[0] || ret[1];
 }
 
 static string nameFromOp(int op)
