@@ -84,7 +84,7 @@ bool GetValueOfTxPos(const CDiskTxPos& txPos, std::vector<unsigned char>& vchVal
 int GetDisplayExpirationDepth(int nHeight);
 bool GetNameOfTx(const CTransaction& tx, std::vector<unsigned char>& name);
 bool GetValueOfNameTx(const CTransaction& tx, std::vector<unsigned char>& value);
-bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch);
+bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, std::vector<std::vector<unsigned char> >& vvch, int nHeight);
 bool DecodeNameScript(const CScript& script, int& op, std::vector<std::vector<unsigned char> > &vvch);
 bool GetNameAddress(const CTransaction& tx, std::string& strAddress);
 std::string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee);
