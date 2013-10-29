@@ -217,7 +217,10 @@ bool CWalletDB::LoadWallet(CWallet* pwallet)
 #ifdef GUI
                 int op, nOut;
                 std::vector<std::vector<unsigned char> > vvch;
-                if (DecodeNameTx(wtx, op, nOut, vvch) && op == OP_NAME_FIRSTUPDATE && vvch.size() == 3)
+                int nHeight;
+                if (!wtx.GetDepthInMainChain(nHeight))
+                    nHeight = pindexBest->nHeight + 1;
+                if (DecodeNameTx(wtx, op, nOut, vvch, nHeight) && op == OP_NAME_FIRSTUPDATE && vvch.size() == 3)
                 {
                     std::vector<unsigned char> &vchName = vvch[0];
                     std::vector<unsigned char> &vchRand = vvch[1];
