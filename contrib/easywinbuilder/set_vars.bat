@@ -1,9 +1,8 @@
-@set PATH=c:\mingw\msys\1.0\bin;c:\mingw\bin
+@set MINGWPATH=C:\MinGW
+@set PATH=%MINGWPATH%\msys\1.0\bin;%MINGWPATH%\bin
 
 @set LANG=en_US.UTF8
 @set LC_ALL=en_US.UTF8
-
-@set MINGWINSTALLER=mingw-get-inst-20120426
 
 @set OPENSSL=openssl-1.0.1e
 @set BERKELEYDB=db-4.8.30.NC
@@ -27,7 +26,7 @@
 @set QTDOWNLOADPATH=http://download.qt-project.org/official_releases/qt/4.8/4.8.5/qt-win-opensource-4.8.5-mingw.exe
 @rem Qt5 will need changes in gather_dlls.bat
 
-@set MSYS=C:/MinGW/msys/1.0/bin
+@set MSYS=%MINGWPATH:\=/%/msys/1.0/bin
 @set PERL=%MSYS%/perl.exe
 
 @rem the following will be set as additional CXXFLAGS and CFLAGS for everything - no ' or ", space is ok
