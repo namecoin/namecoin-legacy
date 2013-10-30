@@ -13,7 +13,6 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
-#include <boost/filesystem.hpp>
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
 using namespace std;
@@ -1307,22 +1306,10 @@ void rescanfornames()
 {
     printf("Scanning blockchain for names to create fast index...\n");
 
-    const char* tmpNameIndexName = "nameindexfull.tmp";
-    boost::filesystem::path tmpNameIndex = boost::filesystem::path(GetDataDir()) / tmpNameIndexName;
-    boost::filesystem::path nameIndex = boost::filesystem::path(GetDataDir()) / "nameindex.dat";
-
-    if (!boost::filesystem::exists(tmpNameIndex)) {
-        boost::filesystem::remove(tmpNameIndex);
-    }
-
-    CNameDB dbName(tmpNameIndexName, "cr+");
+    CNameDB dbName("cr+");
 
     // scan blockchain
     dbName.ReconstructNameIndex();
-
-    dbName.Close();
-
-    boost::filesystem::rename(tmpNameIndex, nameIndex);
 }
 
 Value name_clean(const Array& params, bool fHelp)
@@ -1646,13 +1633,12 @@ bool CNameDB::ReconstructNameIndex()
         //CNameDB dbName("cr+", txdb);
 
         while (pindex)
-        {
+        {  
             TxnBegin();
             CBlock block;
             block.ReadFromDisk(pindex, true);
-            int names = 0;
             int nHeight = pindex->nHeight;
-
+            
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (tx.nVersion != NAMECOIN_TX_VERSION)
@@ -1705,18 +1691,11 @@ bool CNameDB::ReconstructNameIndex()
                     return error("Rescanfornames() : failed to write to name DB");
                 }
 
-                names++;
-
                 //if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
                 //    ret++;
             }
             pindex = pindex->pnext;
             TxnCommit();
-
-            printf("Scanning block [%d] [%s] With [%d] names\n",
-                   nHeight,
-                   block.GetHash().ToString().substr(0,20).c_str(),
-                   names);
         }
     }
 }

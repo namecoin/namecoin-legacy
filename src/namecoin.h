@@ -12,10 +12,6 @@ public:
         fHaveParent = true;
     }
 
-    CNameDB(const char* pszFile, const char* pszMode) : CDB(pszFile, pszMode) {
-        fHaveParent = false;
-    }
-
     ~CNameDB()
     {
         if (fHaveParent)
@@ -55,3 +51,4 @@ public:
     bool ReconstructNameIndex();
 }
 ;
+
