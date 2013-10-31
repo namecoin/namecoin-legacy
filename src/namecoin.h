@@ -3,11 +3,11 @@ class CNameDB : public CDB
 protected:
     bool fHaveParent;
 public:
-    CNameDB(const char* pszMode="r+") : CDB("nameindexfull.dat", pszMode) {
+    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) {
         fHaveParent = false;
     }
 
-    CNameDB(const char* pszMode, CDB& parent) : CDB("nameindexfull.dat", pszMode) {
+    CNameDB(const char* pszMode, CDB& parent) : CDB("nameindex.dat", pszMode) {
         vTxn.push_back(parent.GetTxn());
         fHaveParent = true;
     }
@@ -51,3 +51,4 @@ public:
     bool ReconstructNameIndex();
 }
 ;
+

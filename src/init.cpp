@@ -548,13 +548,20 @@ bool AppInit2(int argc, char* argv[])
 
     RandAddSeedPerfmon();
 
-    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindexfull.dat";
-    if (!filesystem::exists(nameindexfile))
-    {   
-        //PrintConsole("Scanning blockchain for names to create fast index...");
+    filesystem::path nameindexfile_old = filesystem::path(GetDataDir()) / "nameindexfull.dat";
+    filesystem::path nameindexfile = filesystem::path(GetDataDir()) / "nameindex.dat";
+
+    if (filesystem::exists(nameindexfile_old))
+    {
+        // If old file exists - delete it and recan
+        filesystem::remove(nameindexfile_old);
+        // Also delete new file if it exists together with the old one, as it could be the one from a much older version
+        if (filesystem::exists(nameindexfile))
+            filesystem::remove(nameindexfile);
         rescanfornames();
-        //PrintConsole("\n");
     }
+    else if (!filesystem::exists(nameindexfile))
+        rescanfornames();
 
     if (!CreateThread(StartNode, NULL))
         wxMessageBox("Error: CreateThread(StartNode) failed", "Bitcoin");
