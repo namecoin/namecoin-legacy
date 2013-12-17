@@ -1,4 +1,4 @@
-EasyWinBuilder v0.3
+EasyWinBuilder v0.5
 ===============
 (c) 2013 phelix / blockchained.com - MIT license
 
@@ -8,16 +8,13 @@ EasyWinBuilder can run on a mint windows system (e.g. a virtual machine) or a no
 
 In this repository there are no changes to the Bitcoin code itself though the process makes a handful of small changes. This means it should be possible to plug'n'play the easywinbuilder directory into similar Bitcoin versions.
 
-To change dependency versions edit set_vars.bat
+To change directories and dependency versions edit set_vars.bat
 
-File Hashes
------------
-The process will calculate a hash of the disassemblies of the final executables. The idea is to validate binaries by several people.
-I am not quite sure if this will reliably result in the same hash for the same build. Please let me know if you get different values or know how to improve this feature.
+More info here: https://bitcointalk.org/index.php?topic=252931
+
 
 ToDo
 -----
-* Check daemon disassembly hashes (deterministic build)
 * Automatic environment install (how to bootstrap?)
 * Try to speed up building of OpenSSL and Berkeley DB by only building what is necessary
 

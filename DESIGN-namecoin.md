@@ -1,4 +1,4 @@
-# Name Coin Design
+# Namecoin Design
 
 ## Key Operations
 
@@ -8,7 +8,7 @@ Key operations are performed by transactions with version 0x9900 - 0x99ff
 * name\_firstupdate(name, rand, value)
 * name\_update(name, value)
 
-The last is a normal bitcoin like transaction that does not affect the name.
+The last is a normal bitcoin-like transaction that does not affect the name.
 
 ## Method
 
