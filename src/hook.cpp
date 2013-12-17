@@ -40,6 +40,9 @@ public:
     void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
     {
     }
+    void RemoveFromMemoryPool(const CTransaction& tx)
+    {
+    }
     virtual bool IsMine(const CTransaction& tx)
     {
         return false;
