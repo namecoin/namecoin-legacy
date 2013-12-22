@@ -4,6 +4,10 @@
 #ifndef BITCOIN_UTIL_H
 #define BITCOIN_UTIL_H
 
+#if defined(HAVE_CONFIG_H)
+#include "namecoin-config.h"
+#endif
+
 #include "uint256.h"
 
 #ifndef __WXMSW__
