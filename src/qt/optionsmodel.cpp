@@ -30,11 +30,11 @@ bool static ApplyProxySettings()
     }
     if (nSocksVersion && !addrProxy.IsValid())
         return false;
-    //if (!IsLimited(NET_IPV4))
+    // if (!IsLimited(NET_IPV4))
         SetProxy(NET_IPV4, addrProxy, nSocksVersion);
     if (nSocksVersion > 4) {
 #ifdef USE_IPV6
-        if (!IsLimited(NET_IPV6))
+      // if (!IsLimited(NET_IPV6))
             SetProxy(NET_IPV6, addrProxy, nSocksVersion);
 #endif
         SetNameProxy(addrProxy, nSocksVersion);

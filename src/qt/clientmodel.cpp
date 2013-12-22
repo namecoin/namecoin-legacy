@@ -158,7 +158,6 @@ QString ClientModel::formatBuildDate() const
 
 bool ClientModel::isReleaseVersion() const
 {
-    const bool CLIENT_VERSION_IS_RELEASE = true;
     return CLIENT_VERSION_IS_RELEASE;
 }
 

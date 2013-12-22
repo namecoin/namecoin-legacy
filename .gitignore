@@ -2,6 +2,10 @@
 *.pyc
 /src/namecoin
 /src/namecoind
+/src/qt/namecoin-qt
+/src/qt/forms/ui_*.h
+/src/qt/moc_*.cpp
+*.moc
 .*.swp
 *.*~*
 *.o
@@ -14,9 +18,10 @@ Makefile.in
 /config.log
 /config.status
 /configure
-src/build-aux
-src/cryptopp/.dirstamp
-src/namecoin-config.h
-src/namecoin-config.h.in
-src/stamp-h1
-src/test/test_namecoin
+/src/build-aux
+/src/cryptopp/.dirstamp
+/src/namecoin-config.h
+/src/namecoin-config.h.in
+/src/stamp-h1
+/src/test/test_namecoin
+/src/qt/qrc_bitcoin.cpp

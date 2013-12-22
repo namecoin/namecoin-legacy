@@ -144,7 +144,6 @@ AC_ARG_WITH([qt-incdir],[AS_HELP_STRING([--with-qt-incdir=INC_DIR],[specify qt i
 AC_ARG_WITH([qt-libdir],[AS_HELP_STRING([--with-qt-libdir=LIB_DIR],[specify qt lib path (overridden by pkgconfig)])], [qt_lib_path=$withval], [])
 AC_ARG_WITH([qt-bindir],[AS_HELP_STRING([--with-qt-bindir=BIN_DIR],[specify qt bin path])], [qt_bin_path=$withval], [])
 AC_ARG_WITH([qt-plugindir],[AS_HELP_STRING([--with-qt-plugindir=PLUGIN_DIR],[specify qt plugin path (overridden by pkgconfig)])], [qt_plugin_path=$withval], [])
-AC_ARG_WITH([protoc-bindir],[AS_HELP_STRING([--with-protoc-bindir=BIN_DIR],[specify protoc bin path])], [protoc_bin_path=$withval], [])
 
 
 AC_CONFIG_SRCDIR([src])
@@ -172,7 +171,6 @@ NAMECOIN_QT_PATH_PROGS([MOC], [moc-qt4 moc4 moc],, $qt_bin_path:$PATH)
 NAMECOIN_QT_PATH_PROGS([UIC], [uic-qt4 uic4 uic],, $qt_bin_path:$PATH)
 NAMECOIN_QT_PATH_PROGS([RCC], [rcc-qt4 rcc4 rcc],, $qt_bin_path:$PATH)
 NAMECOIN_QT_PATH_PROGS([LRELEASE], [lrelease-qt4 lrelease4 lrelease],, $qt_bin_path:$PATH)
-NAMECOIN_QT_PATH_PROGS([PROTOC], [protoc],, $protoc_bin_path:$PATH)
 AC_PATH_PROG(CCACHE,ccache)
 AC_PATH_PROGS([LUPDATE], [lupdate-qt4 lupdate4 lupdate],, $qt_bin_path:$PATH)
 AC_PATH_PROG(XGETTEXT,xgettext)
@@ -241,6 +239,8 @@ case $host in
      CXXFLAGS="$CXXFLAGS -w"
      ;;
   *darwin*)
+     use_pkgconfig=no
+     
      TARGET_OS=darwin
      LEVELDB_TARGET_FLAGS="TARGET_OS=Darwin"
      if  test x$cross_compiling != xyes; then
@@ -267,8 +267,12 @@ case $host in
        base_frameworks="-framework Foundation -framework ApplicationServices -framework AppKit"
        AX_CHECK_LINK_FLAG([[$base_frameworks]],[LIBS="$LIBS $base_frameworks"],[AC_MSG_ERROR(could not find base frameworks)])
      ])
-
-     CPPFLAGS="$CPPFLAGS -DMAC_OSX"
+     
+     # with boost-1.55.0, Qt 4.8.3: Qt header qglobal.h re-defines
+     # MAC_OS_X_VERESION_MIN_REQUIED (why?), which changes the boost
+     # mutex implementation (buggy if < 10.7, see workaround.h).  So
+     # this has to be < 10.7.
+     CPPFLAGS="$CPPFLAGS -DMAC_OSX -mmacosx-version-min=10.6"
      TESTDEFS="-DBOOST_TEST_DYN_LINK"
      ;;
    *)
@@ -464,123 +468,15 @@ LIBS="$TEMP_LIBS"
 CPPFLAGS="$TEMP_CPPFLAGS"
 fi
 
-if test x$boost_sleep != xyes; then
-  AC_MSG_ERROR(No working boost sleep implementation found)
-fi
+AC_CHECK_HEADER([openssl/crypto.h],,AC_MSG_ERROR(libcrypto headers missing))
+AC_CHECK_LIB([crypto],      [main],, AC_MSG_ERROR(libcrypto missing))
 
-if test x$use_pkgconfig = xyes; then
+AC_CHECK_HEADER([openssl/ssl.h],, AC_MSG_ERROR(libssl headers missing),)
+AC_CHECK_LIB([ssl],         [main],, AC_MSG_ERROR(libssl missing))
 
-  if test x$PKG_CONFIG == x; then
-    AC_MSG_ERROR(pkg-config not found.)
-  fi
+# FIX: Qt-save was here
+NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QtCore],,NAMECOIN_QT_FAIL(QtCore headers missing))])
 
-  : #NOP
-  m4_ifdef(
-    [PKG_CHECK_MODULES],
-    [
-      PKG_CHECK_MODULES([SSL], [libssl], [INCLUDES="$INCLUDES $SSL_CFLAGS"; LIBS="$LIBS $SSL_LIBS"], [AC_MSG_ERROR(openssl  not found.)])
-      PKG_CHECK_MODULES([CRYPTO], [libcrypto], [INCLUDES="$INCLUDES $CRYPTO_CFLAGS"; LIBS="$LIBS $CRYPTO_LIBS"], [AC_MSG_ERROR(libcrypto  not found.)])
-
-      NAMECOIN_QT_CHECK([
-        PKG_CHECK_MODULES([QT], [QtCore QtGui QtNetwork], [QT_INCLUDES="$QT_CFLAGS"; have_qt=yes],[
-          have_qt=no
-          NAMECOIN_QT_FAIL([Qt dependencies not found])
-        ])
-        if test x$use_tests = xyes; then
-          PKG_CHECK_MODULES([QT_TEST], [QtTest], [QT_TEST_INCLUDES="$QT_TEST_CFLAGS"; have_qt_test=yes], [have_qt_test=no])
-        fi
-        if test x$use_dbus != xno; then
-          PKG_CHECK_MODULES([QT_DBUS], [QtDBus], [QT_DBUS_INCLUDES="$QT_DBUS_CFLAGS"; have_qt_dbus=yes], [have_qt_dbus=no])
-        fi
-        if test x$use_qr != xno; then
-          PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes], [have_qrencode=no])
-        fi
-        PKG_CHECK_MODULES([PROTOBUF], [protobuf], [have_protobuf=yes], [AC_MSG_ERROR(libprotobuf not found.)])
-      ])
-    ]
-  )
-else
-  AC_CHECK_HEADER([openssl/crypto.h],,AC_MSG_ERROR(libcrypto headers missing))
-  AC_CHECK_LIB([crypto],      [main],, AC_MSG_ERROR(libcrypto missing))
-
-  AC_CHECK_HEADER([openssl/ssl.h],, AC_MSG_ERROR(libssl headers missing),)
-  AC_CHECK_LIB([ssl],         [main],, AC_MSG_ERROR(libssl missing))
-
-  NAMECOIN_QT_CHECK([
-    TEMP_LIBS="$LIBS"
-    LIBS=
-    if test x$qt_lib_path != x; then
-      QT_LIBS="$QT_LIBS -L$qt_lib_path"
-      LIBS="$QT_LIBS"
-    fi
-    if test x$qt_plugin_path != x; then
-      QT_LIBS="$QT_LIBS -L$qt_plugin_path/codecs"
-      LIBS="$QT_LIBS"
-    fi
-
-    if test x$TARGET_OS == xwindows; then
-      AC_CHECK_LIB([imm32],      [main],, NAMECOIN_QT_FAIL(libimm32 not found))
-    fi
-  ])
-
-    #TODO: These are only needed when they're linked directly to parent libs. It really has nothing to do with windows.
-    #Instead, check for missing functions in parent libs and assume static if they're absent.
-    if test x$TARGET_OS == xwindows; then
-      NAMECOIN_QT_CHECK(AC_CHECK_LIB([qcncodecs],[main],,NAMECOIN_QT_FAIL(libqcncodecs not found)))
-      NAMECOIN_QT_CHECK(AC_CHECK_LIB([qjpcodecs],[main],,NAMECOIN_QT_FAIL(libqjpcodecs not found)))
-      NAMECOIN_QT_CHECK(AC_CHECK_LIB([qkrcodecs],[main],,NAMECOIN_QT_FAIL(libqkrcodecs not found)))
-      NAMECOIN_QT_CHECK(AC_CHECK_LIB([qtwcodecs],[main],,NAMECOIN_QT_FAIL(libqtwcodecs not found)))
-    fi
-
-    NAMECOIN_QT_CHECK(AC_CHECK_LIB([QtCore]   ,[main],,NAMECOIN_QT_FAIL(libQtCore not found)))
-    NAMECOIN_QT_CHECK(AC_CHECK_LIB([QtGui]    ,[main],,NAMECOIN_QT_FAIL(libQtGui not found)))
-    NAMECOIN_QT_CHECK(AC_CHECK_LIB([QtNetwork],[main],,NAMECOIN_QT_FAIL(libQtNetwork not found)))
-    NAMECOIN_QT_CHECK(AC_CHECK_LIB([protobuf] ,[main],,NAMECOIN_QT_FAIL(libprotobuf not found)))
-
-  NAMECOIN_QT_CHECK([
-    QT_LIBS="$LIBS"
-    LIBS="$TEMP_LIBS"
-
-    TEMP_CPPFLAGS="$CPPFLAGS"
-    if test x$qt_include_path != x; then
-      QT_INCLUDES="-I$qt_include_path -I$qt_include_path/QtCore -I$qt_include_path/QtGui -I$qt_include_path/QtNetwork -I$qt_include_path/QtTest -I$qt_include_path/QtDBus"
-      CPPFLAGS="$CPPFLAGS $QT_INCLUDES"
-    fi
-  ])
-    NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QtPlugin],,NAMECOIN_QT_FAIL(QtCore headers missing))])
-    NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QApplication],, NAMECOIN_QT_FAIL(QtGui headers missing))])
-    NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QLocalSocket],, NAMECOIN_QT_FAIL(QtNetwork headers missing))])
-
-  NAMECOIN_QT_CHECK([
-    if test x$use_tests = xyes; then
-      TEMP_LIBS="$LIBS"
-      LIBS=
-      if test x$qt_lib_path != x; then
-        LIBS="-L$qt_lib_path"
-      fi
-      AC_CHECK_LIB([QtTest],      [main],, have_qt_test=no)
-      AC_CHECK_HEADER([QTest],, have_qt_test=no)
-      QT_TEST_LIBS="$LIBS"
-      LIBS="$TEMP_LIBS"
-    fi
-    if test x$use_dbus != xno; then
-      TEMP_LIBS="$LIBS"
-      LIBS=
-      if test x$qt_lib_path != x; then
-        LIBS="-L$qt_lib_path"
-      fi
-      AC_CHECK_LIB([QtDBus],      [main],, have_qt_dbus=no)
-      AC_CHECK_HEADER([QtDBus],, have_qt_dbus=no)
-      QT_DBUS_LIBS="$LIBS"
-      LIBS="$TEMP_LIBS"
-    fi
-    CPPFLAGS="$TEMP_CPPFLAGS"
-    if test x$use_qr != xno; then
-      AC_CHECK_LIB([qrencode], [main],, [have_qrencode=no])
-      AC_CHECK_HEADER([qrencode.h],, have_qrencode=no)
-    fi
-  ])
-fi
 
 if test x$use_ipv6 = xyes; then
   dnl Check for ipv6 build requirements
@@ -700,8 +596,12 @@ NAMECOIN_QT_CHECK([
   if test x$LUPDATE == x; then
     AC_MSG_WARN("lupdate is required to update qt translations")
   fi
+  
+  CPPFLAGS="$CPPFLAGS -DGUI"
+  AC_SUBST([NAMECOIN_QT], ['namecoin-qt${EXEEXT}'])
 ],[
   use_qt=no
+  AC_SUBST([NAMECOIND], ['namecoind${EXEEXT}'])
 ])
 
 AC_MSG_RESULT($use_qt)
@@ -765,7 +665,6 @@ AC_SUBST(CLIENT_VERSION_REVISION, _CLIENT_VERSION_REVISION)
 AC_SUBST(CLIENT_VERSION_BUILD, _CLIENT_VERSION_BUILD)
 AC_SUBST(CLIENT_VERSION_IS_RELEASE, _CLIENT_VERSION_IS_RELEASE)
 AC_SUBST(COPYRIGHT_YEAR, _COPYRIGHT_YEAR)
-
 
 AC_SUBST(USE_UPNP)
 AC_SUBST(USE_QRCODE)

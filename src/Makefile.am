@@ -7,7 +7,8 @@ if ENABLE_WALLET
 noinst_LIBRARIES += libnamecoin_wallet.a
 endif
 
-bin_PROGRAMS = namecoind
+bin_PROGRAMS = $(NAMECOIND)
+EXTRA_PROGRAMS = namecoind
 
 SUBDIRS = . $(BUILD_QT) $(BUILD_TEST)
 DIST_SUBDIRS = . qt test
@@ -46,6 +47,7 @@ libnamecoin_wallet_a_SOURCES = \
   $(NAMECOIN_CORE_H)
 
 libnamecoin_common_a_SOURCES = \
+  init.cpp \
   irc.cpp \
   namecoin.cpp \
   auxpow.cpp \
@@ -66,7 +68,7 @@ if ENABLE_WALLET
 namecoind_LDADD += libnamecoin_wallet.a
 endif
 # 
-namecoind_SOURCES = init.cpp
+namecoind_SOURCES = namecoind.cpp
 #
 
 if TARGET_WINDOWS

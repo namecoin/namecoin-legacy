@@ -100,7 +100,7 @@ public:
                 }
             }
         } catch (boost::lock_error& e) {
-            printf("UnlockRange: lock_error: %s", e.what());
+            printf("UnlockRange: lock_error: %s\n", e.what());
         }
     }
 
