@@ -23,7 +23,7 @@ twice, once with Qt and once without.
 See the output from `./configure --help' for additional configure
 options.
 
-This release has been tested with the following dependency versions:
+This release has been tested with the following versions:
  - MAC OSX 10.8.5
  - gcc 4.2.1/XCode 5.0
  - Berkeley DB 4.8.30
@@ -51,7 +51,7 @@ MacPorts, run:
 
 Security
 --------
-To help make your bitcoin installation more secure by making certain attacks impossible to
+To help make your namecoin installation more secure by making certain attacks impossible to
 exploit even if a vulnerability is found, binaries are hardened by default.
 This can be disabled with:
 
@@ -75,7 +75,12 @@ Hardening enables the following features:
 
     To test that you have built PIE executable, install scanelf, part of paxutils, and use:
 
-    	scanelf -e ./bitcoin
+    	scanelf -e ./src/namecoind
+
+or
+
+    	scanelf -e ./src/qt/namecoin-qt
+
 
     The output should contain:
      TYPE
@@ -83,13 +88,18 @@ Hardening enables the following features:
 
 * Non-executable Stack
     If the stack is executable then trivial stack based buffer overflow exploits are possible if
-    vulnerable buffers are found. By default, bitcoin should be built with a non-executable stack
+    vulnerable buffers are found. By default, namecoin should be built with a non-executable stack
     but if one of the libraries it uses asks for an executable stack or someone makes a mistake
     and uses a compiler extension which requires an executable stack, it will silently build an
     executable without the non-executable stack protection.
 
     To verify that the stack is non-executable after compiling use:
-    `scanelf -e ./bitcoin`
+
+    	scanelf -e ./src/namecoind
+
+or
+
+    	scanelf -e ./src/qt/namecoin-qt
 
     the output should contain:
 	STK/REL/PTL
