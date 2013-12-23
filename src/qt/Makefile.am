@@ -137,6 +137,12 @@ NAMECOIN_QT_CPP = aboutdialog.cpp addressbookpage.cpp \
   walletmodel.cpp netbase.cpp nametablemodel.cpp managenamespage.cpp \
   configurenamedialog.cpp
 
+if USE_QRCODE
+NAMECOIN_QT_H += qrcodedialog.h
+NAMECOIN_QT_CPP += src/qt/qrcodedialog.cpp
+QT_FORMS_UI += forms/qrcodedialog.ui
+endif
+
 RES_IMAGES = res/images/about.png
 
 RES_MOVIES = res/movies/update_spinner.mng

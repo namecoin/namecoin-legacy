@@ -63,7 +63,7 @@ nodist_libnamecoin_common_a_SOURCES = $(top_srcdir)/src/obj/build.h
 #
 
 # namecoind binary #
-namecoind_LDADD = libnamecoin_server.a libnamecoin_common.a $(BOOST_LIBS)
+namecoind_LDADD = libnamecoin_server.a libnamecoin_common.a $(BOOST_LIBS) $(QT_LIBS)
 if ENABLE_WALLET
 namecoind_LDADD += libnamecoin_wallet.a
 endif

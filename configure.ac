@@ -235,14 +235,10 @@ case $host in
      fi
 
      CPPFLAGS="$CPPFLAGS -D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -D__USE_MINGW_ANSI_STDIO"
-     LEVELDB_TARGET_FLAGS="TARGET_OS=OS_WINDOWS_CROSSCOMPILE"
      CXXFLAGS="$CXXFLAGS -w"
      ;;
   *darwin*)
-     use_pkgconfig=no
-     
      TARGET_OS=darwin
-     LEVELDB_TARGET_FLAGS="TARGET_OS=Darwin"
      if  test x$cross_compiling != xyes; then
        AC_CHECK_PROG([PORT],port, port)
        if test x$PORT = xport; then
@@ -261,7 +257,7 @@ case $host in
          LIBS="$LIBS -L$bdb_prefix/lib"
        fi
      fi
-
+     
      NAMECOIN_QT_CHECK([
        MOC_DEFS="-DQ_OS_MAC"
        base_frameworks="-framework Foundation -framework ApplicationServices -framework AppKit"
@@ -354,7 +350,6 @@ if test x$use_hardening != xno; then
 
   if test x$TARGET_OS != xwindows; then
     # -fstack-protector-all can produce broken binaries with mingw
-    AX_CHECK_COMPILE_FLAG([-fno-stack-protector],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fno-stack-protector"])
     AX_CHECK_COMPILE_FLAG([-fstack-protector-all],[HARDENED_CXXFLAGS="$HARDENED_CXXFLAGS -fstack-protector-all"])
 
     # -pie will link successfully with MinGW, but it's unsupported and leads to undeterministic binaries
@@ -468,15 +463,130 @@ LIBS="$TEMP_LIBS"
 CPPFLAGS="$TEMP_CPPFLAGS"
 fi
 
-AC_CHECK_HEADER([openssl/crypto.h],,AC_MSG_ERROR(libcrypto headers missing))
-AC_CHECK_LIB([crypto],      [main],, AC_MSG_ERROR(libcrypto missing))
+# openssl:
+# try defaults then pkg-config
+found_libcrypto=no
+AC_CHECK_HEADER([openssl/crypto.h],[
+    AC_CHECK_LIB([crypto],[OPENSSL_cleanse],[found_libcrypto=yes],,)
+  ],)
 
-AC_CHECK_HEADER([openssl/ssl.h],, AC_MSG_ERROR(libssl headers missing),)
-AC_CHECK_LIB([ssl],         [main],, AC_MSG_ERROR(libssl missing))
+found_libssl=no
+if test "x$found_libcrypto" = "xyes"; then
+  AC_CHECK_HEADER([openssl/ssl.h],[
+      AC_CHECK_LIB([ssl],[SSL_CTX_set_cipher_list],[
+          found_libssl=yes
+	  LIBS="$LIBS -lssl -lcrypto"
+	],,[-lcrypto])
+    ],)
+fi
 
-# FIX: Qt-save was here
-NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QtCore],,NAMECOIN_QT_FAIL(QtCore headers missing))])
+if test "x$found_libcrypto" = "xno" -o "x$found_libssl" = "xno"; then
+  # libssl module also provides libcrypto
+  PKG_CHECK_MODULES([SSL], [libssl], [CXXFLAGS="$CXXFLAGS $SSL_CFLAGS"; LIBS="$LIBS $SSL_LIBS"], [AC_MSG_ERROR(libssl  not found.)])  
+fi
 
+# qrencode
+# try defaults then pkg-config
+have_qrencode=no
+AC_CHECK_HEADER([qrencode.h],[
+  AC_CHECK_LIB([qrencode],[QRcode_encodeString],[have_qrencode=yes],)
+],)
+
+if test "x$have_qrencode" = "xno"; then
+   PKG_CHECK_MODULES([QR], [libqrencode], [have_qrencode=yes],[have_qrencode=no])
+fi
+
+# NAMECOIN_CHECK_QT_MODULES(variable-prefix, module, [action-if-found], [action-if-not-found])
+darwin_added_frameworks=no
+AC_DEFUN([NAMECOIN_CHECK_QT_MODULES],[
+    AC_CHECK_HEADER([$2],[
+        found=no
+	AC_CHECK_LIB([$2],[main],[
+	    found=yes
+	    $3
+	  ],[
+	    if test "x$TARGET_OS" = "xdarwin"; then
+	      AX_CHECK_LINK_FLAG([[-framework $2]],[
+		  found=yes
+		  $3
+		],)
+	    fi
+	  ],)
+	
+	if test "x$found" = "xno"; then
+	  PKG_CHECK_MODULES([$1], [$2], [
+	      $1[]_CXXFLAGS="$$1[]_CXXFFLAGS $$1[]_CFLAGS"
+	      $3
+	    ], [
+	      dummy=
+	      $4
+	    ])
+	fi
+    ],[
+        unset ac_cv_header_$2
+	
+	found=no
+	if test "x$TARGET_OS" = "xdarwin"; then
+	  SAVE_CPPFLAGS="$CPPFLAGS"
+	  SAVE_LDFLAGS="$LDFLAGS"
+	  
+	  CPPFLAGS="$CPPFLAGS -I/Library/Frameworks/$2.framework/Versions/4/Headers -D$1[]_LIB"
+	  if test "x$2" = "xQtCore"; then
+	      CPPFLAGS="$CPPFLAGS -DQT_SHARED"
+	  fi
+	  if test "x$darwin_added_frameworks" = "xno"; then
+	      LDFLAGS="$LDFLAGS -F/Library/Frameworks -L/Library/Frameworks"
+	  fi
+	  
+	  echo "darwin: checking for $2 in the default location:"
+	  AC_CHECK_HEADER([$2],[
+	      AX_CHECK_LINK_FLAG([[-framework $2]],[
+		found=yes
+		$1[]_CPPFLAGS="$$1[]_CPPFLAGS -I/Library/Frameworks/$2.framework/Versions/4/Headers -D$1[]_LIB"
+		if test "x$2" = "xQtCore"; then
+		  $1[]_CPPFLAGS="$$1[]_CPPFLAGS -DQT_SHARED"
+		fi
+		if test "x$darwin_added_frameworks" = "xno"; then
+		  $1[]_LDFLAGS="$QT_LDFLAGS -F/Library/Frameworks -L/Library/Frameworks"
+		  darwin_added_frameworks=yes
+		fi
+		$1[]_LIBS="$QT_LIBS -framework $2"
+		$3
+		],,)
+	    ],)
+	  
+	  CPPFLAGS="$SAVE_CPPFLAGS"
+	  LDFLAGS="$SAVE_LDFLAGS"
+	fi
+	
+	if test "x$found" = "xno"; then
+	  PKG_CHECK_MODULES([$1], [$2], [
+	      $1[]_CXXFLAGS="$$1[]_CXXFFLAGS $$1[]_CFLAGS"
+	      $3
+	    ], [
+	      dummy=
+	      $4
+	    ])
+	fi
+  ])
+])
+  
+# Qt
+NAMECOIN_CHECK_QT_MODULES([QT_CORE],[QtCore],,NAMECOIN_QT_FAIL(QtCore missing))
+NAMECOIN_CHECK_QT_MODULES([QT_GUI],[QtGui],,NAMECOIN_QT_FAIL(QtGui missing))
+NAMECOIN_CHECK_QT_MODULES([QT_NETWORK],[QtNetwork],,NAMECOIN_QT_FAIL(QtNetwork missing))
+
+QT_CPPFLAGS="$QT_CPPFLAGS $QT_CORE_CPPFLAGS $QT_GUI_CPPFLAGS $QT_NETWORK_CPPFLAGS"
+QT_CXXFLAGS="$QT_CXXFLAGS $QT_CORE_CXXFLAGS $QT_GUI_CXXFLAGS $QT_NETWORK_CXXFLAGS"
+QT_LDFLAGS="$QT_LDFLAGS $QT_CORE_LDFLAGS $QT_GUI_LDFLAGS $QT_NETWORK_LDFLAGS"
+QT_LIBS="$QT_LIBS $QT_CORE_LIBS $QT_GUI_LIBS $QT_NETWORK_LIBS"
+
+if test x$use_tests = xyes; then
+  NAMECOIN_CHECK_QT_MODULES([QT_TEST],[QtTest],[have_qt_test=yes],[have_qt_test=no])
+fi
+if test x$use_dbus != xno; then
+  NAMECOIN_CHECK_QT_MODULES([QT_DBUS],[QtDBus],[have_qt_dbus=yes],[have_qt_dbus=no])
+fi
 
 if test x$use_ipv6 = xyes; then
   dnl Check for ipv6 build requirements
@@ -672,14 +782,16 @@ AC_SUBST(USE_IPV6)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(BOOST_LIBS)
 AC_SUBST(MOC_DEFS)
-AC_SUBST(QT_INCLUDES)
+AC_SUBST(QT_CPPFLAGS)
+AC_SUBST(QT_CXXFLAGS)
 AC_SUBST(QT_TEST_LIBS)
+AC_SUBST(QT_LDFLAGS)
 AC_SUBST(QT_LIBS)
 AC_SUBST(QT_DBUS_LIBS)
-AC_SUBST(QT_DBUS_INCLUDES)
-AC_SUBST(QT_TEST_INCLUDES)
+AC_SUBST(QT_DBUS_CPPFLAGS)
+AC_SUBST(QT_TEST_CPPFLAGS)
+AC_SUBST(QT_TEST_CXXFLAGS)
 AC_SUBST(TESTDEFS)
-AC_SUBST(LEVELDB_TARGET_FLAGS)
 AC_SUBST(BUILD_QT)
 AC_SUBST(BUILD_TEST)
 AC_SUBST(BUILD_TEST_QT)

@@ -3,11 +3,12 @@
 /src/namecoin
 /src/namecoind
 /src/qt/namecoin-qt
+/src/qt/test/test_namecoin-qt
 /src/qt/forms/ui_*.h
-/src/qt/moc_*.cpp
+moc_*.cpp
 *.moc
 .*.swp
-*.*~*
+*~
 *.o
 *.a
 .deps
