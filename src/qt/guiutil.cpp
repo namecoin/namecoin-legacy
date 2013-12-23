@@ -340,7 +340,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
     return true;
 }
 
-#elif defined(LINUX)
+#elif defined(__linux__)
 
 // Follow the Desktop Application Autostart Spec:
 //  http://standards.freedesktop.org/autostart-spec/autostart-spec-latest.html

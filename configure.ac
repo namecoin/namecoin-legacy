@@ -349,8 +349,8 @@ if test x$use_hardening != xno; then
 
   AX_CHECK_LINK_FLAG([[-Wl,--dynamicbase]], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,--dynamicbase"])
   AX_CHECK_LINK_FLAG([[-Wl,--nxcompat]], [HARDENED_LDFLAGS="$HARDENED_LDFLAGS -Wl,--nxcompat"])
-  AX_CHECK_LINK_FLAG([[-Wl,-z,relro]], [LDFLAGS="-Wl,-z,relro"])
-  AX_CHECK_LINK_FLAG([[-Wl,-z,now]], [LDFLAGS="-Wl,-z,now"])
+  AX_CHECK_LINK_FLAG([[-Wl,-z,relro]], [LDFLAGS="$LDFLAGS -Wl,-z,relro"])
+  AX_CHECK_LINK_FLAG([[-Wl,-z,now]], [LDFLAGS="$LDFLAGS -Wl,-z,now"])
 
   if test x$TARGET_OS != xwindows; then
     # -fstack-protector-all can produce broken binaries with mingw
@@ -476,7 +476,6 @@ AC_CHECK_LIB([ssl],         [main],, AC_MSG_ERROR(libssl missing))
 
 # FIX: Qt-save was here
 NAMECOIN_QT_CHECK([AC_CHECK_HEADER([QtCore],,NAMECOIN_QT_FAIL(QtCore headers missing))])
-
 
 if test x$use_ipv6 = xyes; then
   dnl Check for ipv6 build requirements
