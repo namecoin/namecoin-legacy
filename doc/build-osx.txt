@@ -7,6 +7,60 @@ OpenSSL Toolkit (http://www.openssl.org/).  This product includes cryptographic
 software written by Eric Young (eay@cryptsoft.com) and UPnP software written by
 Thomas Bernard.
 
+MAC OSX BUILD NOTES
+===================
+
+Some notes on how to build Namecoin for Mac OSX.
+
+To Build
+--------
+
+Namecoin now supports the GNU build system (aka autotools) on Mac OSX.
+After the dependences are installed (see below), Namecoin can be built
+as follows.
+
+	$ ./autogen.sh
+	$ cd namecoin-qt
+	$ ./configure
+	$ make
+
+See the output from `./configure --help' for additional configure
+options.
+
+configure either builds ./src/namecoind or ./src/qt/namecoin-qt
+depending on whether support for the Qt GUI toolkit was configured or
+detected.  If you want both binaries, you should configure and build
+twice, once with Qt and once without.
+
+Dependencies
+------------
+
+Namecoin depends on:
+ - autoconf
+ - automake
+ - Berkeley DB 4.8
+ - OpenSSL
+ - boost
+ - Qt GUI toolkit (optional)
+ - qrencode (optional)
+ - miniupnpc (optional)
+
+
+
+Namecoin depends on Berkeley DB (version 4.8), openssl, boost and,
+optionally, Qt 4.  Namecoin works with the default Mac OSX openssl.
+Berkeley DB, boost and Qt can either be installed by hand or through
+MacPorts.
+
+To the install the dependencies with MacPorts, simply do:
+
+	sudo port install openssl db4.8 boost qt4
+
+
+
+Berkeley DB and boost can either be installed by hand
+
+
 
 Mac OS X build instructions
 Laszlo Hanyecz <solar@heliacal.net>

@@ -712,6 +712,7 @@ NAMECOIN_QT_CHECK([
 ],[
   use_qt=no
   AC_SUBST([NAMECOIND], ['namecoind${EXEEXT}'])
+  AC_SUBST([TEST_NAMECOIN], ['test_namecoin${EXEEXT}'])
 ])
 
 AC_MSG_RESULT($use_qt)

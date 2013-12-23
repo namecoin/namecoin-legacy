@@ -4,8 +4,6 @@ AM_LDFLAGS = $(LDFLAGS) $(QT_LDFLAGS)
 
 AM_OBJCXXFLAGS = $(QT_CXXFLAGS)
 
-LIBNAMECOIN_SERVER=$(top_builddir)/src/libnamecoin_server.a
-LIBNAMECOIN_WALLET=$(top_builddir)/src/libnamecoin_wallet.a
 LIBNAMECOIN_COMMON=$(top_builddir)/src/libnamecoin_common.a
 LIBNAMECOINQT=$(top_builddir)/src/qt/libnamecoinqt.a
 

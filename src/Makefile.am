@@ -2,10 +2,7 @@ include Makefile.include
 
 AM_CPPFLAGS += -I$(builddir)
 
-noinst_LIBRARIES = libnamecoin_server.a libnamecoin_common.a
-if ENABLE_WALLET
-noinst_LIBRARIES += libnamecoin_wallet.a
-endif
+noinst_LIBRARIES = libnamecoin_common.a
 
 bin_PROGRAMS = $(NAMECOIND)
 EXTRA_PROGRAMS = namecoind
@@ -26,26 +23,6 @@ JSON_H = json/json_spirit.h json/json_spirit_error_position.h \
   json/json_spirit_value.h json/json_spirit_writer.h \
   json/json_spirit_writer_template.h
 
-obj/build.h: FORCE
-	@$(MKDIR_P) $(abs_top_builddir)/src/obj
-	@$(top_srcdir)/share/genbuild.sh $(abs_top_builddir)/src/obj/build.h \
-	  $(abs_top_srcdir)
-version.o: obj/build.h
-
-libnamecoin_server_a_SOURCES = \
-  keystore.cpp \
-  main.cpp \
-  net.cpp \
-  $(JSON_H) \
-  $(NAMECOIN_CORE_H)
-
-libnamecoin_wallet_a_SOURCES = \
-  db.cpp \
-  crypter.cpp \
-  wallet.cpp \
-  walletdb.cpp \
-  $(NAMECOIN_CORE_H)
-
 libnamecoin_common_a_SOURCES = \
   init.cpp \
   irc.cpp \
@@ -57,16 +34,19 @@ libnamecoin_common_a_SOURCES = \
   util.cpp \
   cryptopp/sha.cpp \
   cryptopp/cpu.cpp \
+  db.cpp \
+  crypter.cpp \
+  wallet.cpp \
+  walletdb.cpp \
+  keystore.cpp \
+  main.cpp \
+  net.cpp \
+  $(JSON_H) \
   $(NAMECOIN_CORE_H)
-
-nodist_libnamecoin_common_a_SOURCES = $(top_srcdir)/src/obj/build.h
 #
 
 # namecoind binary #
-namecoind_LDADD = libnamecoin_server.a libnamecoin_common.a $(BOOST_LIBS) $(QT_LIBS)
-if ENABLE_WALLET
-namecoind_LDADD += libnamecoin_wallet.a
-endif
+namecoind_LDADD = libnamecoin_common.a $(BOOST_LIBS) $(QT_LIBS)
 # 
 namecoind_SOURCES = namecoind.cpp
 #
@@ -78,16 +58,10 @@ endif
 AM_CPPFLAGS += $(BDB_CPPFLAGS)
 namecoind_LDADD += $(BDB_LIBS)
 
-qt/namecoinstrings.cpp: $(libnamecoin_server_a_SOURCES) $(libnamecoin_common_a_SOURCES)
+qt/namecoinstrings.cpp: $(libnamecoin_common_a_SOURCES)
 	@test -n $(XGETTEXT) || echo "xgettext is required for updating translations"
 	@cd $(top_srcdir); XGETTEXT=$(XGETTEXT) share/qt/extract_strings_qt.py
 
-CLEANFILES = leveldb/libleveldb.a leveldb/libmemenv.a *.gcda *.gcno
+CLEANFILES = *.gcda *.gcno
 
-DISTCLEANFILES = obj/build.h
-
-EXTRA_DIST = leveldb Makefile.include
-
-clean-local:
-	-$(MAKE) -C leveldb clean
-	rm -f leveldb/*/*.gcno leveldb/helpers/memenv/*.gcno
+EXTRA_DIST = Makefile.include

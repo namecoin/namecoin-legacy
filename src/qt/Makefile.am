@@ -10,6 +10,25 @@ noinst_LIBRARIES = libnamecoinqt.a
 SUBDIRS = $(BUILD_TEST_QT)
 DIST_SUBDIRS = test
 
+libnamecoin_common_a_OBJECTS = \
+  ../init.$(OBJEXT) \
+  ../irc.$(OBJEXT) \
+  ../namecoin.$(OBJEXT) \
+  ../auxpow.$(OBJEXT) \
+  ../bitcoinrpc.$(OBJEXT) \
+  ../key.$(OBJEXT) \
+  ../script.$(OBJEXT) \
+  ../util.$(OBJEXT) \
+  ../cryptopp/sha.$(OBJEXT) \
+  ../cryptopp/cpu.$(OBJEXT) \
+  ../db.$(OBJEXT) \
+  ../crypter.$(OBJEXT) \
+  ../wallet.$(OBJEXT) \
+  ../walletdb.$(OBJEXT) \
+  ../keystore.$(OBJEXT) \
+  ../main.$(OBJEXT) \
+  ../net.$(OBJEXT)
+
 # namecoin qt core #
 QT_TS = locale/bitcoin_af_ZA.ts \
   locale/bitcoin_ar.ts \
@@ -170,7 +189,7 @@ endif
 namecoin_qt_CPPFLAGS = $(AM_CPPFLAGS) $(QT_INCLUDES) \
   -I$(top_srcdir)/src/qt/forms
 namecoin_qt_SOURCES = bitcoin.cpp
-namecoin_qt_LDADD = libnamecoinqt.a $(LIBNAMECOIN_SERVER) $(LIBNAMECOIN_WALLET) $(LIBNAMECOIN_CLI) $(LIBNAMECOIN_COMMON) $(LIBLEVELDB) $(LIBMEMENV) \
+namecoin_qt_LDADD = libnamecoinqt.a $(libnamecoin_common_a_OBJECTS) \
   $(BOOST_LIBS) $(QT_LIBS) $(QT_DBUS_LIBS) $(QR_LIBS) $(BDB_LIBS)
 
 # forms/foo.h -> forms/ui_foo.h

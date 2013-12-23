@@ -19,7 +19,7 @@ BUILT_SOURCES = $(TEST_QT_MOC_CPP)
 test_namecoin_qt_CPPFLAGS = $(AM_CPPFLAGS) $(QT_INCLUDES) $(QT_TEST_INCLUDES)
 test_namecoin_qt_SOURCES = test_main.cpp uritests.cpp $(TEST_QT_H)
 nodist_test_namecoin_qt_SOURCES = $(TEST_QT_MOC_CPP)
-test_namecoin_qt_LDADD = $(LIBNAMECOINQT) $(LIBNAMECOIN_SERVER) $(LIBNAMECOIN_WALLET) $(LIBNAMECOIN_COMMON) \
+test_namecoin_qt_LDADD = $(LIBNAMECOINQT) \
   $(BOOST_LIBS) $(QT_LIBS) $(QT_DBUS_LIBS) $(QT_TEST_LIBS) \
   $(QR_LIBS) $(BDB_LIBS)
 
