@@ -143,7 +143,7 @@ RES_ICONS = res/icons/bitcoin.png res/icons/address-book.png \
 
 NAMECOIN_QT_CPP = aboutdialog.cpp addressbookpage.cpp \
   addresstablemodel.cpp askpassphrasedialog.cpp bitcoinaddressvalidator.cpp \
-  bitcoinamountfield.cpp bitcoin.cpp bitcoingui.cpp \
+  bitcoinamountfield.cpp ui_interface.cpp bitcoingui.cpp \
   bitcoinunits.cpp clientmodel.cpp \
   csvmodelwriter.cpp editaddressdialog.cpp \
   guiutil.cpp monitoreddatamapper.cpp notificator.cpp \
@@ -158,7 +158,8 @@ NAMECOIN_QT_CPP = aboutdialog.cpp addressbookpage.cpp \
 
 if USE_QRCODE
 NAMECOIN_QT_H += qrcodedialog.h
-NAMECOIN_QT_CPP += src/qt/qrcodedialog.cpp
+NAMECOIN_QT_CPP += qrcodedialog.cpp
+QT_MOC_CPP += moc_qrcodedialog.cpp
 QT_FORMS_UI += forms/qrcodedialog.ui
 endif
 
