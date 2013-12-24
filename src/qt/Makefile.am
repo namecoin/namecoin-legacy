@@ -173,7 +173,7 @@ libnamecoinqt_a_CPPFLAGS = $(AM_CPPFLAGS) $(QT_INCLUDES) \
   -I$(top_srcdir)/src/qt/forms $(QT_DBUS_INCLUDES)
 libnamecoinqt_a_SOURCES = $(NAMECOIN_QT_CPP) $(NAMECOIN_QT_H) $(QT_FORMS_UI) \
   $(QT_QRC) $(QT_TS) $(RES_ICONS) $(RES_IMAGES) $(RES_MOVIES)
-
+libnamecoinqt_a_LIBADD = $(libnamecoin_common_a_OBJECTS)
 nodist_libnamecoinqt_a_SOURCES = $(QT_MOC_CPP) $(QT_MOC) $(QT_QRC_CPP)
 
 BUILT_SOURCES = $(nodist_libnamecoinqt_a_SOURCES)
@@ -190,7 +190,7 @@ endif
 namecoin_qt_CPPFLAGS = $(AM_CPPFLAGS) $(QT_INCLUDES) \
   -I$(top_srcdir)/src/qt/forms
 namecoin_qt_SOURCES = bitcoin.cpp
-namecoin_qt_LDADD = libnamecoinqt.a $(libnamecoin_common_a_OBJECTS) \
+namecoin_qt_LDADD = libnamecoinqt.a \
   $(BOOST_LIBS) $(QT_LIBS) $(QT_DBUS_LIBS) $(QR_LIBS) $(BDB_LIBS)
 
 # forms/foo.h -> forms/ui_foo.h
