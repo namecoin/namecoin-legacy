@@ -2,15 +2,6 @@ UNIX BUILD NOTES
 ====================
 Some notes on how to build Bitcoin in Unix. 
 
-To Build
----------------------
-
-	./autogen.sh
-	./configure
-	make
-
-This will build bitcoin-qt as well if the dependencies are met.
-
 Dependencies
 ---------------------
 
@@ -21,35 +12,7 @@ Dependencies
  libboost    Boost             C++ Library
  miniupnpc   UPnP Support      Optional firewall-jumping support
  qt          GUI               GUI toolkit
- protobuf    Payments in GUI   Data interchange format used for payment protocol
  libqrencode QR codes in GUI   Optional for generating QR codes
-
-[miniupnpc](http://miniupnp.free.fr/) may be used for UPnP port mapping.  It can be downloaded from [here](
-http://miniupnp.tuxfamily.org/files/).  UPnP support is compiled in and
-turned off by default.  See the configure options for upnp behavior desired:
-
-	--with-miniupnpc         No UPnP support miniupnp not required
-	--disable-upnp-default   (the default) UPnP support turned off by default at runtime
-	--enable-upnp-default    UPnP support turned on by default at runtime
-
-IPv6 support may be disabled by setting:
-
-	--disable-ipv6           Disable IPv6 support
-
-Licenses of statically linked libraries:
- Berkeley DB   New BSD license with additional requirement that linked
-               software must be free open source
- Boost         MIT-like license
- miniupnpc     New (3-clause) BSD license
-
-This release has been tested with the following versions:
--  Ubuntu	 14.04.3 TLS
--  GCC           4.6.3
--  OpenSSL       1.0.0, 1.0.1e
--  Berkeley DB   4.8.30
--  Boost         1.48.0
--  qt            4.8.1
--  libqrencode   3.1.1
 
 Dependency Build Instructions: Ubuntu & Debian
 ----------------------------------------------
@@ -65,8 +28,9 @@ for Ubuntu 12.04 and later:
 
  db4.8 packages are available [here](https://launchpad.net/~bitcoin/+archive/bitcoin).
 
- Ubuntu 12.04 and later have packages for libdb5.1-dev and libdb5.1++-dev,
- but using these will break binary wallet compatibility, and is not recommended.
+Ubuntu 12.04 and later have packages for libdb5.1-dev and
+libdb5.1++-dev, but using these will break binary wallet
+compatibility, and is not recommended.
 
 for other Ubuntu & Debian:
 
@@ -87,7 +51,7 @@ are installed. Qt 4 is currently necessary to build the GUI.
 
 To build with Qt 4 you need the following:
 
-    apt-get install libqt4-dev libprotobuf-dev protobuf-compiler
+    apt-get install libqt4-dev
 
 libqrencode (optional) can be installed with:
 
@@ -96,31 +60,39 @@ libqrencode (optional) can be installed with:
 Once these are installed, they will be found by configure and a bitcoin-qt executable will be
 built by default.
 
-miniupnpc
----------
-	tar -xzvf miniupnpc-1.6.tar.gz
-	cd miniupnpc-1.6
-	make
-	sudo su
-	make install
+To Build
+---------------------
 
-
-Berkeley DB
------------
-You need Berkeley DB 4.8.  If you have to build Berkeley DB yourself:
-
-	../dist/configure --enable-cxx
+	./autogen.sh
+	./configure
 	make
 
+This will build ./src/namecoind or ./src/qt/namecoin-qt depending on
+whether support for the Qt GUI toolkit was configured or detected.  If
+you want both binaries, you should configure and build twice, once
+with Qt and once without.
 
-Boost
------
-If you need to build Boost yourself:
+[miniupnpc](http://miniupnp.free.fr/) may be used for UPnP port
+mapping.  It can be downloaded from [here](
+http://miniupnp.tuxfamily.org/files/).  See the configure options for
+upnp behavior desired:
 
-	sudo su
-	./bootstrap.sh
-	./bjam install
+	--with-miniupnpc         No UPnP support miniupnp not required
+	--disable-upnp-default   (the default) UPnP support turned off by default at runtime
+	--enable-upnp-default    UPnP support turned on by default at runtime
 
+IPv6 support may be disabled by setting:
+
+	--disable-ipv6           Disable IPv6 support
+
+This release has been tested with the following versions:
+-  Ubuntu	 14.04.3 TLS
+-  GCC           4.6.3
+-  OpenSSL       1.0.0, 1.0.1e
+-  Berkeley DB   4.8.30
+-  Boost         1.48.0
+-  qt            4.8.1
+-  libqrencode   3.1.1
 
 Security
 --------

@@ -73,7 +73,7 @@ AC_DEFUN([NAMECOIN_QT_FAIL],[
   if test "x$use_qt" = "xauto"; then
     AC_MSG_WARN([$1; namecoin-qt frontend will not be built])
     use_qt=no
-  else
+  elif "x$use_qt" = "xyes"; then
     AC_MSG_ERROR([$1])
   fi
 ])

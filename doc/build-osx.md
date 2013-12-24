@@ -3,34 +3,6 @@ MAC OSX BUILD NOTES
 
 Some notes on how to build Namecoin for Mac OSX.
 
-To Build
---------
-
-Namecoin now supports the GNU build system (aka autotools) on Mac OSX.
-After the dependences are installed (see below), Namecoin can be built
-as follows.
-
-	$ ./autogen.sh
-	$ cd namecoin-qt
-	$ ./configure
-	$ make
-
-configure either builds ./src/namecoind or ./src/qt/namecoin-qt
-depending on whether support for the Qt GUI toolkit was configured or
-detected.  If you want both binaries, you should configure and build
-twice, once with Qt and once without.
-
-See the output from `./configure --help' for additional configure
-options.
-
-This release has been tested with the following versions:
- - MAC OSX 10.8.5
- - gcc 4.2.1/XCode 5.0
- - Berkeley DB 4.8.30
- - Mac OSX default openssl and openssl-1.0.1e
- - boost 1.55.0
- - Qt4.8.5, through MacPorts and the stand-alone installer
-
 Dependencies
 ------------
 
@@ -48,6 +20,33 @@ The dependencies can be installed by hand.  To install them with
 MacPorts, run:
 
 	sudo port install automake autoconf db48 boost openssl qt4-mac qrencode
+
+To Build
+--------
+
+Namecoin now supports the GNU build system (aka autotools) on Mac OSX.
+With the depenencies installed, Namecoin can be built as follows.
+
+	$ cd namecoin-qt
+	$ ./autogen.sh
+	$ ./configure
+	$ make
+
+This will build ./src/namecoind or ./src/qt/namecoin-qt depending on
+whether support for the Qt GUI toolkit was configured or detected.  If
+you want both binaries, you should configure and build twice, once
+with Qt and once without.
+
+See the output from `./configure --help' for additional configure
+options.
+
+This release has been tested with the following versions:
+ - MAC OSX 10.8.5
+ - gcc 4.2.1/XCode 5.0
+ - Berkeley DB 4.8.30
+ - Mac OSX default openssl and openssl-1.0.1e
+ - boost 1.55.0
+ - Qt4.8.5, through MacPorts and the stand-alone installer
 
 Security
 --------
