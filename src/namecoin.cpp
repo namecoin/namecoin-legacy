@@ -837,8 +837,16 @@ Value name_filter(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() > 5)
         throw runtime_error(
-                "name_filter [regexp] [maxage=36000] [from=0] [nb=0] [stat]\n"
+                "name_filter [[[[[regexp] maxage=36000] from=0] nb=0] stat]\n"
                 "scan and filter names\n"
+                "[regexp] : apply [regexp] on names, empty means all names\n"
+                "[maxage] : look in last [maxage] blocks\n"
+                "[from] : show results from number [from]\n"
+                "[nb] : show [nb] results, 0 means all\n"
+                "[stats] : show some stats instead of results\n"
+                "name_filter \"\" 5 # list names updated in last 5 blocks\n"
+                "name_filter \"^id/\" # list all names from the \"id\" namespace\n"
+                "name_filter \"^id/\" 36000 0 0 stat # display stats (number of names) on active names from the \"id\" namespace\n"
                 );
 
     string strRegexp;
