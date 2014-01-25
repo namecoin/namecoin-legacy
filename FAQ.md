@@ -50,7 +50,7 @@ This will output two values - a random number (short) and a transaction ID (long
 
 **wait 12 blocks**, then:
 
-`namecoind first_update <name> <random> <value>`
+`namecoind name_firstupdate <name> <random> <value>`
 
 **Q: How do I make my browser recognize the .bit top level domain?**
 
