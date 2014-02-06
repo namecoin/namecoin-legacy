@@ -916,12 +916,7 @@ Value name_filter(const Array& params, bool fHelp)
 
         Object oName;
         oName.push_back(Pair("name", name));
-        CTransaction tx;
-        CDiskTxPos txPos = txName.txPos;
-        if ((nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-            || txPos.IsNull()
-            || !tx.ReadFromDisk(txPos))
-            //|| !GetValueOfNameTx(tx, vchValue))
+        if (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
         {
             oName.push_back(Pair("expired", 1));
         }
