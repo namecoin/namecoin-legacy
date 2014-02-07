@@ -288,7 +288,7 @@ ns0.xname.org
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="nameEdit">
+          <widget class="QLineEdit" name="idNameEdit">
            <property name="toolTip">
             <string>Real name or pseudonym</string>
            </property>
@@ -305,7 +305,7 @@ ns0.xname.org
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="emailEdit">
+          <widget class="QLineEdit" name="idEmailEdit">
            <property name="toolTip">
             <string>Email address</string>
            </property>
@@ -322,7 +322,7 @@ ns0.xname.org
           </widget>
          </item>
          <item row="2" column="1">
-          <widget class="QLineEdit" name="bitmessageEdit">
+          <widget class="QLineEdit" name="idBitmessageEdit">
            <property name="toolTip">
             <string>Bitmessage address</string>
            </property>
