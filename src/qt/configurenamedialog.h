@@ -34,6 +34,9 @@ public slots:
     void on_nsFingerprintEdit_textChanged()                   { if (initialized) SetDNS(); }
     void on_ipEdit_textChanged(const QString &text)           { if (initialized) SetIP();  }
     void on_ipFingerprintEdit_textChanged()                   { if (initialized) SetIP(); }
+    void on_idNameEdit_textChanged()                          { if (initialized) SetID(); }
+    void on_idEmailEdit_textChanged()                         { if (initialized) SetID(); }
+    void on_idBitmessageEdit_textChanged()                    { if (initialized) SetID(); }
     void on_dataEdit_textChanged(const QString &text);
 
 private:
@@ -46,6 +49,7 @@ private:
 
     void SetDNS();
     void SetIP();
+    void SetID();
 };
 
 #endif // CONFIGURENAMEDIALOG_H

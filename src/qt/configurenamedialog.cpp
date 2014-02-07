@@ -57,6 +57,8 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
         // Empty data - select DNS for domains, custom for other
         if (name.startsWith("d/"))
             ui->tabWidget->setCurrentWidget(ui->tab_dns);
+        else if (name.startsWith("id/"))
+            ui->tabWidget->setCurrentWidget(ui->tab_id);
         else
             ui->tabWidget->setCurrentWidget(ui->tab_json);
     }
@@ -124,6 +126,7 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
         else
         {
             // Check conformance to IP type
+            // FIXME: Allow string array for fingerprint.
             json_spirit::Object obj = val.get_obj();
             QString ip, fingerprint;
             json_spirit::Value ipVal = json_spirit::find_value(obj, "ip");
@@ -164,7 +167,39 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
                 ui->tabWidget->setCurrentWidget(ui->tab_ip);
             }
             else
-                ui->tabWidget->setCurrentWidget(ui->tab_json);
+            {
+                // Check conformance to ID type.
+                ok = false;
+                QString name, email, bm;
+                json_spirit::Value nameVal = json_spirit::find_value(obj, "name");
+                json_spirit::Value emailVal = json_spirit::find_value(obj, "email");
+                json_spirit::Value bmVal = json_spirit::find_value(obj, "bitmessage");
+                if (nameVal.type() == json_spirit::str_type)
+                {
+                    ok = true;
+                    name = QString::fromStdString(nameVal.get_str());
+                }
+                if (emailVal.type() == json_spirit::str_type)
+                {
+                    ok = true;
+                    email = QString::fromStdString(emailVal.get_str());
+                }
+                if (bmVal.type() == json_spirit::str_type)
+                {
+                    ok = true;
+                    bm = QString::fromStdString(bmVal.get_str());
+                }
+
+                if (ok)
+                {
+                    ui->idNameEdit->setText(name);
+                    ui->idEmailEdit->setText(email);
+                    ui->idBitmessageEdit->setText(bm);
+                    ui->tabWidget->setCurrentWidget(ui->tab_id);
+                }
+                else
+                    ui->tabWidget->setCurrentWidget(ui->tab_json);
+            }
         }
     }
 
@@ -321,6 +356,24 @@ void ConfigureNameDialog::SetIP()
     QString ipFingerprint = ui->ipFingerprintEdit->text().trimmed();
     if (!ipFingerprint.isEmpty())
         data.push_back(json_spirit::Pair("fingerprint", ipFingerprint.toStdString()));
+
+    ui->dataEdit->setText(QString::fromStdString(json_spirit::write_string(json_spirit::Value(data), false)));
+}
+
+void ConfigureNameDialog::SetID()
+{
+    json_spirit::Object data;
+
+    const QString name = ui->idNameEdit->text().trimmed();
+    const QString email = ui->idEmailEdit->text().trimmed();
+    const QString bm = ui->idBitmessageEdit->text().trimmed();
+
+    if (!name.isEmpty())
+        data.push_back(json_spirit::Pair("name", name.toStdString()));
+    if (!email.isEmpty())
+        data.push_back(json_spirit::Pair("email", email.toStdString()));
+    if (!bm.isEmpty())
+        data.push_back(json_spirit::Pair("bitmessage", bm.toStdString()));
 
     ui->dataEdit->setText(QString::fromStdString(json_spirit::write_string(json_spirit::Value(data), false)));
 }
