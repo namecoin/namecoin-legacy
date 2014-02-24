@@ -45,8 +45,6 @@ using namespace boost::asio;
 using namespace json_spirit;
 
 void ThreadRPCServer2(void* parg);
-typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
-extern map<string, rpcfn_type> mapCallTable;
 Value sendtoaddress(const Array& params, bool fHelp);
 
 int64 nWalletUnlockTime;
@@ -3186,6 +3184,10 @@ string pAllowInSafeMode[] =
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
 
+/* Methods that will be called in a new thread and can block waiting for
+   some condition without hurting the RPC server performance.  */
+set<string> setCallAsync;
+
 
 
 
@@ -3486,6 +3488,74 @@ private:
 };
 #endif
 
+/**
+ * Class encapsulating the state necessary for writing to a client connection.
+ * This is used to hold the state for async method calls.
+ */
+class ClientConnectionOutput
+{
+
+private:
+
+    /* The stream for outputting.  */   
+#ifdef USE_SSL
+    SSLStream* sslStream;
+    SSLIOStreamDevice* d;
+    iostreams::stream<SSLIOStreamDevice>* stream;
+#else
+    ip::tcp::iostream* stream;
+#endif
+
+public:
+
+    /* Basic constructor.  */
+#ifdef USE_SSL
+    inline ClientConnectionOutput (asio::io_service& io, ssl::context& c,
+                                   bool fUseSSL)
+      : sslStream(new SSLStream (io, c)),
+        d(new SSLIOStreamDevice (*sslStream, fUseSSL)),
+        stream(new iostreams::stream<SSLIOStreamDevice> (*d))
+    {}
+#else
+    inline ClientConnectionOutput ()
+      : stream(new ip::tcp::iostream ())
+    {}
+#endif
+
+    /* Destructor freeing everything.  */
+    inline ~ClientConnectionOutput ()
+    {
+        delete stream;
+#ifdef USE_SSL
+        delete d;
+        delete sslStream;
+#endif
+    }
+
+    /* Wait for incoming connection.  */
+    inline void
+    waitForConnection (ip::tcp::acceptor& acc, ip::tcp::endpoint& peer)
+    {
+#ifdef USE_SSL
+        acc.accept(sslStream->lowest_layer(), peer);
+#else
+        acc.accept(*stream->rdbuf(), peer);
+#endif
+    }
+
+    /* Return the stream held.  */
+#ifdef USE_SSL
+    inline iostreams::stream<SSLIOStreamDevice>&
+#else
+    inline ip::tcp::iostream&
+#endif
+    getStream ()
+    {
+        return *stream;
+    }
+
+};
+
 void ThreadRPCServer(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer(parg));
@@ -3561,20 +3631,14 @@ void ThreadRPCServer2(void* parg)
     {
         // Accept connection
 #ifdef USE_SSL
-        SSLStream sslStream(io_service, context);
-        SSLIOStreamDevice d(sslStream, fUseSSL);
-        iostreams::stream<SSLIOStreamDevice> stream(d);
+        ClientConnectionOutput out(io_service, context, fUseSSL);
 #else
-        ip::tcp::iostream stream;
+        ClientConnectionOutput out;
 #endif
 
         ip::tcp::endpoint peer;
         vnThreadsRunning[4]--;
-#ifdef USE_SSL
-        acceptor.accept(sslStream.lowest_layer(), peer);
-#else
-        acceptor.accept(*stream.rdbuf(), peer);
-#endif
+        out.waitForConnection (acceptor, peer);
         vnThreadsRunning[4]++;
         if (fShutdown)
             return;
@@ -3584,14 +3648,16 @@ void ThreadRPCServer2(void* parg)
         {
             // Only send a 403 if we're not using SSL to prevent a DoS during the SSL handshake.
             if (!fUseSSL)
-                stream << HTTPReply(403, "") << std::flush;
+                out.getStream() << HTTPReply(403, "") << std::flush;
             continue;
         }
 
         map<string, string> mapHeaders;
         string strRequest;
 
-        boost::thread api_caller(ReadHTTP, boost::ref(stream), boost::ref(mapHeaders), boost::ref(strRequest));
+        boost::thread api_caller(ReadHTTP, boost::ref(out.getStream()),
+                                 boost::ref(mapHeaders),
+                                 boost::ref(strRequest));
         if (!api_caller.timed_join(boost::posix_time::seconds(GetArg("-rpctimeout", 30))))
         {   // Timed out:
             acceptor.cancel();
@@ -3602,7 +3668,7 @@ void ThreadRPCServer2(void* parg)
         // Check authorization
         if (mapHeaders.count("authorization") == 0)
         {
-            stream << HTTPReply(401, "") << std::flush;
+            out.getStream() << HTTPReply(401, "") << std::flush;
             continue;
         }
         if (!HTTPAuthorized(mapHeaders))
@@ -3611,7 +3677,7 @@ void ThreadRPCServer2(void* parg)
             if (mapArgs["-rpcpassword"].size() < 15)
                 Sleep(50);
 
-            stream << HTTPReply(401, "") << std::flush;
+            out.getStream() << HTTPReply(401, "") << std::flush;
             printf("ThreadRPCServer incorrect password attempt\n");
             continue;
         }
@@ -3665,20 +3731,22 @@ void ThreadRPCServer2(void* parg)
 
                 // Send reply
                 string strReply = JSONRPCReply(result, Value::null, id);
-                stream << HTTPReply(200, strReply) << std::flush;
+                out.getStream() << HTTPReply(200, strReply) << std::flush;
             }
             catch (std::exception& e)
             {
-                ErrorReply(stream, JSONRPCError(RPC_MISC_ERROR, e.what()), id);
+                ErrorReply(out.getStream(),
+                           JSONRPCError(RPC_MISC_ERROR, e.what()), id);
             }
         }
         catch (Object& objError)
         {
-            ErrorReply(stream, objError, id);
+            ErrorReply(out.getStream(), objError, id);
         }
         catch (std::exception& e)
         {
-            ErrorReply(stream, JSONRPCError(RPC_PARSE_ERROR, e.what()), id);
+            ErrorReply(out.getStream(),
+                       JSONRPCError(RPC_PARSE_ERROR, e.what()), id);
         }
     }
 }

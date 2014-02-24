@@ -31,6 +31,10 @@ void RPCTypeCheck(const json_spirit::Object& o,
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
 
+typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
+extern std::map<std::string, rpcfn_type> mapCallTable;
+extern std::set<std::string> setCallAsync;
+
 // Bitcoin RPC error codes
 enum RPCErrorCode
 {
