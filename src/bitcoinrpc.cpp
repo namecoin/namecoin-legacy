@@ -3698,6 +3698,9 @@ void ThreadRPCServer2(void* parg)
         vnThreadsRunning[4]--;
         out->waitForConnection (acceptor, peer);
         vnThreadsRunning[4]++;
+
+        /* Note:  This isn't usually called since the thread blocks
+           in the routine above until the program terminates.  */
         if (fShutdown)
         {
             printf("Waiting for %d async RPC call threads to finish...\n",
