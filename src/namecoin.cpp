@@ -17,6 +17,8 @@
 #include "json/json_spirit_utils.h"
 #include <boost/xpressive/xpressive_dynamic.hpp>
 
+#include <boost/thread/thread.hpp>
+
 using namespace std;
 using namespace json_spirit;
 

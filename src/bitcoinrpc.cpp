@@ -17,6 +17,10 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/thread/thread.hpp>
+
+#include <memory>
+#include <list>
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp> 
@@ -3499,62 +3503,91 @@ private:
 
     /* The stream for outputting.  */   
 #ifdef USE_SSL
-    SSLStream* sslStream;
-    SSLIOStreamDevice* d;
-    iostreams::stream<SSLIOStreamDevice>* stream;
+  SSLStream* sslStream;
+  SSLIOStreamDevice* d;
+  iostreams::stream<SSLIOStreamDevice>* stream;
 #else
-    ip::tcp::iostream* stream;
+  ip::tcp::iostream* stream;
 #endif
 
 public:
 
-    /* Basic constructor.  */
+  /* Basic constructor.  */
 #ifdef USE_SSL
-    inline ClientConnectionOutput (asio::io_service& io, ssl::context& c,
-                                   bool fUseSSL)
-      : sslStream(new SSLStream (io, c)),
-        d(new SSLIOStreamDevice (*sslStream, fUseSSL)),
-        stream(new iostreams::stream<SSLIOStreamDevice> (*d))
-    {}
+  inline ClientConnectionOutput (asio::io_service& io, ssl::context& c,
+                                 bool fUseSSL)
+    : sslStream(new SSLStream (io, c)),
+      d(new SSLIOStreamDevice (*sslStream, fUseSSL)),
+      stream(new iostreams::stream<SSLIOStreamDevice> (*d))
+  {}
 #else
-    inline ClientConnectionOutput ()
-      : stream(new ip::tcp::iostream ())
-    {}
+  inline ClientConnectionOutput ()
+    : stream(new ip::tcp::iostream ())
+  {}
 #endif
 
-    /* Destructor freeing everything.  */
-    inline ~ClientConnectionOutput ()
-    {
-        delete stream;
+  /* Destructor freeing everything.  */
+  inline ~ClientConnectionOutput ()
+  {
+    delete stream;
 #ifdef USE_SSL
-        delete d;
-        delete sslStream;
+    delete d;
+    delete sslStream;
 #endif
-    }
+  }
 
-    /* Wait for incoming connection.  */
-    inline void
-    waitForConnection (ip::tcp::acceptor& acc, ip::tcp::endpoint& peer)
-    {
+  /* Wait for incoming connection.  */
+  inline void
+  waitForConnection (ip::tcp::acceptor& acc, ip::tcp::endpoint& peer)
+  {
 #ifdef USE_SSL
-        acc.accept(sslStream->lowest_layer(), peer);
+    acc.accept(sslStream->lowest_layer(), peer);
 #else
-        acc.accept(*stream->rdbuf(), peer);
+    acc.accept(*stream->rdbuf(), peer);
 #endif
-    }
+  }
 
-    /* Return the stream held.  */
+  /* Return the stream held.  */
 #ifdef USE_SSL
-    inline iostreams::stream<SSLIOStreamDevice>&
+  inline iostreams::stream<SSLIOStreamDevice>&
 #else
-    inline ip::tcp::iostream&
+  inline ip::tcp::iostream&
 #endif
-    getStream ()
-    {
-        return *stream;
-    }
+  getStream ()
+  {
+    return *stream;
+  }
 
 };
+
+/* Execute an RPC call, can be used as thread object for async calls.  */
+static void
+ExecuteRpcCall (ClientConnectionOutput* out, rpcfn_type method,
+                json_spirit::Array params, json_spirit::Value id)
+{
+  try
+    {
+      // Execute
+      Value result = method (params, false);
+
+      // Send reply
+      string strReply = JSONRPCReply (result, json_spirit::Value::null, id);
+      out->getStream () << HTTPReply (200, strReply) << std::flush;
+    }
+  catch (const boost::thread_interrupted& e)
+    {
+      ErrorReply (out->getStream (),
+                  JSONRPCError (RPC_ASYNC_INTERRUPT,
+                                "async method interrupted"), id);
+    }
+  catch (const std::exception& e)
+    {
+      ErrorReply (out->getStream (),
+                  JSONRPCError (RPC_MISC_ERROR, e.what ()), id);
+    }
+
+  delete out;
+}
 
 void ThreadRPCServer(void* parg)
 {
@@ -3627,35 +3660,78 @@ void ThreadRPCServer2(void* parg)
         throw runtime_error("-rpcssl=1, but namecoin compiled without full openssl libraries.");
 #endif
 
+    // Threads running async methods at the moment.
+    typedef std::list<boost::thread*> ThreadList;
+    ThreadList asyncThreads;
+
     loop
     {
+        // Clean up async threads.
+        printf("Trying to clean up %d async RPC call threads...\n",
+               asyncThreads.size());
+        for (ThreadList::iterator i = asyncThreads.begin();
+             i != asyncThreads.end(); )
+        {
+            if ((*i)->timed_join(boost::posix_time::seconds(0)))
+            {
+                printf("Async RPC call thread finished.\n");
+                delete *i;
+                i = asyncThreads.erase (i);
+            }
+            else
+            {
+                /* Explicitly increment iterator here in case we didn't
+                   delete the element above.  */
+                ++i;
+            }
+        }
+
         // Accept connection
+        std::auto_ptr<ClientConnectionOutput> out;
 #ifdef USE_SSL
-        ClientConnectionOutput out(io_service, context, fUseSSL);
+        out.reset(new ClientConnectionOutput(io_service, context, fUseSSL));
 #else
-        ClientConnectionOutput out;
+        out.reset(new ClientConnectionOutput());
 #endif
 
         ip::tcp::endpoint peer;
         vnThreadsRunning[4]--;
-        out.waitForConnection (acceptor, peer);
+        out->waitForConnection (acceptor, peer);
         vnThreadsRunning[4]++;
         if (fShutdown)
+        {
+            printf("Waiting for %d async RPC call threads to finish...\n",
+                   asyncThreads.size());
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->interrupt();
+            }
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->join();
+                delete *i;
+            }
+
             return;
+        }
 
         // Restrict callers by IP
         if (!ClientAllowed(peer.address().to_string()))
         {
             // Only send a 403 if we're not using SSL to prevent a DoS during the SSL handshake.
             if (!fUseSSL)
-                out.getStream() << HTTPReply(403, "") << std::flush;
+                out->getStream() << HTTPReply(403, "") << std::flush;
             continue;
         }
 
         map<string, string> mapHeaders;
         string strRequest;
 
-        boost::thread api_caller(ReadHTTP, boost::ref(out.getStream()),
+        boost::thread api_caller(ReadHTTP, boost::ref(out->getStream()),
                                  boost::ref(mapHeaders),
                                  boost::ref(strRequest));
         if (!api_caller.timed_join(boost::posix_time::seconds(GetArg("-rpctimeout", 30))))
@@ -3668,7 +3744,7 @@ void ThreadRPCServer2(void* parg)
         // Check authorization
         if (mapHeaders.count("authorization") == 0)
         {
-            out.getStream() << HTTPReply(401, "") << std::flush;
+            out->getStream() << HTTPReply(401, "") << std::flush;
             continue;
         }
         if (!HTTPAuthorized(mapHeaders))
@@ -3677,7 +3753,7 @@ void ThreadRPCServer2(void* parg)
             if (mapArgs["-rpcpassword"].size() < 15)
                 Sleep(50);
 
-            out.getStream() << HTTPReply(401, "") << std::flush;
+            out->getStream() << HTTPReply(401, "") << std::flush;
             printf("ThreadRPCServer incorrect password attempt\n");
             continue;
         }
@@ -3724,28 +3800,26 @@ void ThreadRPCServer2(void* parg)
             if (strWarning != "" && !GetBoolArg("-disablesafemode") && !setAllowInSafeMode.count(strMethod))
                 throw JSONRPCError(RPC_FORBIDDEN_BY_SAFE_MODE, string("Safe mode: ") + strWarning);
 
-            try
+            // Check for asynchronous execution and call the method.
+            const bool async = (setCallAsync.count(strMethod) > 0);
+            if (!async)
+                ExecuteRpcCall(out.release(), (*mi).second, params, id);
+            else
             {
-                // Execute
-                Value result = (*(*mi).second)(params, false);
-
-                // Send reply
-                string strReply = JSONRPCReply(result, Value::null, id);
-                out.getStream() << HTTPReply(200, strReply) << std::flush;
-            }
-            catch (std::exception& e)
-            {
-                ErrorReply(out.getStream(),
-                           JSONRPCError(RPC_MISC_ERROR, e.what()), id);
+                std::auto_ptr<boost::thread> runner;
+                runner.reset (new boost::thread (&ExecuteRpcCall,
+                                  out.release(),
+                                  (*mi).second, params, id));
+                asyncThreads.push_back (runner.release());
             }
         }
         catch (Object& objError)
         {
-            ErrorReply(out.getStream(), objError, id);
+            ErrorReply(out->getStream(), objError, id);
         }
         catch (std::exception& e)
         {
-            ErrorReply(out.getStream(),
+            ErrorReply(out->getStream(),
                        JSONRPCError(RPC_PARSE_ERROR, e.what()), id);
         }
     }
