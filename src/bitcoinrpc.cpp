@@ -3666,6 +3666,29 @@ void ThreadRPCServer2(void* parg)
 
     loop
     {
+        /* Shut down.  Do this here before we block again in the accept call
+           below, when the last command was "stop", it can exit now.  */
+        if (fShutdown)
+        {
+            printf("Waiting for %d async RPC call threads to finish...\n",
+                   asyncThreads.size());
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->interrupt();
+            }
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->join();
+                delete *i;
+            }
+
+            return;
+        }
+
         // Clean up async threads.
         printf("Trying to clean up %d async RPC call threads...\n",
                asyncThreads.size());
@@ -3698,29 +3721,6 @@ void ThreadRPCServer2(void* parg)
         vnThreadsRunning[4]--;
         out->waitForConnection (acceptor, peer);
         vnThreadsRunning[4]++;
-
-        /* Note:  This isn't usually called since the thread blocks
-           in the routine above until the program terminates.  */
-        if (fShutdown)
-        {
-            printf("Waiting for %d async RPC call threads to finish...\n",
-                   asyncThreads.size());
-
-            for (ThreadList::iterator i = asyncThreads.begin();
-                 i != asyncThreads.end(); ++i)
-            {
-                (*i)->interrupt();
-            }
-
-            for (ThreadList::iterator i = asyncThreads.begin();
-                 i != asyncThreads.end(); ++i)
-            {
-                (*i)->join();
-                delete *i;
-            }
-
-            return;
-        }
 
         // Restrict callers by IP
         if (!ClientAllowed(peer.address().to_string()))
