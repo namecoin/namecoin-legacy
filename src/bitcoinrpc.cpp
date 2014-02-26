@@ -3574,6 +3574,10 @@ ExecuteRpcCall (ClientConnectionOutput* out, rpcfn_type method,
       string strReply = JSONRPCReply (result, json_spirit::Value::null, id);
       out->getStream () << HTTPReply (200, strReply) << std::flush;
     }
+  catch (Object& objError)
+    {
+      ErrorReply (out->getStream (), objError, id);
+    }
   catch (const boost::thread_interrupted& e)
     {
       ErrorReply (out->getStream (),
