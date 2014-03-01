@@ -882,15 +882,17 @@ Value name_filter(const Array& params, bool fHelp)
     if (!dbName.ScanNames(vchName, 100000000, nameScan))
         throw JSONRPCError(-4, "scan failed");
 
+    // compile regex once
+    using namespace boost::xpressive;
+    smatch nameparts;
+    sregex cregex = sregex::compile(strRegexp);
+
     pair<vector<unsigned char>, CNameIndex> pairScan;
     BOOST_FOREACH(pairScan, nameScan)
     {
         string name = stringFromVch(pairScan.first);
 
         // regexp
-        using namespace boost::xpressive;
-        smatch nameparts;
-        sregex cregex = sregex::compile(strRegexp);
         if(strRegexp != "" && !regex_search(name, nameparts, cregex))
             continue;
 
@@ -907,22 +909,19 @@ Value name_filter(const Array& params, bool fHelp)
             continue;
 
         Object oName;
-        oName.push_back(Pair("name", name));
-        CTransaction tx;
-        CDiskTxPos txPos = txName.txPos;
-        if ((nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-            || txPos.IsNull()
-            || !tx.ReadFromDisk(txPos))
-            //|| !GetValueOfNameTx(tx, vchValue))
-        {
-            oName.push_back(Pair("expired", 1));
-        }
-        else
-        {
-            vector<unsigned char> vchValue = txName.vValue;
-            string value = stringFromVch(vchValue);
-            oName.push_back(Pair("value", value));
-            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
+        if (!fStat) {
+            oName.push_back(Pair("name", name));
+	        int nExpiresIn = nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight;
+            if (nExpiresIn <= 0)
+            {
+                oName.push_back(Pair("expired", 1));
+            }
+            else
+            {
+                string value = stringFromVch(txName.vValue);
+                oName.push_back(Pair("value", value));
+                oName.push_back(Pair("expires_in", nExpiresIn));
+            }
         }
         oRes.push_back(oName);
 
@@ -936,7 +935,7 @@ Value name_filter(const Array& params, bool fHelp)
         dbName.test();
     }
 
-    if(fStat)
+    if (fStat)
     {
         Object oStat;
         oStat.push_back(Pair("blocks",    (int)nBestHeight));
