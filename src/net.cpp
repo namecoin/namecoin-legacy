@@ -749,8 +749,31 @@ void ThreadSocketHandler(void* parg)
 void ThreadSocketHandler2(void* parg)
 {
     printf("ThreadSocketHandler started\n");
-    list<CNode*> vNodesDisconnected;
     int nPrevNodeCount = 0;
+
+    class CleanupDisconnectedQueue : public list<CNode*>
+    {
+    public:
+        ~CleanupDisconnectedQueue ()
+        {
+            printf ("Freeing %d disconnected nodes...\n", size());
+            while (!empty ())
+            {
+                CNode* pnode = front ();
+                pop_front ();
+
+                // Wait until the node is no longer used.
+                while (pnode->GetRefCount() > 0)
+                    Sleep(10);
+
+                CRITICAL_BLOCK(pnode->cs_vSend)
+                CRITICAL_BLOCK(pnode->cs_vRecv)
+                CRITICAL_BLOCK(pnode->cs_mapRequests)
+                CRITICAL_BLOCK(pnode->cs_inventory)
+                    delete pnode;
+            }
+        }
+    } vNodesDisconnected;
 
     loop
     {
@@ -848,7 +871,7 @@ void ThreadSocketHandler2(void* parg)
         int nSelect = select(hSocketMax + 1, &fdsetRecv, &fdsetSend, &fdsetError, &timeout);
         vnThreadsRunning[0]++;
         if (fShutdown)
-            goto shutdown;
+            return;
         if (nSelect == SOCKET_ERROR)
         {
             int nErr = WSAGetLastError();
@@ -912,7 +935,7 @@ void ThreadSocketHandler2(void* parg)
         BOOST_FOREACH(CNode* pnode, vNodesCopy)
         {
             if (fShutdown)
-                goto shutdown;
+                return;
 
             //
             // Receive
@@ -1031,27 +1054,6 @@ void ThreadSocketHandler2(void* parg)
         }
 
         Sleep(10);
-    }
-
-shutdown:
-
-    // Clean up disconnected nodes on shutdown.
-    printf ("Socket thread exited, freeing %d disconnected nodes...\n",
-            vNodesDisconnected.size ());
-    while (!vNodesDisconnected.empty ())
-    {
-        CNode* pnode = vNodesDisconnected.front ();
-        vNodesDisconnected.pop_front ();
-
-        // Wait until the node is no longer used.
-        while (pnode->GetRefCount() > 0)
-            Sleep(10);
-
-        CRITICAL_BLOCK(pnode->cs_vSend)
-        CRITICAL_BLOCK(pnode->cs_vRecv)
-        CRITICAL_BLOCK(pnode->cs_mapRequests)
-        CRITICAL_BLOCK(pnode->cs_inventory)
-            delete pnode;
     }
 }
 
