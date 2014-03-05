@@ -27,7 +27,7 @@ CCriticalSection cs_mapTransactions;
 unsigned int nTransactionsUpdated = 0;
 map<COutPoint, CInPoint> mapNextTx;
 
-map<uint256, CBlockIndex*> mapBlockIndex;
+CMapBlockIndex mapBlockIndex;
 uint256 hashGenesisBlock("0x000000000062b72c5e2ceb45fbc8587e807c155b0da735e6483dfba2f0a9c770");
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 32);
 const int nInitialBlockThreshold = 120; // Regard blocks up until N-threshold as "initial download"
@@ -3461,4 +3461,11 @@ std::string CBlockIndex::ToString() const
             GetBlockHash().ToString().substr(0,20).c_str(),
             (auxpow.get() != NULL) ? auxpow->GetParentBlockHash().ToString().substr(0,20).c_str() : "-"
             );
+}
+
+CMapBlockIndex::~CMapBlockIndex ()
+{
+    printf ("Freeing %d entries in CMapBlockIndex...\n", size ());
+    for (iterator i = begin (); i != end (); ++i)
+        delete i->second;
 }
