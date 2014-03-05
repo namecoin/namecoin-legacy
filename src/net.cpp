@@ -848,7 +848,7 @@ void ThreadSocketHandler2(void* parg)
         int nSelect = select(hSocketMax + 1, &fdsetRecv, &fdsetSend, &fdsetError, &timeout);
         vnThreadsRunning[0]++;
         if (fShutdown)
-            return;
+            goto shutdown;
         if (nSelect == SOCKET_ERROR)
         {
             int nErr = WSAGetLastError();
@@ -912,7 +912,7 @@ void ThreadSocketHandler2(void* parg)
         BOOST_FOREACH(CNode* pnode, vNodesCopy)
         {
             if (fShutdown)
-                return;
+                goto shutdown;
 
             //
             // Receive
@@ -1031,6 +1031,27 @@ void ThreadSocketHandler2(void* parg)
         }
 
         Sleep(10);
+    }
+
+shutdown:
+
+    // Clean up disconnected nodes on shutdown.
+    printf ("Socket thread exited, freeing %d disconnected nodes...\n",
+            vNodesDisconnected.size ());
+    while (!vNodesDisconnected.empty ())
+    {
+        CNode* pnode = vNodesDisconnected.front ();
+        vNodesDisconnected.pop_front ();
+
+        // Wait until the node is no longer used.
+        while (pnode->GetRefCount() > 0)
+            Sleep(10);
+
+        CRITICAL_BLOCK(pnode->cs_vSend)
+        CRITICAL_BLOCK(pnode->cs_vRecv)
+        CRITICAL_BLOCK(pnode->cs_mapRequests)
+        CRITICAL_BLOCK(pnode->cs_inventory)
+            delete pnode;
     }
 }
 
