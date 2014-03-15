@@ -439,13 +439,44 @@ getchains (const Array& params, bool fHelp)
     {
       i = mapBlockIndex.find (*j);
       assert (i != mapBlockIndex.end ());
-      const CBlockIndex& block = *i->second;
 
+      const CBlockIndex& block = *i->second;
       assert (*j == *block.phashBlock);
 
       Object obj;
       obj.push_back (Pair ("height", block.nHeight));
       obj.push_back (Pair ("hash", block.phashBlock->GetHex ()));
+
+      const bool isMain = (&block == pindexBest);
+      obj.push_back (Pair ("is_best", isMain));
+
+      /* If the block is not the main head, construct the branch that
+         connects it to the main chain.  */
+      if (!isMain)
+        {
+          Array branch;
+          int len = 0;
+
+          const CBlockIndex* pcur = &block;
+          while (true)
+            {
+              assert (pcur->pprev);
+              pcur = pcur->pprev;
+
+              branch.push_back (pcur->phashBlock->GetHex ());
+              ++len;
+
+              /* We are on the main chain if there's a next pointer.  */
+              if (pcur->pnext)
+                break;
+            }
+
+          obj.push_back (Pair ("branch_len", len));
+          obj.push_back (Pair ("branch", branch));
+        }
+      else
+        obj.push_back (Pair ("branch_len", 0));
+
       res.push_back (obj);
     }
 
