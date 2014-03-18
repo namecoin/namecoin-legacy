@@ -1503,6 +1503,69 @@ Value listaccounts(const Array& params, bool fHelp)
     return ret;
 }
 
+Value listsinceblock(const Array& params, bool fHelp)
+{
+    if (fHelp)
+        throw runtime_error(
+            "listsinceblock [blockhash] [target-confirmations]\n"
+            "Get all transactions in blocks since block [blockhash], or all transactions if omitted");
+
+    CBlockIndex *pindex = NULL;
+    int target_confirms = 1;
+
+    if (params.size() > 0)
+    {
+        uint256 blockId = 0;
+
+        blockId.SetHex(params[0].get_str());
+        pindex = CBlockLocator(blockId).GetBlockIndex();
+    }
+
+    if (params.size() > 1)
+    {
+        target_confirms = params[1].get_int();
+
+        if (target_confirms < 1)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter");
+    }
+
+    int depth = pindex ? (1 + nBestHeight - pindex->nHeight) : -1;
+
+    Array transactions;
+
+    for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); it++)
+    {
+        CWalletTx tx = (*it).second;
+
+        if (depth == -1 || tx.GetDepthInMainChain() < depth)
+            ListTransactions(tx, "*", 0, true, transactions);
+    }
+
+    uint256 lastblock;
+
+    if (target_confirms == 1)
+    {
+        lastblock = hashBestChain;
+    }
+    else
+    {
+        int target_height = pindexBest->nHeight + 1 - target_confirms;
+
+        CBlockIndex *block;
+        for (block = pindexBest;
+             block && block->nHeight > target_height;
+             block = block->pprev)  { }
+
+        lastblock = block ? block->GetBlockHash() : 0;
+    }
+
+    Object ret;
+    ret.push_back(Pair("transactions", transactions));
+    ret.push_back(Pair("lastblock", lastblock.GetHex()));
+
+    return ret;
+}
+
 Value gettransaction(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
@@ -3081,6 +3144,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("verifymessage",         &verifymessage),
     make_pair("listunspent",           &listunspent),
     make_pair("listaddressgroupings",  &listaddressgroupings),
+    make_pair("listsinceblock",        &listsinceblock),
     make_pair("getrawtransaction",     &getrawtransaction),
     make_pair("createrawtransaction",  &createrawtransaction),
     make_pair("decoderawtransaction",  &decoderawtransaction),
@@ -3777,6 +3841,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<Object>(params[1]);
     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
+    if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
 }
 
 int CommandLineRPC(int argc, char *argv[])
