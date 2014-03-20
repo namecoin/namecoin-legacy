@@ -2553,11 +2553,68 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     string address;
     int nRequired = 1;
 
-    out.push_back(Pair("asm", scriptPubKey.ToString()));
+    /* If this is a name transaction, try to strip off the initial
+       script and decode the rest for better results.  */
+    std::string nameAsmPrefix = "";
+    CScript script(scriptPubKey);
+    int op;
+    vector<vector<unsigned char> > vvch;
+    CScript::const_iterator pc = script.begin();
+    if (DecodeNameScript(script, op, vvch, pc))
+    {
+        Object nameOp;
+
+        switch (op)
+        {
+        case OP_NAME_NEW:
+        {
+            assert(vvch.size() == 1);
+            const std::string rand = HexStr(vvch[0].begin(), vvch[0].end());
+            nameOp.push_back(Pair("op", "name_new"));
+            nameOp.push_back(Pair("rand", rand));
+            break;
+        }
+
+        case OP_NAME_FIRSTUPDATE:
+        {
+            assert(vvch.size() == 3);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string rand = HexStr(vvch[1].begin(), vvch[1].end());
+            const std::string val(vvch[2].begin(), vvch[2].end());
+            nameOp.push_back(Pair("op", "name_firstupdate"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("rand", rand));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        case OP_NAME_UPDATE:
+        {
+            assert(vvch.size() == 2);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string val(vvch[1].begin(), vvch[1].end());
+            nameOp.push_back(Pair("op", "name_update"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        default:
+            nameOp.push_back(Pair("op", "unknown"));
+            break;
+        }
+
+        out.push_back(Pair("nameOp", nameOp));
+        nameAsmPrefix = "NAME_OPERATION ";
+        script = CScript(pc, script.end());
+    }
+
+    /* Write out the results.  */
+    out.push_back(Pair("asm", nameAsmPrefix + script.ToString()));
     out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
     //if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
-    if (!ExtractDestination(scriptPubKey, address))
+    if (!ExtractDestination(script, address))
     {
         out.push_back(Pair("type", "nonstandard" /*GetTxnOutputType(TX_NONSTANDARD)*/ ));
         return;
