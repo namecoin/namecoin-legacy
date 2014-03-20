@@ -2620,6 +2620,10 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
         return;
     }
 
+    /* Note:  ExtractDestination handles both pubkey hash and pubkey,
+       but the code below prints pubkeyhash as type in both cases.  That
+       is not so big a deal, presumably.  */
+
     out.push_back(Pair("reqSigs", nRequired));
     out.push_back(Pair("type", "pubkeyhash" /*GetTxnOutputType(type)*/ ));
 
