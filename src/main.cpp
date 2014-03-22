@@ -22,6 +22,9 @@ set<CWallet*> setpwalletRegistered;
 
 CCriticalSection cs_main;
 
+boost::mutex mut_newBlock;
+boost::condition_variable cv_newBlock;
+
 map<uint256, CTransaction> mapTransactions;
 CCriticalSection cs_mapTransactions;
 unsigned int nTransactionsUpdated = 0;

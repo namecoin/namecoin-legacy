@@ -3092,9 +3092,31 @@ waitforblock (const Array& params, bool fHelp)
       " and return the new block's hash when it arrives.  If blockHash"
       " is given, wait until a block with different hash is found.\n");
 
-  Sleep (10000);
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                        "huntercoin is downloading blocks...");
 
-  return "some hash";
+  uint256 lastHash;
+  if (params.size () > 0)
+    lastHash = ParseHashV (params[0], "blockHash");
+  else
+    lastHash = hashBestChain;
+
+  boost::unique_lock<boost::mutex> lock(mut_newBlock);
+  while (true)
+    {
+      /* Atomically check whether we have found a new best block and return
+         it if that's the case.  We use a lock on cs_main in order to
+         prevent race conditions.  */
+      CRITICAL_BLOCK(cs_main)
+        {
+          if (lastHash != hashBestChain)
+            return hashBestChain.GetHex ();
+        }
+
+      /* Wait on the condition variable.  */
+      cv_newBlock.wait (lock);
+    }
 }
 
 
