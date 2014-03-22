@@ -3081,6 +3081,21 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
+/* Block until a new block is found and return only then.  */
+static Value
+waitforblock (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 1)
+    throw runtime_error (
+      "waitforblock [blockHash]\n"
+      "Wait for a change in the best chain (a new block being found)"
+      " and return the new block's hash when it arrives.  If blockHash"
+      " is given, wait until a block with different hash is found.\n");
+
+  Sleep (10000);
+
+  return "some hash";
+}
 
 
 //
@@ -3153,6 +3168,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
     make_pair("getrawmempool",         &getrawmempool),
+    make_pair("waitforblock",          &waitforblock),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -3190,7 +3206,11 @@ set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllo
 
 /* Methods that will be called in a new thread and can block waiting for
    some condition without hurting the RPC server performance.  */
-set<string> setCallAsync;
+string pCallAsync[] =
+{
+    "waitforblock",
+};
+set<string> setCallAsync(pCallAsync, pCallAsync + sizeof(pCallAsync)/sizeof(pCallAsync[0]));
 
 
 
