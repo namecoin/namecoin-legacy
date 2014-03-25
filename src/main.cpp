@@ -1096,9 +1096,6 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, map<uint256, CTxIndex>& mapTestPoo
         if (!hooks->ConnectInputs(txdb, mapTestPool, *this, vTxPrev, vTxindex, pindexBlock, posThisTx, fBlock, fMiner))
             return false;
 
-        if (nValueIn < GetValueOut())
-            return error("ConnectInputs() : %s value in < value out", GetHash().ToString().substr(0,10).c_str());
-
         // Tally transaction fees
         int64 nTxFee = nValueIn - GetValueOut();
         if (nTxFee < 0)
