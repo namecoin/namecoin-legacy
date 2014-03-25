@@ -2746,17 +2746,23 @@ Value listunspent(const Array& params, bool fHelp)
 
 Value createrawtransaction(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 2)
+    if (fHelp || (params.size() != 2 && params.size() != 3))
         throw runtime_error(
             "createrawtransaction [{\"txid\":txid,\"vout\":n},...] {address:amount,...}\n"
+            "optional third argument:\n"
+            "  {\"op\":\"name_update\", \"name\":name, \"value\":value, \"address\":address}\n\n"
             "Create a transaction spending given inputs\n"
             "(array of objects containing transaction id and output number),\n"
             "sending to given address(es).\n"
-            "Returns hex-encoded raw transaction.\n"
+            "Optionally, a name_update operation can be performed.\n\n"
+            "Returns hex-encoded raw transaction.\n\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.");
 
-    RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    if (params.size() == 2)
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    else
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type)(obj_type));
 
     Array inputs = params[0].get_array();
     Object sendTo = params[1].get_obj();
@@ -2797,6 +2803,12 @@ Value createrawtransaction(const Array& params, bool fHelp)
 
         CTxOut out(nAmount, scriptPubKey);
         rawTx.vout.push_back(out);
+    }
+
+    if (params.size() == 3)
+    {
+        Object nameOp = params[2].get_obj();
+        AddRawTxNameOperation(rawTx, nameOp);
     }
 
     CDataStream ss(SER_NETWORK, VERSION);
@@ -3839,6 +3851,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<Array>(params[0]);
     if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<Object>(params[1]);
+    if (strMethod == "createrawtransaction"   && n > 2) ConvertTo<Object>(params[2]);
     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
