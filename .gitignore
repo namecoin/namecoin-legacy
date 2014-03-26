@@ -1,7 +1,10 @@
-src/*.exe
 *.pyc
-src/bitcoin
-src/bitcoind
 .*.swp
 *.*~*
+qrc_bitcoin.cpp
+namecoin-qt
+namecoin-qt.exe
 src/namecoind
+src/namecoind.exe
+build
+Makefile
