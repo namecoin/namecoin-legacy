@@ -1,10 +1,12 @@
 *.pyc
 .*.swp
 *.*~*
-qrc_bitcoin.cpp
 namecoin-qt
 namecoin-qt.exe
 src/namecoind
 src/namecoind.exe
+
+# Stuff created by the Qt build system.
+qrc_bitcoin.cpp
 build
-Makefile
+/Makefile
