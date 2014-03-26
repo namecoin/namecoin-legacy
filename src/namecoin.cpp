@@ -1267,6 +1267,89 @@ Value name_new(const Array& params, bool fHelp)
     return res;
 }
 
+static Value
+name_pending (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 0)
+    throw runtime_error(
+      "name_pending\n"
+      "List all pending name operations known of.\n");
+
+  Array res;
+
+  CRITICAL_BLOCK (cs_main)
+    {
+      std::map<vchType, std::set<uint256> >::const_iterator i;
+      for (i = mapNamePending.begin (); i != mapNamePending.end (); ++i)
+        {
+          if (i->second.empty ())
+            continue;
+
+          const std::string name = stringFromVch (i->first);
+
+          for (std::set<uint256>::const_iterator j = i->second.begin ();
+               j != i->second.end (); ++j)
+            {
+              CTransaction tx;
+              uint256 hashBlock;
+              if (!GetTransaction (*j, tx, hashBlock))
+                {
+                  printf ("name_pending: failed to GetTransaction of hash %s\n",
+                          j->GetHex ().c_str ());
+                  continue;
+                }
+
+              int op, nOut;
+              std::vector<vchType> vvch;
+              if (!DecodeNameTx (tx, op, nOut, vvch))
+                {
+                  printf ("name_pending: failed to find name output in tx %s\n",
+                          j->GetHex ().c_str ());
+                  continue;
+                }
+
+              /* Decode the name operation.  */
+              std::string value;
+              std::string opString;
+              switch (op)
+                {
+                case OP_NAME_FIRSTUPDATE:
+                  assert (vvch.size () == 3);
+                  opString = "name_firstupdate";
+                  value = stringFromVch (vvch[2]);
+                  break;
+
+                case OP_NAME_UPDATE:
+                  assert (vvch.size () == 2);
+                  opString = "name_update";
+                  value = stringFromVch (vvch[1]);
+                  break;
+
+                default:
+                  printf ("name_pending: unexpected op code %d for tx %s\n",
+                          op, j->GetHex ().c_str ());
+                  continue;
+                }
+
+              /* See if it is owned by the wallet user.  */
+              const CTxOut& txout = tx.vout[nOut];
+              const bool isMine = IsMyName (tx, txout);
+
+              /* Construct the JSON output.  */
+              Object obj;
+              obj.push_back (Pair ("name", name));
+              obj.push_back (Pair ("txid", j->GetHex ()));
+              obj.push_back (Pair ("op", opString));
+              obj.push_back (Pair ("value", value));
+              obj.push_back (Pair ("ismine", isMine));
+              res.push_back (obj);
+            }
+        }
+    }
+
+  return res;
+}
+
 /* Implement name operations for createrawtransaction.  */
 void
 AddRawTxNameOperation (CTransaction& tx, const Object& obj)
@@ -1747,6 +1830,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
+    mapCallTable.insert(make_pair("name_pending", &name_pending));
     mapCallTable.insert(make_pair("sendtoname", &sendtoname));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
