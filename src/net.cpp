@@ -54,7 +54,7 @@ uint64 nLocalHostNonce = 0;
 array<int, 10> vnThreadsRunning;
 SOCKET hListenSocket = INVALID_SOCKET;
 
-vector<CNode*> vNodes;
+CNodeList vNodes(true);
 CCriticalSection cs_vNodes;
 map<vector<unsigned char>, CAddress> mapAddresses;
 CCriticalSection cs_mapAddresses;
@@ -85,6 +85,29 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     hashLastGetBlocksEnd = hashEnd;
 
     PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
+}
+
+CNodeList::~CNodeList ()
+{
+    printf ("Freeing %d nodes in CNodeList %p...\n", size(), this);
+    while (!empty ())
+    {
+        CNode* pnode = back ();
+        pop_back ();
+
+        if (fRefCounts)
+            pnode->Release ();
+
+        // Wait until the node is no longer used.
+        while (pnode->GetRefCount () > 0)
+            Sleep (10);
+
+        CRITICAL_BLOCK(pnode->cs_vSend)
+        CRITICAL_BLOCK(pnode->cs_vRecv)
+        CRITICAL_BLOCK(pnode->cs_mapRequests)
+        CRITICAL_BLOCK(pnode->cs_inventory)
+            delete pnode;
+    }
 }
 
 
@@ -749,7 +772,7 @@ void ThreadSocketHandler(void* parg)
 void ThreadSocketHandler2(void* parg)
 {
     printf("ThreadSocketHandler started\n");
-    list<CNode*> vNodesDisconnected;
+    CNodeList vNodesDisconnected(false);
     int nPrevNodeCount = 0;
 
     loop
@@ -767,7 +790,7 @@ void ThreadSocketHandler2(void* parg)
                     (pnode->GetRefCount() <= 0 && pnode->vRecv.empty() && pnode->vSend.empty()))
                 {
                     // remove from vNodes
-                    vNodes.erase(remove(vNodes.begin(), vNodes.end(), pnode), vNodes.end());
+                    vNodes.remove(pnode);
 
                     // close socket and cleanup
                     pnode->CloseSocketDisconnect();
@@ -775,14 +798,13 @@ void ThreadSocketHandler2(void* parg)
 
                     // hold in disconnected pool until all refs are released
                     pnode->nReleaseTime = max(pnode->nReleaseTime, GetTime() + 15 * 60);
-                    if (pnode->fNetworkNode || pnode->fInbound)
-                        pnode->Release();
+                    pnode->Release();
                     vNodesDisconnected.push_back(pnode);
                 }
             }
 
             // Delete disconnected nodes
-            list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
+            vector<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
             BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
             {
                 // wait until threads are done using it
@@ -1721,10 +1743,6 @@ public:
     }
     ~CNetCleanup()
     {
-        // Close sockets
-        BOOST_FOREACH(CNode* pnode, vNodes)
-            if (pnode->hSocket != INVALID_SOCKET)
-                closesocket(pnode->hSocket);
         if (hListenSocket != INVALID_SOCKET)
             if (closesocket(hListenSocket) == SOCKET_ERROR)
                 printf("closesocket(hListenSocket) failed with error %d\n", WSAGetLastError());
