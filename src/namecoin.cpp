@@ -76,6 +76,7 @@ public:
     virtual int LockinHeight();
     virtual string IrcPrefix();
     virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx);
+    virtual void RemoveFromMemoryPool(const CTransaction& tx);
 
     virtual void MessageStart(char* pchMessageStart)
     {
@@ -1777,7 +1778,7 @@ bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsi
     }
     else
     {
-        // Name bug: before hard-fork point, we reproduce the buggy behavior
+        // Name bug: before the hard-fork point, we reproduce the buggy behavior
         // of concatenating args (vvchPrevArgs not cleared between calls)
         bool fBug = false;
         for (int i = 0; i < tx.vout.size(); i++)
@@ -1938,11 +1939,36 @@ void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
         return;
     }
 
-    CRITICAL_BLOCK(cs_main)
+    if (op != OP_NAME_NEW)
     {
-        if (op != OP_NAME_NEW)
-        {
+        CRITICAL_BLOCK(cs_main)
             mapNamePending[vvch[0]].insert(tx.GetHash());
+    }
+}
+
+void CNamecoinHooks::RemoveFromMemoryPool(const CTransaction& tx)
+{
+    if (tx.nVersion != NAMECOIN_TX_VERSION)
+        return;
+
+    if (tx.vout.size() < 1)
+        return;
+
+    vector<vector<unsigned char> > vvch;
+
+    int op;
+    int nOut;
+
+    if (!DecodeNameTx(tx, op, nOut, vvch, BUG_WORKAROUND_BLOCK))
+        return;
+
+    if (op != OP_NAME_NEW)
+    {
+        CRITICAL_BLOCK(cs_main)
+        {
+            std::map<std::vector<unsigned char>, std::set<uint256> >::iterator mi = mapNamePending.find(vvch[0]);
+            if (mi != mapNamePending.end())
+                mi->second.erase(tx.GetHash());
         }
     }
 }
@@ -2136,7 +2162,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     else
                     {
                         // Accept bad transactions before the hard-fork point, but do not write them to name DB
-                        printf("ConnectInputsHook() : name_firstupdate mismatch bug workaround");
+                        printf("ConnectInputsHook() : name_firstupdate mismatch bug workaround\n");
                         fBugWorkaround = true;
                     }
                 }
@@ -2265,7 +2291,6 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                         return error("ConnectInputsHook() : failed to write to name DB");
                 }
             }
-
 
             if (op != OP_NAME_NEW)
                 CRITICAL_BLOCK(cs_main)

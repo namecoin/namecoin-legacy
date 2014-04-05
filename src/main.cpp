@@ -485,6 +485,8 @@ bool CTransaction::AddToMemoryPoolUnchecked()
 
 bool CTransaction::RemoveFromMemoryPool()
 {
+    hooks->RemoveFromMemoryPool(*this);
+
     // Remove transaction from memory pool
     CRITICAL_BLOCK(cs_mapTransactions)
     {

@@ -4,6 +4,10 @@
 #ifndef BITCOIN_MAIN_H
 #define BITCOIN_MAIN_H
 
+#if defined(HAVE_CONFIG_H)
+#include "namecoin-config.h"
+#endif
+
 #include "bignum.h"
 #include "net.h"
 #include "key.h"

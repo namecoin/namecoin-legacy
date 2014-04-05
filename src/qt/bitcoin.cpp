@@ -45,8 +45,6 @@ Q_DECLARE_METATYPE(bool*)
 static BitcoinGUI *guiref;
 static QSplashScreen *splashref;
 
-CClientUIInterface uiInterface;
-
 static bool ThreadSafeMessageBox(const std::string& message, const std::string& caption, unsigned int style)
 {
     // Message from network thread
@@ -119,7 +117,6 @@ static void handleRunawayException(std::exception *e)
     exit(1);
 }
 
-#ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
 {
     // Command-line options take precedence:
@@ -129,7 +126,7 @@ int main(int argc, char *argv[])
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
     QTextCodec::setCodecForCStrings(QTextCodec::codecForTr());
 
-    Q_INIT_RESOURCE(bitcoin);
+    Q_INIT_RESOURCE(namecoin);
     QApplication app(argc, argv);
 
     // Parse data dir (all other parameters will be parsed in AppInit2)
@@ -305,4 +302,3 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-#endif // BITCOIN_QT_TEST

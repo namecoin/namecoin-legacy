@@ -95,19 +95,6 @@ void HandleSIGTERM(int)
 //
 // Start
 //
-#ifndef GUI
-int main(int argc, char* argv[])
-{
-    bool fRet = false;
-    fRet = AppInit(argc, argv);
-
-    if (fRet && fDaemon)
-        return 0;
-
-    return 1;
-}
-#endif
-
 bool AppInit(int argc, char* argv[])
 {
     bool fRet = false;
