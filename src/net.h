@@ -18,6 +18,7 @@ class CAddress;
 class CInv;
 class CRequestTracker;
 class CNode;
+class CNodeList;
 class CBlockIndex;
 extern int nBestHeight;
 extern int nConnectTimeout;
@@ -480,7 +481,7 @@ extern uint64 nLocalHostNonce;
 extern boost::array<int, 10> vnThreadsRunning;
 extern SOCKET hListenSocket;
 
-extern std::vector<CNode*> vNodes;
+extern CNodeList vNodes;
 extern CCriticalSection cs_vNodes;
 extern std::map<std::vector<unsigned char>, CAddress> mapAddresses;
 extern CCriticalSection cs_mapAddresses;
@@ -964,6 +965,42 @@ public:
     void CancelSubscribe(unsigned int nChannel);
     void CloseSocketDisconnect();
     void Cleanup();
+};
+
+/* Small wrapper around list<CNode*> that ensures that the nodes
+   are deleted when the list goes out of scope.  While the lists
+   usually live until program shutdown, this is still useful to
+   prevent "false positives" on memory leak checks.  */
+class CNodeList : public std::vector<CNode*>
+{
+
+private:
+
+    // Disallow default constructor.
+    CNodeList ();
+
+    /* Set to true if the reference in this list counts towards the
+       nodes refcount.  In other words, if fRefCounts is set, then
+       the node will be deleted already with refcount = 1 and we do not
+       wait for refcount = 0.  */
+    bool fRefCounts;
+
+public:
+
+    explicit inline
+    CNodeList (bool fRefCountsIn)
+        : std::vector<CNode*>(), fRefCounts(fRefCountsIn)
+    {}
+
+    ~CNodeList ();
+
+    // Erase a given node from the list.
+    inline void
+    remove (CNode* pnode)
+    {
+        erase (std::remove (begin (), end (), pnode), end ());
+    }
+
 };
 
 
