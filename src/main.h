@@ -21,6 +21,7 @@
 
 class CBlock;
 class CBlockIndex;
+class CMapBlockIndex;
 class CWalletTx;
 class CWallet;
 class CKeyItem;
@@ -59,7 +60,7 @@ static const int fHaveUPnP = false;
 
 
 extern CCriticalSection cs_main;
-extern std::map<uint256, CBlockIndex*> mapBlockIndex;
+extern CMapBlockIndex mapBlockIndex;
 extern uint256 hashGenesisBlock;
 extern CBigNum bnProofOfWorkLimit;
 extern CBlockIndex* pindexGenesisBlock;
@@ -1296,6 +1297,23 @@ public:
     {
         printf("%s\n", ToString().c_str());
     }
+};
+
+
+
+
+
+/* Wrapper around std::map<uint256, CBlockIndex*> to ensure that the blocks
+   are freed properly.  While the global map is only freed at program
+   shutdown, this is useful to prevent false positives when looking
+   for memory leaks.  */
+class CMapBlockIndex : public std::map<uint256, CBlockIndex*>
+{
+
+public:
+
+    ~CMapBlockIndex ();
+
 };
 
 
