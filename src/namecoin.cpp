@@ -1028,9 +1028,9 @@ Value name_scan(const Array& params, bool fHelp)
 
 Value name_firstupdate(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 3 || params.size() > 4)
+    if (fHelp || params.size() < 3 || params.size() > 5)
         throw runtime_error(
-                "name_firstupdate <name> <rand> [<tx>] <value>\n"
+                "name_firstupdate <name> <rand> [<tx>] <value> [<toaddress>]\n"
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
                 + HelpRequiringPassphrase());
@@ -1072,6 +1072,23 @@ Value name_firstupdate(const Array& params, bool fHelp)
         }
     }
 
+    CScript scriptPubKeyOrig;
+    if (params.size () == 5)
+    {
+        const std::string strAddress = params[4].get_str ();
+        uint160 hash160;
+        bool isValid = AddressToHash160 (strAddress, hash160);
+        if (!isValid)
+            throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
+                                "Invalid namecoin address");
+        scriptPubKeyOrig.SetBitcoinAddress (strAddress);
+    }
+    else
+    {
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool ();
+        scriptPubKeyOrig.SetBitcoinAddress (vchPubKey);
+    }
+
     CRITICAL_BLOCK(cs_main)
     {
         EnsureWalletIsUnlocked();
@@ -1097,9 +1114,6 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
-        CScript scriptPubKeyOrig;
-        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
         CScript scriptPubKey;
         scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
         scriptPubKey += scriptPubKeyOrig;
