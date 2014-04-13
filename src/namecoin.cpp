@@ -1884,7 +1884,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     const CTxOut& txout = tx.vout[nOut];
     if (IsMyName(tx, txout))
     {
-        printf("IsMine() hook : found my transaction %s nout %d\n", tx.GetHash().GetHex().c_str(), nOut);
+        //printf("IsMine() hook : found my transaction %s nout %d\n", tx.GetHash().GetHex().c_str(), nOut);
         return true;
     }
     return false;
@@ -1908,7 +1908,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
 
     if (IsMyName(tx, txout))
     {
-        printf("IsMine() hook : found my transaction %s value %ld\n", tx.GetHash().GetHex().c_str(), txout.nValue);
+        //printf("IsMine() hook : found my transaction %s value %ld\n", tx.GetHash().GetHex().c_str(), txout.nValue);
         return true;
     }
     return false;
