@@ -537,14 +537,12 @@ bool CTxDB::LoadBlockIndex()
             pindexNew->nTime          = diskindex.nTime;
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
-            pindexNew->auxpow         = diskindex.auxpow;
+            pindexNew->auxpow.reset ();
+            pindexNew->hasAuxpow      = diskindex.hasAuxpow;
 
             // Watch for genesis block
             if (pindexGenesisBlock == NULL && diskindex.GetBlockHash() == hashGenesisBlock)
                 pindexGenesisBlock = pindexNew;
-
-            if (!pindexNew->CheckIndex())
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else
         {
