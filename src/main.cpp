@@ -1763,12 +1763,33 @@ bool LoadBlockIndex(bool fAllowNew)
     hooks->MessageStart(pchMessageStart);
 
     //
-    // Load block index
+    // Load block index.  Update to the new format (without auxpow)
+    // if necessary.
     //
-    CTxDB txdb("cr");
-    if (!txdb.LoadBlockIndex())
-        return false;
-    txdb.Close();
+    {
+      CTxDB txdb("cr");
+      if (!txdb.LoadBlockIndex())
+          return false;
+
+      int nVersion;
+      if (txdb.ReadVersion (nVersion))
+        if (nVersion < 37400)
+          {
+            txdb.Close ();
+            CTxDB wtxdb;
+
+            /* Go through each blkindex object loaded into memory and
+               write it again to disk.  */
+            printf ("Updating blkindex.dat data format...\n");
+            map<uint256, CBlockIndex*>::const_iterator mi;
+            for (mi = mapBlockIndex.begin (); mi != mapBlockIndex.end (); ++mi)
+              {
+                CDiskBlockIndex disk(mi->second);
+                wtxdb.WriteBlockIndex (disk);
+              }
+            wtxdb.WriteVersion (37400);
+          }
+    }
 
     //
     // Init with genesis block
@@ -3463,22 +3484,21 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
     }
 }
 
-bool CBlockIndex::CheckIndex() const
-{
-    if (nVersion & BLOCK_VERSION_AUXPOW)
-        return CheckProofOfWork(auxpow->GetParentBlockHash(), nBits);
-    else
-        return CheckProofOfWork(GetBlockHash(), nBits);
-}
-
 std::string CBlockIndex::ToString() const
 {
+    const char* auxpowStr;
+    if (!hasAuxpow)
+      auxpowStr = "-";
+    else if (auxpow)
+      auxpowStr = auxpow->GetParentBlockHash ().ToString ().substr (0, 20).c_str ();
+    else
+      auxpowStr = "<not loaded>";
+
     return strprintf("CBlockIndex(nprev=%08x, pnext=%08x, nFile=%d, nBlockPos=%-6d nHeight=%d, merkle=%s, hashBlock=%s, hashParentBlock=%s)",
             pprev, pnext, nFile, nBlockPos, nHeight,
             hashMerkleRoot.ToString().substr(0,10).c_str(),
             GetBlockHash().ToString().substr(0,20).c_str(),
-            (auxpow.get() != NULL) ? auxpow->GetParentBlockHash().ToString().substr(0,20).c_str() : "-"
-            );
+            auxpowStr);
 }
 
 CMapBlockIndex::~CMapBlockIndex ()
