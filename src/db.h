@@ -212,16 +212,21 @@ public:
             return NULL;
     }
 
-    bool TxnBegin()
+    /* Start a new atomic DB transaction.  Optionally use the passed one
+       instead, which can be used to synchronise between multiple DBs.  */
+    inline bool
+    TxnBegin (DbTxn* ptxn = NULL)
     {
-        if (!pdb)
+      if (!pdb)
+        return false;
+      if (!ptxn)
+        {
+          const int ret = dbenv.txn_begin (GetTxn (), &ptxn, DB_TXN_NOSYNC);
+          if (!ptxn || ret != 0)
             return false;
-        DbTxn* ptxn = NULL;
-        int ret = dbenv.txn_begin(GetTxn(), &ptxn, DB_TXN_NOSYNC);
-        if (!ptxn || ret != 0)
-            return false;
-        vTxn.push_back(ptxn);
-        return true;
+        }
+      vTxn.push_back (ptxn);
+      return true;
     }
 
     bool TxnCommit()
