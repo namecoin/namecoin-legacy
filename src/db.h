@@ -40,7 +40,14 @@ class CDB
 protected:
     Db* pdb;
     std::string strFile;
+
+    /* Keep track of the database transactions open.  Also remember for
+       each one whether or not it is owned by us or was instead passed
+       to TxnBegin.  If it is the latter, it should not be committed/aborted
+       but only removed from the vector when done.  */
     std::vector<DbTxn*> vTxn;
+    std::vector<bool> ownTxn;
+
     bool fReadOnly;
 
     explicit CDB(const char* pszFile, const char* pszMode="r+");
@@ -217,6 +224,8 @@ public:
     inline bool
     TxnBegin (DbTxn* ptxn = NULL)
     {
+      const bool own = (ptxn == NULL);
+
       if (!pdb)
         return false;
       if (!ptxn)
@@ -226,6 +235,7 @@ public:
             return false;
         }
       vTxn.push_back (ptxn);
+      ownTxn.push_back (own);
       return true;
     }
 
@@ -235,8 +245,12 @@ public:
             return false;
         if (vTxn.empty())
             return false;
-        int ret = vTxn.back()->commit(0);
+
+        int ret = 0;
+        if (ownTxn.back ())
+          vTxn.back()->commit(0);
         vTxn.pop_back();
+        ownTxn.pop_back ();
         return (ret == 0);
     }
 
@@ -246,8 +260,12 @@ public:
             return false;
         if (vTxn.empty())
             return false;
-        int ret = vTxn.back()->abort();
+
+        int ret = 0;
+        if (ownTxn.back ())
+          vTxn.back()->abort();
         vTxn.pop_back();
+        ownTxn.pop_back ();
         return (ret == 0);
     }
 

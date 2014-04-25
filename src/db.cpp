@@ -136,9 +136,10 @@ CDB::Close ()
 {
   if (!pdb)
     return;
-  if (!vTxn.empty ())
+  if (!vTxn.empty () && ownTxn.front ())
     vTxn.front ()->abort ();
   vTxn.clear ();
+  ownTxn.clear ();
   pdb = NULL;
 
   if (!fReadOnly)

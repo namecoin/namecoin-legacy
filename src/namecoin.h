@@ -7,22 +7,12 @@ typedef std::vector<unsigned char> vchType;
 
 class CNameDB : public CDB
 {
-protected:
-    bool fHaveParent;
 public:
-    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) {
-        fHaveParent = false;
-    }
+    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) { }
 
     CNameDB(const char* pszMode, CDB& parent) : CDB("nameindex.dat", pszMode) {
         vTxn.push_back(parent.GetTxn());
-        fHaveParent = true;
-    }
-
-    ~CNameDB()
-    {
-        if (fHaveParent)
-            vTxn.erase(vTxn.begin());
+        ownTxn.push_back(false);
     }
 
     bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
