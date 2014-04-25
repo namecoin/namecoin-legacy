@@ -346,7 +346,9 @@ void NameTableModel::updateExpiration()
 {
     if (nBestHeight != cachedNumBlocks)
     {
-        LOCK(cs_main);
+        CTryCriticalBlock criticalBlock(cs_main);
+        if (!criticalBlock.Entered())
+            return;
 
         cachedNumBlocks = nBestHeight;
         // Blocks came in since last poll.
