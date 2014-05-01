@@ -258,6 +258,14 @@ public:
     }
     
     bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
+
+    /* Rewrite the DB with this database's name.  This closes it.  */
+    inline bool
+    Rewrite ()
+    {
+      Close ();
+      Rewrite (strFile);
+    }
 };
 
 
@@ -280,7 +288,6 @@ public:
     bool AddTxIndex(const CTransaction& tx, const CDiskTxPos& pos, int nHeight);
     bool EraseTxIndex(const CTransaction& tx);
     bool ContainsTx(uint256 hash);
-    bool ReadOwnerTxes(uint160 hash160, int nHeight, std::vector<CTransaction>& vtx);
     bool ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);

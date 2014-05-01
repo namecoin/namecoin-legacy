@@ -5,7 +5,6 @@
 #include "headers.h"
 #include "db.h"
 #include "net.h"
-#include "auxpow.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -364,60 +363,6 @@ bool CTxDB::ContainsTx(uint256 hash)
     return Exists(make_pair(string("tx"), hash));
 }
 
-bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>& vtx)
-{
-    assert(!fClient);
-    vtx.clear();
-
-    // Get cursor
-    Dbc* pcursor = GetCursor();
-    if (!pcursor)
-        return false;
-
-    unsigned int fFlags = DB_SET_RANGE;
-    loop
-    {
-        // Read next record
-        CDataStream ssKey;
-        if (fFlags == DB_SET_RANGE)
-            ssKey << string("owner") << hash160 << CDiskTxPos(0, 0, 0);
-        CDataStream ssValue;
-        int ret = ReadAtCursor(pcursor, ssKey, ssValue, fFlags);
-        fFlags = DB_NEXT;
-        if (ret == DB_NOTFOUND)
-            break;
-        else if (ret != 0)
-        {
-            pcursor->close();
-            return false;
-        }
-
-        // Unserialize
-        string strType;
-        uint160 hashItem;
-        CDiskTxPos pos;
-        ssKey >> strType >> hashItem >> pos;
-        int nItemHeight;
-        ssValue >> nItemHeight;
-
-        // Read transaction
-        if (strType != "owner" || hashItem != hash160)
-            break;
-        if (nItemHeight >= nMinHeight)
-        {
-            vtx.resize(vtx.size()+1);
-            if (!vtx.back().ReadFromDisk(pos))
-            {
-                pcursor->close();
-                return false;
-            }
-        }
-    }
-
-    pcursor->close();
-    return true;
-}
-
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
 {
     assert(!fClient);
@@ -537,14 +482,10 @@ bool CTxDB::LoadBlockIndex()
             pindexNew->nTime          = diskindex.nTime;
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
-            pindexNew->auxpow         = diskindex.auxpow;
 
             // Watch for genesis block
             if (pindexGenesisBlock == NULL && diskindex.GetBlockHash() == hashGenesisBlock)
                 pindexGenesisBlock = pindexNew;
-
-            if (!pindexNew->CheckIndex())
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else
         {
