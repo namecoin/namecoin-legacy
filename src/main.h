@@ -1282,7 +1282,7 @@ public:
         READWRITE(nNonce);
 
         /* In the old format, the auxpow is stored.  Load it and ignore.  */
-        if ((nType & SER_DISK) && fRead && nVersion < 37400)
+        if (fRead && nVersion < 37400)
         {
             boost::shared_ptr<CAuxPow> auxpow;
             ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
