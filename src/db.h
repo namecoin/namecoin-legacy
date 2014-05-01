@@ -258,6 +258,14 @@ public:
     }
     
     bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
+
+    /* Rewrite the DB with this database's name.  This closes it.  */
+    inline bool
+    Rewrite ()
+    {
+      Close ();
+      Rewrite (strFile);
+    }
 };
 
 
