@@ -1054,7 +1054,7 @@ public:
 
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
+    bool ReadFromDisk(const CBlockIndex* pindex);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock(int nHeight) const;
@@ -1139,6 +1139,10 @@ public:
         auxpow         = block.auxpow;
     }
 
+    /* GetBlockHeader is never actually used in the code, thus disable
+       it since it can't reliably be tested.  It can be re-enabled
+       when necessary later.  */
+#if 0
     CBlock GetBlockHeader() const
     {
         CBlock block;
@@ -1167,6 +1171,7 @@ public:
 
         return block;
     }
+#endif
 
     uint256 GetBlockHash() const
     {
