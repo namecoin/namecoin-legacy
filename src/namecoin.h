@@ -3,6 +3,8 @@
 
 #include "json/json_spirit.h"
 
+typedef std::vector<unsigned char> vchType;
+
 class CNameDB : public CDB
 {
 protected:
@@ -23,33 +25,30 @@ public:
             vTxn.erase(vTxn.begin());
     }
 
-    //bool WriteName(std::vector<unsigned char>& name, std::vector<CDiskTxPos> vtxPos)
-    bool WriteName(const std::vector<unsigned char>& name, std::vector<CNameIndex>& vtxPos)
+    bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
     {
         return Write(make_pair(std::string("namei"), name), vtxPos);
     }
 
-    //bool ReadName(std::vector<unsigned char>& name, std::vector<CDiskTxPos>& vtxPos)
-    bool ReadName(const std::vector<unsigned char>& name, std::vector<CNameIndex>& vtxPos)
+    bool ReadName(const vchType& name, std::vector<CNameIndex>& vtxPos)
     {
         return Read(make_pair(std::string("namei"), name), vtxPos);
     }
 
-    bool ExistsName(const std::vector<unsigned char>& name)
+    bool ExistsName(const vchType& name)
     {
         return Exists(make_pair(std::string("namei"), name));
     }
 
-    bool EraseName(const std::vector<unsigned char>& name)
+    bool EraseName(const vchType& name)
     {
         return Erase(make_pair(std::string("namei"), name));
     }
 
     bool ScanNames(
-            const std::vector<unsigned char>& vchName,
+            const vchType& vchName,
             int nMax,
-            std::vector<std::pair<std::vector<unsigned char>, CNameIndex> >& nameScan);
-            //std::vector<std::pair<std::vector<unsigned char>, CDiskTxPos> >& nameScan);
+            std::vector<std::pair<vchType, CNameIndex> >& nameScan);
 
     bool test();
 
@@ -71,8 +70,8 @@ class CNameIndex;
 class CDiskTxPos;
 class uint256;
 
-extern std::map<std::vector<unsigned char>, uint256> mapMyNames;
-extern std::map<std::vector<unsigned char>, std::set<uint256> > mapNamePending;
+extern std::map<vchType, uint256> mapMyNames;
+extern std::map<vchType, std::set<uint256> > mapNamePending;
 
 std::string stringFromVch(const std::vector<unsigned char> &vch);
 std::vector<unsigned char> vchFromString(const std::string &str);
