@@ -131,29 +131,35 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
     }
 }
 
-void CDB::Close()
+void
+CDB::Close ()
 {
-    if (!pdb)
-        return;
-    if (!vTxn.empty())
-        vTxn.front()->abort();
-    vTxn.clear();
-    pdb = NULL;
+  if (!pdb)
+    return;
+  if (!vTxn.empty ())
+    vTxn.front ()->abort ();
+  vTxn.clear ();
+  pdb = NULL;
 
-    // Flush database activity from memory pool to disk log
-    // wallet.dat is always flushed, the other files only every couple of minutes
-	// note Namecoin has more .dat files than Bitcoin
-    unsigned int nMinutes = 2;
-    if (fReadOnly)
-        nMinutes = 1;
-    if (strFile == "wallet.dat")
+  if (!fReadOnly)
+    {
+      /* Flush database activity from memory pool to disk log.
+         wallet.dat is always flushed, the other files only every couple
+         of minutes.
+         Note: Namecoin has more .dat files than Bitcoin.  */
+
+      unsigned int nMinutes = 2;
+      if (strFile == "wallet.dat")
         nMinutes = 0;
-    if (strFile == "blkindex.dat" && IsInitialBlockDownload() && nBestHeight % 5000 != 0)
-            nMinutes = 5;
-    dbenv.txn_checkpoint(0, nMinutes, 0);
+      else if ((strFile == "blkindex.dat" || strFile == "nameindex.dat")
+               && IsInitialBlockDownload ())
+        nMinutes = 5;
 
-    CRITICAL_BLOCK(cs_db)
-        --mapFileUseCount[strFile];
+      dbenv.txn_checkpoint (0, nMinutes, 0);
+    }
+
+  CRITICAL_BLOCK(cs_db)
+    --mapFileUseCount[strFile];
 }
 
 static void CloseDb(const string& strFile)
