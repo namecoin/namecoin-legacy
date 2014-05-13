@@ -1,3 +1,4 @@
+*.bak
 *.pyc
 .*.swp
 *.*~*
@@ -10,3 +11,5 @@ src/namecoind.exe
 qrc_bitcoin.cpp
 build
 /Makefile
+*.Debug
+*.Release
