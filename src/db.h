@@ -248,7 +248,7 @@ public:
 
         int ret = 0;
         if (ownTxn.back ())
-          vTxn.back()->commit(0);
+          ret = vTxn.back()->commit(0);
         vTxn.pop_back();
         ownTxn.pop_back ();
         return (ret == 0);
@@ -263,7 +263,7 @@ public:
 
         int ret = 0;
         if (ownTxn.back ())
-          vTxn.back()->abort();
+          ret = vTxn.back()->abort();
         vTxn.pop_back();
         ownTxn.pop_back ();
         return (ret == 0);
