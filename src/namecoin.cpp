@@ -1255,6 +1255,70 @@ Value name_new(const Array& params, bool fHelp)
     return res;
 }
 
+/* Implement name operations for createrawtransaction.  */
+void
+AddRawTxNameOperation (CTransaction& tx, const Object& obj)
+{
+  Value val = find_value (obj, "op");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing op key.");
+  const std::string op = val.get_str ();
+
+  if (op != "name_update")
+    throw std::runtime_error ("Only name_update is implemented"
+                              " for raw transactions at the moment.");
+
+  val = find_value (obj, "name");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing name key.");
+  const std::string name = val.get_str ();
+  const std::vector<unsigned char> vchName = vchFromString (name);
+
+  val = find_value (obj, "value");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing value key.");
+  const std::string value = val.get_str ();
+
+  val = find_value (obj, "address");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing address key.");
+  const std::string address = val.get_str ();
+  if (!IsValidBitcoinAddress (address))
+    {
+      std::ostringstream msg;
+      msg << "Invalid Namecoin address: " << address;
+      throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
+    }
+
+  /* Find the transaction input to add.  */
+
+  CRITICAL_BLOCK(cs_main)
+  {
+    CNameDB dbName("r");
+    CTransaction prevTx;
+    if (!GetTxOfName (dbName, vchName, prevTx))
+      throw std::runtime_error ("could not find a coin with this name");
+    const uint256 prevTxHash = prevTx.GetHash();
+    const int nTxOut = IndexOfNameOutput (prevTx);
+
+    CTxIn in(COutPoint(prevTxHash, nTxOut));
+    tx.vin.push_back (in);
+  }
+
+  /* Construct the transaction output.  */
+
+  CScript scriptPubKeyOrig;
+  scriptPubKeyOrig.SetBitcoinAddress (address);
+
+  CScript scriptPubKey;
+  scriptPubKey << OP_NAME_UPDATE << vchName << vchFromString (value)
+               << OP_2DROP << OP_DROP;
+  scriptPubKey += scriptPubKeyOrig;
+
+  CTxOut out(MIN_AMOUNT, scriptPubKey);
+  tx.vout.push_back (out);
+}
+
 void UnspendInputs(CWalletTx& wtx)
 {
     set<CWalletTx*> setCoins;
