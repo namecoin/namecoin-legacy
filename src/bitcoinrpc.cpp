@@ -2553,15 +2553,76 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     string address;
     int nRequired = 1;
 
-    out.push_back(Pair("asm", scriptPubKey.ToString()));
+    /* If this is a name transaction, try to strip off the initial
+       script and decode the rest for better results.  */
+    std::string nameAsmPrefix = "";
+    CScript script(scriptPubKey);
+    int op;
+    vector<vector<unsigned char> > vvch;
+    CScript::const_iterator pc = script.begin();
+    if (DecodeNameScript(script, op, vvch, pc))
+    {
+        Object nameOp;
+
+        switch (op)
+        {
+        case OP_NAME_NEW:
+        {
+            assert(vvch.size() == 1);
+            const std::string rand = HexStr(vvch[0].begin(), vvch[0].end());
+            nameOp.push_back(Pair("op", "name_new"));
+            nameOp.push_back(Pair("rand", rand));
+            break;
+        }
+
+        case OP_NAME_FIRSTUPDATE:
+        {
+            assert(vvch.size() == 3);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string rand = HexStr(vvch[1].begin(), vvch[1].end());
+            const std::string val(vvch[2].begin(), vvch[2].end());
+            nameOp.push_back(Pair("op", "name_firstupdate"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("rand", rand));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        case OP_NAME_UPDATE:
+        {
+            assert(vvch.size() == 2);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string val(vvch[1].begin(), vvch[1].end());
+            nameOp.push_back(Pair("op", "name_update"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        default:
+            nameOp.push_back(Pair("op", "unknown"));
+            break;
+        }
+
+        out.push_back(Pair("nameOp", nameOp));
+        nameAsmPrefix = "NAME_OPERATION ";
+        script = CScript(pc, script.end());
+    }
+
+    /* Write out the results.  */
+    out.push_back(Pair("asm", nameAsmPrefix + script.ToString()));
     out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
     //if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
-    if (!ExtractDestination(scriptPubKey, address))
+    if (!ExtractDestination(script, address))
     {
         out.push_back(Pair("type", "nonstandard" /*GetTxnOutputType(TX_NONSTANDARD)*/ ));
         return;
     }
+
+    /* Note:  ExtractDestination handles both pubkey hash and pubkey,
+       but the code below prints pubkeyhash as type in both cases.  That
+       is not so big a deal, presumably.  */
 
     out.push_back(Pair("reqSigs", nRequired));
     out.push_back(Pair("type", "pubkeyhash" /*GetTxnOutputType(type)*/ ));
@@ -2579,46 +2640,15 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
     entry.push_back(Pair("version", tx.nVersion));
     entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
-    Array vin;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    {
-        Object in;
-        if (tx.IsCoinBase())
-            in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-        else
-        {
-            in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
-            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
-            Object o;
-            o.push_back(Pair("asm", txin.scriptSig.ToString()));
-            o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-            in.push_back(Pair("scriptSig", o));
-        }
-        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
-        vin.push_back(in);
-    }
-    entry.push_back(Pair("vin", vin));
-    Array vout;
-    for (unsigned int i = 0; i < tx.vout.size(); i++)
-    {
-        const CTxOut& txout = tx.vout[i];
-        Object out;
-        out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
-        out.push_back(Pair("n", (boost::int64_t)i));
-        Object o;
-        ScriptPubKeyToJSON(txout.scriptPubKey, o);
-        out.push_back(Pair("scriptPubKey", o));
-        vout.push_back(out);
-    }
-    entry.push_back(Pair("vout", vout));
 
+    const CBlockIndex* pindex = NULL;
     if (hashBlock != 0)
     {
         entry.push_back(Pair("blockhash", hashBlock.GetHex()));
-        map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+        map<uint256, CBlockIndex*>::const_iterator mi = mapBlockIndex.find(hashBlock);
         if (mi != mapBlockIndex.end() && (*mi).second)
         {
-            CBlockIndex* pindex = (*mi).second;
+            pindex = (*mi).second;
             if (pindex->IsInMainChain())
             {
                 entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
@@ -2629,6 +2659,76 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
                 entry.push_back(Pair("confirmations", 0));
         }
     }
+
+    Array vin;
+    int64 nValueIn = 0;
+    bool fullValueIn = true;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        Object in;
+        if (tx.IsCoinBase())
+        {
+            in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+
+            if (pindex)
+            {
+                const int64 val = GetBlockValue(pindex->nHeight, 0);
+                nValueIn += val;
+                in.push_back(Pair("value", ValueFromAmount(val)));
+            }
+            else
+                fullValueIn = false;
+        }
+        else
+        {
+            in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+            Object o;
+            o.push_back(Pair("asm", txin.scriptSig.ToString()));
+            o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+            in.push_back(Pair("scriptSig", o));
+
+            /* Try to retrieve previous transaction output to find
+               its value in order to calculate transaction fees.  */
+            CTransaction prevTx;
+            uint256 prevHashBlock = 0;
+            if (GetTransaction(txin.prevout.hash, prevTx, prevHashBlock))
+            {
+                if (prevTx.vout.size () > txin.prevout.n)
+                {
+                    const int64 val = prevTx.vout[txin.prevout.n].nValue;
+                    nValueIn += val;
+                    in.push_back(Pair("value", ValueFromAmount(val)));
+                }
+                else
+                    fullValueIn = false;
+            }
+            else
+                fullValueIn = false;
+        }
+        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+        vin.push_back(in);
+    }
+    entry.push_back(Pair("vin", vin));
+
+    Array vout;
+    int64 nValueOut = 0;
+    for (unsigned int i = 0; i < tx.vout.size(); i++)
+    {
+        const CTxOut& txout = tx.vout[i];
+        nValueOut += txout.nValue;
+        Object out;
+        out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
+        out.push_back(Pair("n", (boost::int64_t)i));
+        Object o;
+        ScriptPubKeyToJSON(txout.scriptPubKey, o);
+        out.push_back(Pair("scriptPubKey", o));
+        vout.push_back(out);
+    }
+    entry.push_back(Pair("vout", vout));
+
+    if (fullValueIn)
+        entry.push_back(Pair("fees", ValueFromAmount(nValueIn - nValueOut)));
 }
 
 Value getrawtransaction(const Array& params, bool fHelp)
