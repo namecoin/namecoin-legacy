@@ -1,3 +1,5 @@
+*.bak
+*.dll
 *.pyc
 .*.swp
 *.*~*
@@ -9,4 +11,8 @@ src/namecoind.exe
 # Stuff created by the Qt build system.
 qrc_bitcoin.cpp
 build
+debug
+release
 /Makefile
+*.Debug
+*.Release
