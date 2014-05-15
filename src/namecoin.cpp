@@ -1670,7 +1670,7 @@ bool CNameDB::ReconstructNameIndex()
         {  
             TxnBegin();
             CBlock block;
-            block.ReadFromDisk(pindex, true);
+            block.ReadFromDisk(pindex);
             int nHeight = pindex->nHeight;
             
             BOOST_FOREACH(CTransaction& tx, block.vtx)
