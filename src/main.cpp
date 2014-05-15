@@ -22,6 +22,9 @@ set<CWallet*> setpwalletRegistered;
 
 CCriticalSection cs_main;
 
+boost::mutex mut_newBlock;
+boost::condition_variable cv_newBlock;
+
 map<uint256, CTransaction> mapTransactions;
 CCriticalSection cs_mapTransactions;
 unsigned int nTransactionsUpdated = 0;
@@ -1381,6 +1384,10 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     nTimeBestReceived = GetTime();
     nTransactionsUpdated++;
     printf("SetBestChain: new best=%s  height=%d  work=%s\n", hashBestChain.ToString().substr(0,20).c_str(), nBestHeight, bnBestChainWork.ToString().c_str());
+
+    /* When everything is done, notify threads waiting for a change in the
+       currently best chain.  */
+    cv_newBlock.notify_all ();
 
     return true;
 }

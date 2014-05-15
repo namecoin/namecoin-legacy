@@ -12,6 +12,7 @@
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 
 #ifdef __WXMSW__
 #include <io.h> /* for _commit */
@@ -76,6 +77,11 @@ extern int64 nHPSTimerStart;
 extern int64 nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
+
+/* Synchronisation and condition variable for threads waiting to be notified
+   when a new block arrives.  */
+extern boost::mutex mut_newBlock;
+extern boost::condition_variable cv_newBlock;
 
 // Settings
 extern int fGenerateBitcoins;
