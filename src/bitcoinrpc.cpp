@@ -20,7 +20,6 @@
 #include <boost/thread/thread.hpp>
 
 #include <memory>
-#include <list>
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp> 

@@ -7,6 +7,12 @@
 
 #include "json/json_spirit.h"
 
+#include <map>
+#include <list>
+#include <set>
+#include <string>
+#include <vector>
+
 void ThreadRPCServer(void* parg);
 json_spirit::Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams);
 void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params);
