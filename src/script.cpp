@@ -1278,7 +1278,7 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
     return VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn /* , true, true */ , 0);
 }
 
-bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
+bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType)
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
@@ -1287,17 +1287,14 @@ bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTrans
 
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
-    uint256 hash = SignatureHash(scriptPrereq + txout.scriptPubKey, txTo, nIn, nHashType);
+    uint256 hash = SignatureHash(txout.scriptPubKey, txTo, nIn, nHashType);
 
     if (!Solver(keystore, txout.scriptPubKey, hash, nHashType, txin.scriptSig))
         return false;
 
-    txin.scriptSig = scriptPrereq + txin.scriptSig;
-
     // Test solution
-    if (scriptPrereq.empty())
-        if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, 0))
-            return false;
+    if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, 0))
+        return false;
 
     return true;
 }
