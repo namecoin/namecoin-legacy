@@ -20,7 +20,6 @@
 #include <boost/thread/thread.hpp>
 
 #include <memory>
-#include <list>
 
 #ifdef USE_SSL
 #include <boost/asio/ssl.hpp> 
@@ -373,6 +372,115 @@ Value getblock(const Array& params, bool fHelp)
     return BlockToValue(block);
 }
 
+/* Comparison function for sorting the getchains heads.  */
+static bool
+compareBlocksByHeight (const uint256& a, const uint256& b)
+{
+  std::map<uint256, CBlockIndex*>::const_iterator ia, ib;
+
+  ia = mapBlockIndex.find (a);
+  ib = mapBlockIndex.find (b);
+
+  assert (ia != mapBlockIndex.end () && ib != mapBlockIndex.end ());
+
+  return (ia->second->nHeight > ib->second->nHeight);
+}
+
+/* Return the state of all known chains.  */
+static Value
+getchains (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 0)
+    throw runtime_error (
+      "getchains\n"
+      "Return status of all known chains.");
+
+  /* Lock everything.  Not sure if this is needed for the whole duration
+     of the call, but better be safe than sorry.  */
+  CCriticalBlock lock(cs_main);
+
+  /* For each block known, keep track if there are follow-ups (which have
+     the block as pprev) so that we find the chain heads.  */
+
+  std::map<uint256, bool> blockIsHead;
+  std::map<uint256, CBlockIndex*>::const_iterator i;
+
+  for (i = mapBlockIndex.begin (); i != mapBlockIndex.end (); ++i)
+    blockIsHead.insert (std::make_pair (i->first, true));
+
+  for (i = mapBlockIndex.begin (); i != mapBlockIndex.end (); ++i)
+    {
+      const CBlockIndex* pprev = i->second->pprev;
+      if (!pprev)
+        continue;
+
+      const uint256 prevHash = *pprev->phashBlock;
+      const std::map<uint256, bool>::iterator j = blockIsHead.find (prevHash);
+      assert (j != blockIsHead.end ());
+      j->second = false;
+    }
+
+  /* Get chain heads and sort them by height.  */
+
+  std::vector<uint256> heads;
+  for (std::map<uint256, bool>::const_iterator j = blockIsHead.begin ();
+       j != blockIsHead.end (); ++j)
+    if (j->second)
+      heads.push_back (j->first);
+
+  std::sort (heads.begin (), heads.end (), &compareBlocksByHeight);
+
+  /* Construct the output array.  */
+
+  Array res;
+  for (std::vector<uint256>::const_iterator j = heads.begin ();
+       j != heads.end (); ++j)
+    {
+      i = mapBlockIndex.find (*j);
+      assert (i != mapBlockIndex.end ());
+
+      const CBlockIndex& block = *i->second;
+      assert (*j == *block.phashBlock);
+
+      Object obj;
+      obj.push_back (Pair ("height", block.nHeight));
+      obj.push_back (Pair ("hash", block.phashBlock->GetHex ()));
+
+      const bool isMain = (&block == pindexBest);
+      obj.push_back (Pair ("is_best", isMain));
+
+      /* If the block is not the main head, construct the branch that
+         connects it to the main chain.  */
+      if (!isMain)
+        {
+          Array branch;
+          int len = 0;
+
+          const CBlockIndex* pcur = &block;
+          while (true)
+            {
+              assert (pcur->pprev);
+              pcur = pcur->pprev;
+
+              branch.push_back (pcur->phashBlock->GetHex ());
+              ++len;
+
+              /* We are on the main chain if there's a next pointer.  */
+              if (pcur->pnext)
+                break;
+            }
+
+          obj.push_back (Pair ("branch_len", len));
+          obj.push_back (Pair ("branch", branch));
+        }
+      else
+        obj.push_back (Pair ("branch_len", 0));
+
+      res.push_back (obj);
+    }
+
+  return res;
+}
 
 Value getconnectioncount(const Array& params, bool fHelp)
 {
@@ -3245,6 +3353,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("getblockcount",         &getblockcount),
     make_pair("getblockhash",          &getblockhash),
     make_pair("getblocknumber",        &getblocknumber),
+    make_pair("getchains",             &getchains),
     make_pair("getconnectioncount",    &getconnectioncount),
     make_pair("getdifficulty",         &getdifficulty),
     make_pair("getgenerate",           &getgenerate),
