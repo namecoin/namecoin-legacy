@@ -1301,7 +1301,7 @@ name_pending (const Array& params, bool fHelp)
 
               int op, nOut;
               std::vector<vchType> vvch;
-              if (!DecodeNameTx (tx, op, nOut, vvch))
+              if (!DecodeNameTx (tx, op, nOut, vvch, -1))
                 {
                   printf ("name_pending: failed to find name output in tx %s\n",
                           j->GetHex ().c_str ());
