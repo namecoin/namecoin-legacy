@@ -375,7 +375,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
 // nTxOut is the output from wtxIn that we should grab
 // requires cs_main lock
-string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
+string SendMoneyWithInputTx(const CScript& scriptPubKey, int64 nValue, int64 nNetFee, const CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
 {
     int nTxOut = IndexOfNameOutput(wtxIn);
     CReserveKey reservekey(pwalletMain);
@@ -1350,6 +1350,8 @@ AddRawTxNameOperation (CTransaction& tx, const Object& obj)
       msg << "Invalid Namecoin address: " << address;
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
+
+  tx.nVersion = NAMECOIN_TX_VERSION;
 
   /* Find the transaction input to add.  */
 
