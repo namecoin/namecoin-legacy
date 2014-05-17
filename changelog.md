@@ -1,5 +1,6 @@
 v0.3.74
 ======
+* allow for atomic name transactions via rpc commands (Domob)
 * new rpc commands: name_pending, getchains (Domob)
 * Simplified blkindex.dat for smaller file size and faster startup - not backward compatible ("remove auxpow", Domob) - IT WILL TAKE A WHILE FOR THE REWRITE ON THE FIRST START
 * Implement name_update in createrawtransaction (Domob)
