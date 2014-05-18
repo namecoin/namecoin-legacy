@@ -37,7 +37,7 @@ static const unsigned int MAX_SIZE = 0x02000000;
 
 static const int VERSION = 37400;
 static const char* pszSubVer = "";
-static const bool VERSION_IS_BETA = false;
+static const bool VERSION_IS_BETA = true;
 
 
 
