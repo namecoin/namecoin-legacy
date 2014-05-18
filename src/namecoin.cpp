@@ -230,32 +230,6 @@ CScript RemoveNameScriptPrefix(const CScript& scriptIn)
     return CScript(pc, scriptIn.end());
 }
 
-bool SignNameSignature(const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript())
-{
-    assert(nIn < txTo.vin.size());
-    CTxIn& txin = txTo.vin[nIn];
-    assert(txin.prevout.n < txFrom.vout.size());
-    const CTxOut& txout = txFrom.vout[txin.prevout.n];
-
-    // Leave out the signature from the hash, since a signature can't sign itself.
-    // The checksig op will also drop the signatures from its hash.
-
-    const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
-    uint256 hash = SignatureHash(scriptPrereq + txout.scriptPubKey, txTo, nIn, nHashType);
-
-    if (!Solver(*pwalletMain, scriptPubKey, hash, nHashType, txin.scriptSig))
-        return false;
-
-    txin.scriptSig = scriptPrereq + txin.scriptSig;
-
-    // Test solution
-    if (scriptPrereq.empty())
-        if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, 0))
-            return false;
-
-    return true;
-}
-
 bool IsMyName(const CTransaction& tx, const CTxOut& txout)
 {
     const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
@@ -265,7 +239,7 @@ bool IsMyName(const CTransaction& tx, const CTxOut& txout)
     return true;
 }
 
-bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, const CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
     int64 nValue = 0;
     BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -366,16 +340,8 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 int nIn = 0;
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int)& coin, vecCoins)
                 {
-                    if (coin.first == &wtxIn && coin.second == nTxOut)
-                    {
-                        if (!SignNameSignature(*coin.first, wtxNew, nIn++))
-                            throw runtime_error("could not sign name coin output");
-                    }
-                    else
-                    {
-                        if (!SignSignature(*pwalletMain, *coin.first, wtxNew, nIn++))
-                            return false;
-                    }
+                    if (!SignSignature(*pwalletMain, *coin.first, wtxNew, nIn++))
+                        return false;
                 }
 
                 // Limit size
@@ -409,7 +375,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
 // nTxOut is the output from wtxIn that we should grab
 // requires cs_main lock
-string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
+string SendMoneyWithInputTx(const CScript& scriptPubKey, int64 nValue, int64 nNetFee, const CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
 {
     int nTxOut = IndexOfNameOutput(wtxIn);
     CReserveKey reservekey(pwalletMain);
@@ -1384,6 +1350,8 @@ AddRawTxNameOperation (CTransaction& tx, const Object& obj)
       msg << "Invalid Namecoin address: " << address;
       throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
     }
+
+  tx.nVersion = NAMECOIN_TX_VERSION;
 
   /* Find the transaction input to add.  */
 
