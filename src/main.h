@@ -767,19 +767,16 @@ public:
 
 
 //
-// A txdb record that contains the disk location of a transaction and the
-// locations of transactions that spend its outputs.  vSpent is really only
-// used as a flag, but having the location is very helpful for debugging.
+// A txdb record that contains the disk location of a transaction and an array
+// of flags whether its outputs have already been spent.
 //
 class CTxIndex
 {
 public:
     CDiskTxPos pos;
 
-    /* vSpent is mostly used as a flag.  While transitioning it to a real
-       bool array, make it private and access it via methods.  */
 private:
-    std::vector<CDiskTxPos> vSpent;
+    std::vector<unsigned char> isSpent;
 
 public:
 
@@ -791,7 +788,7 @@ public:
     CTxIndex(const CDiskTxPos& posIn, unsigned int nOutputs)
     {
         pos = posIn;
-        vSpent.resize(nOutputs);
+        isSpent.resize (nOutputs, false);
     }
 
     IMPLEMENT_SERIALIZE
@@ -799,13 +796,26 @@ public:
         if (!(nType & SER_GETHASH))
             READWRITE(nVersion);
         READWRITE(pos);
-        READWRITE(vSpent);
+
+        if (nVersion < 37500)
+          {
+            assert (fRead); 
+            std::vector<CDiskTxPos> vSpent;
+            READWRITE (vSpent);
+
+            std::vector<unsigned char>& newIsSpent = const_cast<std::vector<unsigned char>&> (isSpent);
+            newIsSpent.resize (vSpent.size ());
+            for (unsigned i = 0; i < vSpent.size (); ++i)
+              newIsSpent[i] = !vSpent[i].IsNull ();
+          }
+        else
+          READWRITE(isSpent);
     )
 
     void SetNull()
     {
         pos.SetNull();
-        vSpent.clear();
+        isSpent.clear ();
     }
 
     bool IsNull()
@@ -816,43 +826,34 @@ public:
     inline unsigned
     GetOutputCount () const
     {
-      return vSpent.size ();
+      return isSpent.size ();
     }
 
     inline void
     ResizeOutputs (unsigned n)
     {
-      vSpent.resize (n);
+      isSpent.resize (n, false);
     }
 
     inline bool
     IsSpent (unsigned n) const
     {
-      assert (n < vSpent.size ());
-      return !vSpent[n].IsNull ();
+      assert (n < isSpent.size ());
+      return isSpent[n];
     }
 
     inline void
-    MarkSpent (unsigned n, const CDiskTxPos& pos)
+    SetSpent (unsigned n, bool spent)
     {
-      assert (n < vSpent.size ());
-      assert (vSpent[n].IsNull ());
-      vSpent[n] = pos;
-      assert (!vSpent[n].IsNull ());
-    }
-
-    inline void
-    MarkUnspent (unsigned n)
-    {
-      assert (n < vSpent.size ());
-      assert (!vSpent[n].IsNull ());
-      vSpent[n].SetNull ();
+      assert (n < isSpent.size ());
+      assert (isSpent[n] != spent);
+      isSpent[n] = spent;
     }
 
     friend bool operator==(const CTxIndex& a, const CTxIndex& b)
     {
         return (a.pos    == b.pos &&
-                a.vSpent == b.vSpent);
+                a.isSpent == b.isSpent);
     }
 
     friend bool operator!=(const CTxIndex& a, const CTxIndex& b)

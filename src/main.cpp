@@ -915,7 +915,7 @@ CTransaction::DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex)
                 return error("DisconnectInputs() : prevout.n out of range");
 
             // Mark outpoint as not spent
-            txindex.MarkUnspent (prevout.n);
+            txindex.SetSpent (prevout.n, false);
 
             // Write back
             if (!dbset.tx ().UpdateTxIndex (prevout.hash, txindex))
@@ -1082,7 +1082,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
-            txindex.MarkSpent (prevout.n, posThisTx);
+            txindex.SetSpent (prevout.n, true);
 
             // Write back
             if (fBlock)
@@ -1791,7 +1791,7 @@ bool LoadBlockIndex(bool fAllowNew)
 
       int nVersion;
       if (txdb.ReadVersion (nVersion))
-        if (nVersion < 37400)
+        if (nVersion < 37500)
           {
             txdb.Close ();
             CTxDB wtxdb;
@@ -1805,7 +1805,7 @@ bool LoadBlockIndex(bool fAllowNew)
                 CDiskBlockIndex disk(mi->second);
                 wtxdb.WriteBlockIndex (disk);
               }
-            wtxdb.WriteVersion (37400);
+            wtxdb.WriteVersion (37500);
 
             /* Rewrite the database to compact the storage format.  */
             wtxdb.Rewrite ();
