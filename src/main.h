@@ -776,7 +776,7 @@ public:
     CDiskTxPos pos;
 
 private:
-    std::vector<unsigned char> isSpent;
+    std::vector<bool> isSpent;
 
 public:
 
@@ -803,7 +803,7 @@ public:
             std::vector<CDiskTxPos> vSpent;
             READWRITE (vSpent);
 
-            std::vector<unsigned char>& newIsSpent = const_cast<std::vector<unsigned char>&> (isSpent);
+            std::vector<bool>& newIsSpent = const_cast<std::vector<bool>&> (isSpent);
             newIsSpent.resize (vSpent.size ());
             for (unsigned i = 0; i < vSpent.size (); ++i)
               newIsSpent[i] = !vSpent[i].IsNull ();
