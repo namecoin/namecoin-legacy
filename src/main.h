@@ -775,7 +775,13 @@ class CTxIndex
 {
 public:
     CDiskTxPos pos;
+
+    /* vSpent is mostly used as a flag.  While transitioning it to a real
+       bool array, make it private and access it via methods.  */
+private:
     std::vector<CDiskTxPos> vSpent;
+
+public:
 
     CTxIndex()
     {
@@ -805,6 +811,42 @@ public:
     bool IsNull()
     {
         return pos.IsNull();
+    }
+
+    inline unsigned
+    GetOutputCount () const
+    {
+      return vSpent.size ();
+    }
+
+    inline void
+    ResizeOutputs (unsigned n)
+    {
+      vSpent.resize (n);
+    }
+
+    inline bool
+    IsSpent (unsigned n) const
+    {
+      assert (n < vSpent.size ());
+      return !vSpent[n].IsNull ();
+    }
+
+    inline void
+    MarkSpent (unsigned n, const CDiskTxPos& pos)
+    {
+      assert (n < vSpent.size ());
+      assert (vSpent[n].IsNull ());
+      vSpent[n] = pos;
+      assert (!vSpent[n].IsNull ());
+    }
+
+    inline void
+    MarkUnspent (unsigned n)
+    {
+      assert (n < vSpent.size ());
+      assert (!vSpent[n].IsNull ());
+      vSpent[n].SetNull ();
     }
 
     friend bool operator==(const CTxIndex& a, const CTxIndex& b)
