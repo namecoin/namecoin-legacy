@@ -1785,16 +1785,16 @@ bool LoadBlockIndex(bool fAllowNew)
     /* Load block index.  Update to the new format (without auxpow)
        if necessary.  */
     {
-      int nVersion = VERSION;
+      int nTxDbVersion = VERSION;
       CTxDB txdb("cr");
-      txdb.ReadVersion (nVersion);
-      txdb.SetSerialisationVersion (nVersion);
+      txdb.ReadVersion (nTxDbVersion);
+      txdb.SetSerialisationVersion (nTxDbVersion);
 
       if (!txdb.LoadBlockIndex())
           return false;
       txdb.Close ();
 
-      if (nVersion < 37500)
+      if (nTxDbVersion < 37500)
         {
           CTxDB wtxdb;
           /* SerialisationVersion is set to VERSION by default.  */
@@ -1811,7 +1811,7 @@ bool LoadBlockIndex(bool fAllowNew)
           wtxdb.WriteVersion (VERSION);
 
           /* Rewrite the txindex.  */
-          wtxdb.RewriteTxIndex (nVersion);
+          wtxdb.RewriteTxIndex (nTxDbVersion);
 
           /* Rewrite the database to compact the storage format.  */
           wtxdb.Rewrite ();
