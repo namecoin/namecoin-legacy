@@ -340,6 +340,9 @@ public:
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
     bool LoadBlockIndex();
+
+    /* Update txindex to new data format.  */
+    bool RewriteTxIndex (int oldVersion);
 };
 
 

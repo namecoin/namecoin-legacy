@@ -1785,31 +1785,36 @@ bool LoadBlockIndex(bool fAllowNew)
     /* Load block index.  Update to the new format (without auxpow)
        if necessary.  */
     {
+      int nVersion = VERSION;
       CTxDB txdb("cr");
+      txdb.ReadVersion (nVersion);
+      txdb.SetSerialisationVersion (nVersion);
+
       if (!txdb.LoadBlockIndex())
           return false;
 
-      int nVersion;
-      if (txdb.ReadVersion (nVersion))
-        if (nVersion < 37500)
-          {
-            txdb.Close ();
-            CTxDB wtxdb;
+      if (nVersion < 37500)
+        {
+          txdb.Close ();
+          CTxDB wtxdb;
 
-            /* Go through each blkindex object loaded into memory and
-               write it again to disk.  */
-            printf ("Updating blkindex.dat data format...\n");
-            map<uint256, CBlockIndex*>::const_iterator mi;
-            for (mi = mapBlockIndex.begin (); mi != mapBlockIndex.end (); ++mi)
-              {
-                CDiskBlockIndex disk(mi->second);
-                wtxdb.WriteBlockIndex (disk);
-              }
-            wtxdb.WriteVersion (37500);
+          /* Go through each blkindex object loaded into memory and
+             write it again to disk.  */
+          printf ("Updating blkindex.dat data format...\n");
+          map<uint256, CBlockIndex*>::const_iterator mi;
+          for (mi = mapBlockIndex.begin (); mi != mapBlockIndex.end (); ++mi)
+            {
+              CDiskBlockIndex disk(mi->second);
+              wtxdb.WriteBlockIndex (disk);
+            }
+          wtxdb.WriteVersion (VERSION);
 
-            /* Rewrite the database to compact the storage format.  */
-            wtxdb.Rewrite ();
-          }
+          /* Rewrite the txindex.  */
+          wtxdb.RewriteTxIndex (nVersion);
+
+          /* Rewrite the database to compact the storage format.  */
+          wtxdb.Rewrite ();
+        }
     }
 
     //

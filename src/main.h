@@ -793,8 +793,14 @@ public:
 
     IMPLEMENT_SERIALIZE
     (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
+        assert (nType == SER_DISK);
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nVersionDummy;
+            READWRITE(nVersionDummy);
+            assert (nVersionDummy < 37500);
+          }
         READWRITE(pos);
 
         if (nVersion < 37500)
