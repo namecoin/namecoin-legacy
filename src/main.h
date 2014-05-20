@@ -794,6 +794,11 @@ public:
     IMPLEMENT_SERIALIZE
     (
         assert (nType == SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
+
         if (nVersion < 37500)
           {
             assert (fRead);
