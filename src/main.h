@@ -1325,8 +1325,22 @@ public:
     (
         /* This is only written to disk.  */
         assert (nType & SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
 
-        READWRITE(nVersion);
+        /* Previously, the version was stored in each entry.  This is
+           now replaced with having serialisation version set.  In the old
+           format, read and ignore the version.  */
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nDummyVersion;
+            READWRITE(nDummyVersion);
+            assert (nDummyVersion < 37500);
+          }
+
         READWRITE(hashNext);
         READWRITE(nFile);
         READWRITE(nBlockPos);
@@ -1341,8 +1355,9 @@ public:
         READWRITE(nNonce);
 
         /* In the old format, the auxpow is stored.  Load it and ignore.  */
-        if (fRead && nVersion < 37400)
+        if (nVersion < 37400)
         {
+            assert (fRead);
             boost::shared_ptr<CAuxPow> auxpow;
             ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
         }
