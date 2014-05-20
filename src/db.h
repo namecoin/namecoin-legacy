@@ -217,6 +217,14 @@ protected:
         return 0;
     }
 
+    /* Update the stream to our serialisation version.  This is useful
+       for ReadAtCursor users.  */
+    inline void
+    SetStreamVersion (CDataStream& ss) const
+    {
+      ss.nVersion = nVersion;
+    }
+
 public:
     DbTxn* GetTxn()
     {

@@ -476,6 +476,7 @@ bool CTxDB::LoadBlockIndex()
         if (strType == "blockindex")
         {
             CDiskBlockIndex diskindex;
+            SetStreamVersion (ssValue);
             ssValue >> diskindex;
 
             // Construct block index object

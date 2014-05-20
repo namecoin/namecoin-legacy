@@ -1356,11 +1356,11 @@ public:
 
         /* In the old format, the auxpow is stored.  Load it and ignore.  */
         if (nVersion < 37400)
-        {
+          {
             assert (fRead);
             boost::shared_ptr<CAuxPow> auxpow;
-            ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
-        }
+            ReadWriteAuxPow (s, auxpow, nType, this->nVersion, ser_action);
+          }
     )
 
     uint256 GetBlockHash() const
