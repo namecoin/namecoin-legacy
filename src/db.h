@@ -306,7 +306,7 @@ public:
       nVersion = v;
     }
     
-    bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
+    bool static Rewrite(const std::string& strFile);
 
     /* Rewrite the DB with this database's name.  This closes it.  */
     inline bool
