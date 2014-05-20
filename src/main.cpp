@@ -1792,11 +1792,12 @@ bool LoadBlockIndex(bool fAllowNew)
 
       if (!txdb.LoadBlockIndex())
           return false;
+      txdb.Close ();
 
       if (nVersion < 37500)
         {
-          txdb.Close ();
           CTxDB wtxdb;
+          /* SerialisationVersion is set to VERSION by default.  */
 
           /* Go through each blkindex object loaded into memory and
              write it again to disk.  */
