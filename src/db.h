@@ -12,6 +12,7 @@
 
 #include <db_cxx.h>
 
+class CNameIndex;
 class CTxIndex;
 class CDiskBlockIndex;
 class CDiskTxPos;
@@ -323,6 +324,57 @@ public:
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
     bool LoadBlockIndex();
+};
+
+
+
+
+
+
+
+/**
+ * Name index.  Non-inline implementation code is in namecoin.cpp, but the
+ * class is declared here because it will be used for the "wrapper" database
+ * set class below and in general makes sense here.
+ */
+class CNameDB : public CDB
+{
+public:
+    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) { }
+
+    CNameDB(const char* pszMode, CDB& parent) : CDB("nameindex.dat", pszMode) {
+        vTxn.push_back(parent.GetTxn());
+        ownTxn.push_back(false);
+    }
+
+    bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
+    {
+        return Write(make_pair(std::string("namei"), name), vtxPos);
+    }
+
+    bool ReadName(const vchType& name, std::vector<CNameIndex>& vtxPos)
+    {
+        return Read(make_pair(std::string("namei"), name), vtxPos);
+    }
+
+    bool ExistsName(const vchType& name)
+    {
+        return Exists(make_pair(std::string("namei"), name));
+    }
+
+    bool EraseName(const vchType& name)
+    {
+        return Erase(make_pair(std::string("namei"), name));
+    }
+
+    bool ScanNames(
+            const vchType& vchName,
+            int nMax,
+            std::vector<std::pair<vchType, CNameIndex> >& nameScan);
+
+    bool test();
+
+    bool ReconstructNameIndex();
 };
 
 

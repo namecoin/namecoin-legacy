@@ -3,48 +3,6 @@
 
 #include "json/json_spirit.h"
 
-typedef std::vector<unsigned char> vchType;
-
-class CNameDB : public CDB
-{
-public:
-    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) { }
-
-    CNameDB(const char* pszMode, CDB& parent) : CDB("nameindex.dat", pszMode) {
-        vTxn.push_back(parent.GetTxn());
-        ownTxn.push_back(false);
-    }
-
-    bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
-    {
-        return Write(make_pair(std::string("namei"), name), vtxPos);
-    }
-
-    bool ReadName(const vchType& name, std::vector<CNameIndex>& vtxPos)
-    {
-        return Read(make_pair(std::string("namei"), name), vtxPos);
-    }
-
-    bool ExistsName(const vchType& name)
-    {
-        return Exists(make_pair(std::string("namei"), name));
-    }
-
-    bool EraseName(const vchType& name)
-    {
-        return Erase(make_pair(std::string("namei"), name));
-    }
-
-    bool ScanNames(
-            const vchType& vchName,
-            int nMax,
-            std::vector<std::pair<vchType, CNameIndex> >& nameScan);
-
-    bool test();
-
-    bool ReconstructNameIndex();
-};
-
 static const int NAMECOIN_TX_VERSION = 0x7100;
 static const int64 MIN_AMOUNT = CENT;
 static const int MAX_NAME_LENGTH = 255;
@@ -56,6 +14,7 @@ static const int OP_NAME_UPDATE = 0x03;
 static const int OP_NAME_NOP = 0x04;
 static const int MIN_FIRSTUPDATE_DEPTH = 12;
 
+class CNameDB;
 class CNameIndex;
 class CDiskTxPos;
 class uint256;
