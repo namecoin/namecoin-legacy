@@ -555,8 +555,9 @@ bool CTxDB::LoadBlockIndex()
         CBlock block;
         if (!block.ReadFromDisk(pindexFork))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        CTxDB txdb;
-        block.SetBestChain(txdb, pindexFork);
+
+        DatabaseSet dbset;
+        block.SetBestChain (dbset, pindexFork);
     }
 
     return true;

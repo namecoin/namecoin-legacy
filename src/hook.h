@@ -11,7 +11,7 @@ public:
     virtual bool IsStandard(const CScript& scriptPubKey) = 0;
     virtual void AddToWallet(CWalletTx& tx) = 0;
     virtual bool CheckTransaction(const CTransaction& tx) = 0;
-    virtual bool ConnectInputs(CTxDB& txdb,
+    virtual bool ConnectInputs(DatabaseSet& dbset,
             std::map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             std::vector<CTransaction>& vTxPrev,
@@ -20,18 +20,21 @@ public:
             CDiskTxPos& txPos,
             bool fBlock,
             bool fMiner) = 0;
-    virtual bool DisconnectInputs(CTxDB& txdb,
+    virtual bool DisconnectInputs (DatabaseSet& txdb,
             const CTransaction& tx,
             CBlockIndex* pindexBlock) = 0;
-    virtual bool ConnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex) = 0;
-    virtual bool DisconnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex) = 0;
+    virtual bool ConnectBlock (CBlock& block, DatabaseSet& dbset,
+                               CBlockIndex* pindex) = 0;
+    virtual bool DisconnectBlock (CBlock& block, DatabaseSet& txdb,
+                                  CBlockIndex* pindex) = 0;
     virtual bool ExtractAddress(const CScript& script, std::string& address) = 0;
     virtual bool GenesisBlock(CBlock& block) = 0;
     virtual bool Lockin(int nHeight, uint256 hash) = 0;
     virtual int LockinHeight() = 0;
     virtual std::string IrcPrefix() = 0;
     virtual void MessageStart(char* pchMessageStart) = 0;
-    virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx) = 0;
+    virtual void AcceptToMemoryPool(DatabaseSet& dbset,
+                                    const CTransaction& tx) = 0;
 
     /* These are for display and wallet management purposes.  Not for use to decide
      * whether to spend a coin. */

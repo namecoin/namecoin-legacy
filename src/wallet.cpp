@@ -524,7 +524,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 
 void CWallet::ReacceptWalletTransactions()
 {
-    CTxDB txdb("r");
+    DatabaseSet dbset("r");
     bool fRepeat = true;
     while (fRepeat) CRITICAL_BLOCK(cs_mapWallet)
     {
@@ -538,7 +538,7 @@ void CWallet::ReacceptWalletTransactions()
 
             CTxIndex txindex;
             bool fUpdated = false;
-            if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
+            if (dbset.tx ().ReadTxIndex (wtx.GetHash (), txindex))
             {
                 // Update fSpent if a tx got spent somewhere else by a copy of wallet.dat
                 if (txindex.vSpent.size() != wtx.vout.size())
@@ -568,7 +568,7 @@ void CWallet::ReacceptWalletTransactions()
             {
                 // Reaccept any txes of ours that aren't already in a block
                 if (!wtx.IsCoinBase())
-                    wtx.AcceptWalletTransaction(txdb, false);
+                  wtx.AcceptWalletTransaction (dbset, false);
             }
         }
         if (!vMissingTx.empty())

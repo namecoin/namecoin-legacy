@@ -342,11 +342,6 @@ class CNameDB : public CDB
 public:
     CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) { }
 
-    CNameDB(const char* pszMode, CDB& parent) : CDB("nameindex.dat", pszMode) {
-        vTxn.push_back(parent.GetTxn());
-        ownTxn.push_back(false);
-    }
-
     bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
     {
         return Write(make_pair(std::string("namei"), name), vtxPos);
@@ -375,6 +370,75 @@ public:
     bool test();
 
     bool ReconstructNameIndex();
+};
+
+
+
+
+
+/**
+ * Multiple databases (blkindex, nameindex) are used to represent the "current
+ * blockchain state".  They are updated during block connecting/disconnecting,
+ * and this should happen atomically.  This class encapsulates all those
+ * databases into a single object for simplicity.
+ */
+class DatabaseSet
+{
+
+private:
+
+  CTxDB txDb;
+  CNameDB nameDb;
+
+public:
+
+  inline DatabaseSet (const char* pszMode = "r+")
+    : txDb(pszMode), nameDb(pszMode)
+  {}
+
+  /* Expose the bundled databases.  */
+
+  inline CTxDB&
+  tx ()
+  {
+    return txDb;
+  }
+
+  inline CNameDB&
+  name ()
+  {
+    return nameDb;
+  }
+
+  /* Transaction handling.  */
+
+  inline bool
+  TxnBegin ()
+  {
+    if (!txDb.TxnBegin ())
+      return false;
+    if (!nameDb.TxnBegin (txDb.GetTxn ()))
+      return error ("Failed to start child transaction in NameDB!");
+
+    return true;
+  }
+
+  inline bool
+  TxnAbort ()
+  {
+    if (!nameDb.TxnAbort ())
+      return error ("Failed to abort child transaction in NameDB!");
+    return txDb.TxnAbort ();
+  }
+
+  inline bool
+  TxnCommit ()
+  {
+    if (!nameDb.TxnCommit ())
+      return error ("Failed to commit child transaction in NameDB!");
+    return txDb.TxnCommit ();
+  }
+
 };
 
 

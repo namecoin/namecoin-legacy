@@ -40,7 +40,7 @@ extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsig
 // forward decls
 extern bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet);
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
-extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
+extern bool IsConflictedTx (DatabaseSet& dbset, const CTransaction& tx, vchType& name);
 extern void rescanfornames();
 extern Value sendtoaddress(const Array& params, bool fHelp);
 
@@ -53,7 +53,7 @@ public:
     virtual bool IsStandard(const CScript& scriptPubKey);
     virtual void AddToWallet(CWalletTx& tx);
     virtual bool CheckTransaction(const CTransaction& tx);
-    virtual bool ConnectInputs(CTxDB& txdb,
+    virtual bool ConnectInputs(DatabaseSet& dbset,
             map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             vector<CTransaction>& vTxPrev,
@@ -62,17 +62,19 @@ public:
             CDiskTxPos& txPos,
             bool fBlock,
             bool fMiner);
-    virtual bool DisconnectInputs(CTxDB& txdb,
+    virtual bool DisconnectInputs (DatabaseSet& dbset,
             const CTransaction& tx,
             CBlockIndex* pindexBlock);
-    virtual bool ConnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex);
-    virtual bool DisconnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex);
+    virtual bool ConnectBlock (CBlock& block, DatabaseSet& dbset,
+                               CBlockIndex* pindex);
+    virtual bool DisconnectBlock (CBlock& block, DatabaseSet& dbset,
+                                  CBlockIndex* pindex);
     virtual bool ExtractAddress(const CScript& script, string& address);
     virtual bool GenesisBlock(CBlock& block);
     virtual bool Lockin(int nHeight, uint256 hash);
     virtual int LockinHeight();
     virtual string IrcPrefix();
-    virtual void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx);
+    virtual void AcceptToMemoryPool(DatabaseSet& dbset, const CTransaction& tx);
 
     virtual void MessageStart(char* pchMessageStart)
     {
@@ -202,21 +204,22 @@ int GetTxPosHeight2(const CDiskTxPos& txPos, int nHeight)
 }
 
 
-int GetNameHeight(CTxDB& txdb, vector<unsigned char> vchName) {
-    CNameDB dbName("cr", txdb);
-    //vector<CDiskTxPos> vtxPos;
-    vector<CNameIndex> vtxPos;
-    if (dbName.ExistsName(vchName))
+int
+GetNameHeight (DatabaseSet& dbset, vector<unsigned char> vchName)
+{
+  vector<CNameIndex> vtxPos;
+  if (dbset.name ().ExistsName (vchName))
     {
-        if (!dbName.ReadName(vchName, vtxPos))
-            return error("GetNameHeight() : failed to read from name DB");
-        if (vtxPos.empty())
-            return -1;
-        //CDiskTxPos& txPos = vtxPos.back();
-        CNameIndex& txPos = vtxPos.back();
-        return GetTxPosHeight(txPos);
+      if (!dbset.name ().ReadName (vchName, vtxPos))
+        return error("GetNameHeight() : failed to read from name DB");
+      if (vtxPos.empty ())
+        return -1;
+
+      CNameIndex& txPos = vtxPos.back ();
+      return GetTxPosHeight (txPos);
     }
-    return -1;
+
+  return -1;
 }
 
 CScript RemoveNameScriptPrefix(const CScript& scriptIn)
@@ -1478,12 +1481,13 @@ Value name_clean(const Array& params, bool fHelp)
         printf("-----------------------------\n");
 
         {
-            CTxDB txdb("r");
+            DatabaseSet dbset("r");
             BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet)
             {
                 CWalletTx& wtx = item.second;
-                vector<unsigned char> vchName;
-                if (wtx.GetDepthInMainChain() < 1 && IsConflictedTx(txdb, wtx, vchName))
+                vchType vchName;
+                if (wtx.GetDepthInMainChain () < 1
+                    && IsConflictedTx (dbset, wtx, vchName))
                 {
                     uint256 hash = wtx.GetHash();
                     mapRemove[hash] = wtx;
@@ -1715,8 +1719,6 @@ bool CNameDB::ReconstructNameIndex()
     CBlockIndex* pindex = pindexGenesisBlock;
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
     {
-        //CNameDB dbName("cr+", txdb);
-
         while (pindex)
         {  
             TxnBegin();
@@ -2041,7 +2043,8 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
     return false;
 }
 
-void CNamecoinHooks::AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
+void
+CNamecoinHooks::AcceptToMemoryPool (DatabaseSet& dbset, const CTransaction& tx)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return;
@@ -2104,11 +2107,12 @@ bool GetNameOfTx(const CTransaction& tx, vector<unsigned char>& name)
     return false;
 }
 
-bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name)
+bool
+IsConflictedTx (DatabaseSet& dbset, const CTransaction& tx, vchType& name)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return false;
-    vector<vector<unsigned char> > vvchArgs;
+    vector<vchType> vvchArgs;
     int op;
     int nOut;
 
@@ -2122,7 +2126,7 @@ bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& 
     switch (op)
     {
         case OP_NAME_FIRSTUPDATE:
-            nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
+            nPrevHeight = GetNameHeight (dbset, vvchArgs[0]);
             name = vvchArgs[0];
             if (nPrevHeight >= 0 && pindexBest->nHeight - nPrevHeight < GetExpirationDepth(pindexBest->nHeight))
                 return true;
@@ -2130,15 +2134,14 @@ bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& 
     return false;
 }
 
-bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
-        map<uint256, CTxIndex>& mapTestPool,
-        const CTransaction& tx,
-        vector<CTransaction>& vTxPrev,
-        vector<CTxIndex>& vTxindex,
-        CBlockIndex* pindexBlock,
-        CDiskTxPos& txPos,
-        bool fBlock,
-        bool fMiner)
+bool
+CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
+                               map<uint256, CTxIndex>& mapTestPool,
+                               const CTransaction& tx,
+                               vector<CTransaction>& vTxPrev,
+                               vector<CTxIndex>& vTxindex,
+                               CBlockIndex* pindexBlock, CDiskTxPos& txPos,
+                               bool fBlock, bool fMiner)
 {
     int nInput;
     bool found = false;
@@ -2269,7 +2272,7 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                 }
             }
 
-            nPrevHeight = GetNameHeight(txdb, vvchArgs[0]);
+            nPrevHeight = GetNameHeight (dbset, vvchArgs[0]);
             if (nPrevHeight >= 0 && pindexBlock->nHeight - nPrevHeight < GetExpirationDepth(pindexBlock->nHeight))
                 return error("ConnectInputsHook() : name_firstupdate on an unexpired name");
             nDepth = CheckTransactionAtRelativeDepth(pindexBlock, vTxindex[nInput], MIN_FIRSTUPDATE_DEPTH);
@@ -2339,17 +2342,12 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
 
     if (!fBugWorkaround)
     {
-        CNameDB dbName("cr+", txdb);
-        dbName.TxnBegin();
-
         if (!fBlock && op == OP_NAME_UPDATE)
         {
             vector<CNameIndex> vtxPos;
-            if (dbName.ExistsName(vvchArgs[0]))
-            {
-                if (!dbName.ReadName(vvchArgs[0], vtxPos))
-                    return error("ConnectInputsHook() : failed to read from name DB");
-            }
+            if (dbset.name ().ExistsName (vvchArgs[0])
+                && !dbset.name ().ReadName (vvchArgs[0], vtxPos))
+              return error("ConnectInputsHook() : failed to read from name DB");
             // Valid tx on top of buggy tx: if not in block, reject
             if (!CheckNameTxPos(vtxPos, vTxindex[nInput].pos))
                 return error("ConnectInputsHook() : Name bug workaround: tx %s rejected, since previous tx (%s) is not in the name DB\n", tx.GetHash().ToString().c_str(), vTxPrev[nInput].GetHash().ToString().c_str());
@@ -2361,11 +2359,9 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
             {
                 //vector<CDiskTxPos> vtxPos;
                 vector<CNameIndex> vtxPos;
-                if (dbName.ExistsName(vvchArgs[0]))
-                {
-                    if (!dbName.ReadName(vvchArgs[0], vtxPos))
-                        return error("ConnectInputsHook() : failed to read from name DB");
-                }
+                if (dbset.name ().ExistsName (vvchArgs[0])
+                    && !dbset.name ().ReadName (vvchArgs[0], vtxPos))
+                  return error("ConnectInputsHook() : failed to read from name DB");
 
                 if (op == OP_NAME_UPDATE && !CheckNameTxPos(vtxPos, vTxindex[nInput].pos))
                 {
@@ -2388,8 +2384,8 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                     txPos2.vValue = vchValue;
                     txPos2.txPos = txPos;
                     vtxPos.push_back(txPos2); // fin add
-                    if (!dbName.WriteName(vvchArgs[0], vtxPos))
-                        return error("ConnectInputsHook() : failed to write to name DB");
+                    if (!dbset.name ().WriteName (vvchArgs[0], vtxPos))
+                      return error("ConnectInputsHook() : failed to write to name DB");
                 }
             }
 
@@ -2402,15 +2398,14 @@ bool CNamecoinHooks::ConnectInputs(CTxDB& txdb,
                         mi->second.erase(tx.GetHash());
                 }
         }
-        dbName.TxnCommit();
     }
 
     return true;
 }
 
-bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
-        const CTransaction& tx,
-        CBlockIndex* pindexBlock)
+bool
+CNamecoinHooks::DisconnectInputs (DatabaseSet& dbset, const CTransaction& tx,
+                                  CBlockIndex* pindexBlock)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return true;
@@ -2424,20 +2419,16 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
         return error("DisconnectInputsHook() : could not decode namecoin tx");
     if (op == OP_NAME_FIRSTUPDATE || op == OP_NAME_UPDATE)
     {
-        CNameDB dbName("cr+", txdb);
-
-        dbName.TxnBegin();
-
         //vector<CDiskTxPos> vtxPos;
         vector<CNameIndex> vtxPos;
-        if (!dbName.ReadName(vvchArgs[0], vtxPos))
+        if (!dbset.name ().ReadName (vvchArgs[0], vtxPos))
             return error("DisconnectInputsHook() : failed to read from name DB");
         // vtxPos might be empty if we pruned expired transactions.  However, it should normally still not
         // be empty, since a reorg cannot go that far back.  Be safe anyway and do not try to pop if empty.
         if (vtxPos.size())
         {
             CTxIndex txindex;
-            if (!txdb.ReadTxIndex(tx.GetHash(), txindex))
+            if (!dbset.tx ().ReadTxIndex (tx.GetHash (), txindex))
                 return error("DisconnectInputsHook() : failed to read tx index");
 
             if (vtxPos.back().txPos == txindex.pos)
@@ -2445,10 +2436,8 @@ bool CNamecoinHooks::DisconnectInputs(CTxDB& txdb,
 
             // TODO validate that the first pos is the current tx pos
         }
-        if (!dbName.WriteName(vvchArgs[0], vtxPos))
+        if (!dbset.name ().WriteName (vvchArgs[0], vtxPos))
             return error("DisconnectInputsHook() : failed to write to name DB");
-
-        dbName.TxnCommit();
     }
 
     return true;
@@ -2555,12 +2544,16 @@ bool CNamecoinHooks::ExtractAddress(const CScript& script, string& address)
     return true;
 }
 
-bool CNamecoinHooks::ConnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex)
+bool
+CNamecoinHooks::ConnectBlock (CBlock& block, DatabaseSet& dbset,
+                              CBlockIndex* pindex)
 {
     return true;
 }
 
-bool CNamecoinHooks::DisconnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex)
+bool
+CNamecoinHooks::DisconnectBlock (CBlock& block, DatabaseSet& dbset,
+                                 CBlockIndex* pindex)
 {
     return true;
 }
