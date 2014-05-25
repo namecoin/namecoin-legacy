@@ -278,6 +278,98 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
     return false;
 }
 
+/* Internal struct to accumulate db stats.  */
+struct DbstatsPerKeyData
+{
+  unsigned count;
+  size_t totalKeySize, totalValueSize;
+  size_t minKeySize, minValueSize;
+  size_t maxKeySize, maxValueSize;
+};
+
+void
+CDB::PrintStorageStats (const std::string& file)
+{
+  CCriticalBlock lock(cs_db);
+  CDB db(file.c_str (), "r");
+
+  /* Iterate over all entries in the database and keep track of how many
+     there are per different "key" (first string of the key) and how
+     large they are.  */
+  typedef std::map<std::string, DbstatsPerKeyData> DataMap;
+  DataMap data;
+
+  Dbc* pcursor = db.GetCursor ();
+  if (!pcursor)
+    {
+      printf ("Error creating cursor.\n");
+      return;
+    }
+
+  while (true)
+    {
+      CDataStream ssKey(SER_DISK, VERSION);
+      CDataStream ssValue(SER_DISK, VERSION);
+      const int ret = db.ReadAtCursor (pcursor, ssKey, ssValue, DB_NEXT);
+      if (ret == DB_NOTFOUND)
+        {
+          pcursor->close ();
+          break;
+        }
+      if (ret != 0)
+        {
+          pcursor->close ();
+          printf ("Error reading at cursor.\n");
+          return;
+        }
+
+      std::string key;
+      ssKey >> key;
+
+      /* Note that size reported will be the size *without* the already
+         read key string.  Should not matter much, as this information
+         is, of course, known anyway.  */
+      const size_t sizeKey = ssKey.size ();
+      const size_t sizeValue = ssValue.size ();
+
+      DataMap::iterator i = data.find (key);
+      if (i == data.end ())
+        {
+          DbstatsPerKeyData dat;
+          dat.count = 1;
+          dat.totalKeySize = dat.minKeySize = dat.maxKeySize = sizeKey;
+          dat.totalValueSize = dat.minValueSize = dat.maxValueSize = sizeValue;
+          data.insert (std::make_pair (key, dat));
+        }
+      else
+        {
+          DbstatsPerKeyData& dat = i->second;
+          assert (dat.count >= 1);
+          ++dat.count;
+
+          dat.totalKeySize += sizeKey;
+          dat.totalValueSize += sizeValue;
+
+          dat.minKeySize = std::min (dat.minKeySize, sizeKey);
+          dat.minValueSize = std::min (dat.minValueSize, sizeValue);
+
+          dat.maxKeySize = std::max (dat.maxKeySize, sizeKey);
+          dat.maxValueSize = std::max (dat.maxValueSize, sizeValue);
+        }
+    }
+
+  printf ("Database stats for '%s' collected:\n", file.c_str ());
+  for (DataMap::const_iterator i = data.begin (); i != data.end (); ++i)
+    {
+      const DbstatsPerKeyData& dat = i->second;
+      printf ("  %s: %u entries\n", i->first.c_str (), dat.count);
+      printf ("    keys:   %u total, %u min, %u max\n",
+              dat.totalKeySize, dat.minKeySize, dat.maxKeySize);
+      printf ("    values: %u total, %u min, %u max\n",
+              dat.totalValueSize, dat.minValueSize, dat.maxValueSize);
+    }
+}
+
 void DBFlush(bool fShutdown)
 {
     // Flush log data to the actual data file

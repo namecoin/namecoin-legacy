@@ -266,6 +266,14 @@ public:
       Close ();
       Rewrite (strFile);
     }
+
+    /**
+     * Print some storage stats about the database file for debugging
+     * purposes.
+     * @param file Database file to analyse.
+     */
+    static void PrintStorageStats (const std::string& file);
+
 };
 
 
