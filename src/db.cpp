@@ -5,7 +5,6 @@
 #include "headers.h"
 #include "db.h"
 #include "net.h"
-#include "auxpow.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
@@ -132,29 +131,35 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
     }
 }
 
-void CDB::Close()
+void
+CDB::Close ()
 {
-    if (!pdb)
-        return;
-    if (!vTxn.empty())
-        vTxn.front()->abort();
-    vTxn.clear();
-    pdb = NULL;
+  if (!pdb)
+    return;
+  if (!vTxn.empty ())
+    vTxn.front ()->abort ();
+  vTxn.clear ();
+  pdb = NULL;
 
-    // Flush database activity from memory pool to disk log
-    // wallet.dat is always flushed, the other files only every couple of minutes
-	// note Namecoin has more .dat files than Bitcoin
-    unsigned int nMinutes = 2;
-    if (fReadOnly)
-        nMinutes = 1;
-    if (strFile == "wallet.dat")
+  if (!fReadOnly)
+    {
+      /* Flush database activity from memory pool to disk log.
+         wallet.dat is always flushed, the other files only every couple
+         of minutes.
+         Note: Namecoin has more .dat files than Bitcoin.  */
+
+      unsigned int nMinutes = 2;
+      if (strFile == "wallet.dat")
         nMinutes = 0;
-    if (strFile == "blkindex.dat" && IsInitialBlockDownload() && nBestHeight % 5000 != 0)
-            nMinutes = 5;
-    dbenv.txn_checkpoint(0, nMinutes, 0);
+      else if ((strFile == "blkindex.dat" || strFile == "nameindex.dat")
+               && IsInitialBlockDownload ())
+        nMinutes = 5;
 
-    CRITICAL_BLOCK(cs_db)
-        --mapFileUseCount[strFile];
+      dbenv.txn_checkpoint (0, nMinutes, 0);
+    }
+
+  CRITICAL_BLOCK(cs_db)
+    --mapFileUseCount[strFile];
 }
 
 static void CloseDb(const string& strFile)
@@ -273,6 +278,98 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
     return false;
 }
 
+/* Internal struct to accumulate db stats.  */
+struct DbstatsPerKeyData
+{
+  unsigned count;
+  size_t totalKeySize, totalValueSize;
+  size_t minKeySize, minValueSize;
+  size_t maxKeySize, maxValueSize;
+};
+
+void
+CDB::PrintStorageStats (const std::string& file)
+{
+  CCriticalBlock lock(cs_db);
+  CDB db(file.c_str (), "r");
+
+  /* Iterate over all entries in the database and keep track of how many
+     there are per different "key" (first string of the key) and how
+     large they are.  */
+  typedef std::map<std::string, DbstatsPerKeyData> DataMap;
+  DataMap data;
+
+  Dbc* pcursor = db.GetCursor ();
+  if (!pcursor)
+    {
+      printf ("Error creating cursor.\n");
+      return;
+    }
+
+  while (true)
+    {
+      CDataStream ssKey(SER_DISK, VERSION);
+      CDataStream ssValue(SER_DISK, VERSION);
+      const int ret = db.ReadAtCursor (pcursor, ssKey, ssValue, DB_NEXT);
+      if (ret == DB_NOTFOUND)
+        {
+          pcursor->close ();
+          break;
+        }
+      if (ret != 0)
+        {
+          pcursor->close ();
+          printf ("Error reading at cursor.\n");
+          return;
+        }
+
+      std::string key;
+      ssKey >> key;
+
+      /* Note that size reported will be the size *without* the already
+         read key string.  Should not matter much, as this information
+         is, of course, known anyway.  */
+      const size_t sizeKey = ssKey.size ();
+      const size_t sizeValue = ssValue.size ();
+
+      DataMap::iterator i = data.find (key);
+      if (i == data.end ())
+        {
+          DbstatsPerKeyData dat;
+          dat.count = 1;
+          dat.totalKeySize = dat.minKeySize = dat.maxKeySize = sizeKey;
+          dat.totalValueSize = dat.minValueSize = dat.maxValueSize = sizeValue;
+          data.insert (std::make_pair (key, dat));
+        }
+      else
+        {
+          DbstatsPerKeyData& dat = i->second;
+          assert (dat.count >= 1);
+          ++dat.count;
+
+          dat.totalKeySize += sizeKey;
+          dat.totalValueSize += sizeValue;
+
+          dat.minKeySize = std::min (dat.minKeySize, sizeKey);
+          dat.minValueSize = std::min (dat.minValueSize, sizeValue);
+
+          dat.maxKeySize = std::max (dat.maxKeySize, sizeKey);
+          dat.maxValueSize = std::max (dat.maxValueSize, sizeValue);
+        }
+    }
+
+  printf ("Database stats for '%s' collected:\n", file.c_str ());
+  for (DataMap::const_iterator i = data.begin (); i != data.end (); ++i)
+    {
+      const DbstatsPerKeyData& dat = i->second;
+      printf ("  %s: %u entries\n", i->first.c_str (), dat.count);
+      printf ("    keys:   %u total, %u min, %u max\n",
+              dat.totalKeySize, dat.minKeySize, dat.maxKeySize);
+      printf ("    values: %u total, %u min, %u max\n",
+              dat.totalValueSize, dat.minValueSize, dat.maxValueSize);
+    }
+}
+
 void DBFlush(bool fShutdown)
 {
     // Flush log data to the actual data file
@@ -362,60 +459,6 @@ bool CTxDB::ContainsTx(uint256 hash)
 {
     assert(!fClient);
     return Exists(make_pair(string("tx"), hash));
-}
-
-bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>& vtx)
-{
-    assert(!fClient);
-    vtx.clear();
-
-    // Get cursor
-    Dbc* pcursor = GetCursor();
-    if (!pcursor)
-        return false;
-
-    unsigned int fFlags = DB_SET_RANGE;
-    loop
-    {
-        // Read next record
-        CDataStream ssKey;
-        if (fFlags == DB_SET_RANGE)
-            ssKey << string("owner") << hash160 << CDiskTxPos(0, 0, 0);
-        CDataStream ssValue;
-        int ret = ReadAtCursor(pcursor, ssKey, ssValue, fFlags);
-        fFlags = DB_NEXT;
-        if (ret == DB_NOTFOUND)
-            break;
-        else if (ret != 0)
-        {
-            pcursor->close();
-            return false;
-        }
-
-        // Unserialize
-        string strType;
-        uint160 hashItem;
-        CDiskTxPos pos;
-        ssKey >> strType >> hashItem >> pos;
-        int nItemHeight;
-        ssValue >> nItemHeight;
-
-        // Read transaction
-        if (strType != "owner" || hashItem != hash160)
-            break;
-        if (nItemHeight >= nMinHeight)
-        {
-            vtx.resize(vtx.size()+1);
-            if (!vtx.back().ReadFromDisk(pos))
-            {
-                pcursor->close();
-                return false;
-            }
-        }
-    }
-
-    pcursor->close();
-    return true;
 }
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
@@ -537,14 +580,10 @@ bool CTxDB::LoadBlockIndex()
             pindexNew->nTime          = diskindex.nTime;
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
-            pindexNew->auxpow         = diskindex.auxpow;
 
             // Watch for genesis block
             if (pindexGenesisBlock == NULL && diskindex.GetBlockHash() == hashGenesisBlock)
                 pindexGenesisBlock = pindexNew;
-
-            if (!pindexNew->CheckIndex())
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else
         {

@@ -21,8 +21,6 @@ using namespace std;
 using namespace json_spirit;
 
 static const bool NAME_DEBUG = false;
-typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
-extern map<string, rpcfn_type> mapCallTable;
 extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
 template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
@@ -40,7 +38,6 @@ extern std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
 extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 
 // forward decls
-extern bool DecodeNameScript(const CScript& script, int& op, vector<vector<unsigned char> > &vvch, CScript::const_iterator& pc);
 extern bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType, CScript& scriptSigRet);
 extern bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const CTransaction& txTo, unsigned int nIn, int nHashType);
 extern bool IsConflictedTx(CTxDB& txdb, const CTransaction& tx, vector<unsigned char>& name);
@@ -233,32 +230,6 @@ CScript RemoveNameScriptPrefix(const CScript& scriptIn)
     return CScript(pc, scriptIn.end());
 }
 
-bool SignNameSignature(const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType=SIGHASH_ALL, CScript scriptPrereq=CScript())
-{
-    assert(nIn < txTo.vin.size());
-    CTxIn& txin = txTo.vin[nIn];
-    assert(txin.prevout.n < txFrom.vout.size());
-    const CTxOut& txout = txFrom.vout[txin.prevout.n];
-
-    // Leave out the signature from the hash, since a signature can't sign itself.
-    // The checksig op will also drop the signatures from its hash.
-
-    const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
-    uint256 hash = SignatureHash(scriptPrereq + txout.scriptPubKey, txTo, nIn, nHashType);
-
-    if (!Solver(*pwalletMain, scriptPubKey, hash, nHashType, txin.scriptSig))
-        return false;
-
-    txin.scriptSig = scriptPrereq + txin.scriptSig;
-
-    // Test solution
-    if (scriptPrereq.empty())
-        if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, 0))
-            return false;
-
-    return true;
-}
-
 bool IsMyName(const CTransaction& tx, const CTxOut& txout)
 {
     const CScript& scriptPubKey = RemoveNameScriptPrefix(txout.scriptPubKey);
@@ -268,7 +239,7 @@ bool IsMyName(const CTransaction& tx, const CTxOut& txout)
     return true;
 }
 
-bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
+bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, const CWalletTx& wtxIn, int nTxOut, CWalletTx& wtxNew, CReserveKey& reservekey, int64& nFeeRet)
 {
     int64 nValue = 0;
     BOOST_FOREACH(const PAIRTYPE(CScript, int64)& s, vecSend)
@@ -369,16 +340,8 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
                 int nIn = 0;
                 BOOST_FOREACH(PAIRTYPE(const CWalletTx*, unsigned int)& coin, vecCoins)
                 {
-                    if (coin.first == &wtxIn && coin.second == nTxOut)
-                    {
-                        if (!SignNameSignature(*coin.first, wtxNew, nIn++))
-                            throw runtime_error("could not sign name coin output");
-                    }
-                    else
-                    {
-                        if (!SignSignature(*pwalletMain, *coin.first, wtxNew, nIn++))
-                            return false;
-                    }
+                    if (!SignSignature(*pwalletMain, *coin.first, wtxNew, nIn++))
+                        return false;
                 }
 
                 // Limit size
@@ -412,7 +375,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
 
 // nTxOut is the output from wtxIn that we should grab
 // requires cs_main lock
-string SendMoneyWithInputTx(CScript scriptPubKey, int64 nValue, int64 nNetFee, CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
+string SendMoneyWithInputTx(const CScript& scriptPubKey, int64 nValue, int64 nNetFee, const CWalletTx& wtxIn, CWalletTx& wtxNew, bool fAskFee)
 {
     int nTxOut = IndexOfNameOutput(wtxIn);
     CReserveKey reservekey(pwalletMain);
@@ -1028,9 +991,9 @@ Value name_scan(const Array& params, bool fHelp)
 
 Value name_firstupdate(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() < 3 || params.size() > 4)
+    if (fHelp || params.size() < 3 || params.size() > 5)
         throw runtime_error(
-                "name_firstupdate <name> <rand> [<tx>] <value>\n"
+                "name_firstupdate <name> <rand> [<tx>] <value> [<toaddress>]\n"
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
                 + HelpRequiringPassphrase());
@@ -1072,6 +1035,23 @@ Value name_firstupdate(const Array& params, bool fHelp)
         }
     }
 
+    CScript scriptPubKeyOrig;
+    if (params.size () == 5)
+    {
+        const std::string strAddress = params[4].get_str ();
+        uint160 hash160;
+        bool isValid = AddressToHash160 (strAddress, hash160);
+        if (!isValid)
+            throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY,
+                                "Invalid namecoin address");
+        scriptPubKeyOrig.SetBitcoinAddress (strAddress);
+    }
+    else
+    {
+        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool ();
+        scriptPubKeyOrig.SetBitcoinAddress (vchPubKey);
+    }
+
     CRITICAL_BLOCK(cs_main)
     {
         EnsureWalletIsUnlocked();
@@ -1097,9 +1077,6 @@ Value name_firstupdate(const Array& params, bool fHelp)
             throw runtime_error("previous transaction is not in the wallet");
         }
 
-        vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
-        CScript scriptPubKeyOrig;
-        scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
         CScript scriptPubKey;
         scriptPubKey << OP_NAME_FIRSTUPDATE << vchName << vchRand << vchValue << OP_2DROP << OP_2DROP;
         scriptPubKey += scriptPubKeyOrig;
@@ -1254,6 +1231,155 @@ Value name_new(const Array& params, bool fHelp)
     res.push_back(wtx.GetHash().GetHex());
     res.push_back(HexStr(vchRand));
     return res;
+}
+
+static Value
+name_pending (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 0)
+    throw runtime_error(
+      "name_pending\n"
+      "List all pending name operations known of.\n");
+
+  Array res;
+
+  CRITICAL_BLOCK (cs_main)
+    {
+      std::map<vchType, std::set<uint256> >::const_iterator i;
+      for (i = mapNamePending.begin (); i != mapNamePending.end (); ++i)
+        {
+          if (i->second.empty ())
+            continue;
+
+          const std::string name = stringFromVch (i->first);
+
+          for (std::set<uint256>::const_iterator j = i->second.begin ();
+               j != i->second.end (); ++j)
+            {
+              CTransaction tx;
+              uint256 hashBlock;
+              if (!GetTransaction (*j, tx, hashBlock))
+                {
+                  printf ("name_pending: failed to GetTransaction of hash %s\n",
+                          j->GetHex ().c_str ());
+                  continue;
+                }
+
+              int op, nOut;
+              std::vector<vchType> vvch;
+              if (!DecodeNameTx (tx, op, nOut, vvch, -1))
+                {
+                  printf ("name_pending: failed to find name output in tx %s\n",
+                          j->GetHex ().c_str ());
+                  continue;
+                }
+
+              /* Decode the name operation.  */
+              std::string value;
+              std::string opString;
+              switch (op)
+                {
+                case OP_NAME_FIRSTUPDATE:
+                  assert (vvch.size () == 3);
+                  opString = "name_firstupdate";
+                  value = stringFromVch (vvch[2]);
+                  break;
+
+                case OP_NAME_UPDATE:
+                  assert (vvch.size () == 2);
+                  opString = "name_update";
+                  value = stringFromVch (vvch[1]);
+                  break;
+
+                default:
+                  printf ("name_pending: unexpected op code %d for tx %s\n",
+                          op, j->GetHex ().c_str ());
+                  continue;
+                }
+
+              /* See if it is owned by the wallet user.  */
+              const CTxOut& txout = tx.vout[nOut];
+              const bool isMine = IsMyName (tx, txout);
+
+              /* Construct the JSON output.  */
+              Object obj;
+              obj.push_back (Pair ("name", name));
+              obj.push_back (Pair ("txid", j->GetHex ()));
+              obj.push_back (Pair ("op", opString));
+              obj.push_back (Pair ("value", value));
+              obj.push_back (Pair ("ismine", isMine));
+              res.push_back (obj);
+            }
+        }
+    }
+
+  return res;
+}
+
+/* Implement name operations for createrawtransaction.  */
+void
+AddRawTxNameOperation (CTransaction& tx, const Object& obj)
+{
+  Value val = find_value (obj, "op");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing op key.");
+  const std::string op = val.get_str ();
+
+  if (op != "name_update")
+    throw std::runtime_error ("Only name_update is implemented"
+                              " for raw transactions at the moment.");
+
+  val = find_value (obj, "name");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing name key.");
+  const std::string name = val.get_str ();
+  const std::vector<unsigned char> vchName = vchFromString (name);
+
+  val = find_value (obj, "value");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing value key.");
+  const std::string value = val.get_str ();
+
+  val = find_value (obj, "address");
+  if (val.type () != str_type)
+    throw JSONRPCError (RPC_INVALID_PARAMETER, "Missing address key.");
+  const std::string address = val.get_str ();
+  if (!IsValidBitcoinAddress (address))
+    {
+      std::ostringstream msg;
+      msg << "Invalid Namecoin address: " << address;
+      throw JSONRPCError (RPC_INVALID_ADDRESS_OR_KEY, msg.str ());
+    }
+
+  tx.nVersion = NAMECOIN_TX_VERSION;
+
+  /* Find the transaction input to add.  */
+
+  CRITICAL_BLOCK(cs_main)
+  {
+    CNameDB dbName("r");
+    CTransaction prevTx;
+    if (!GetTxOfName (dbName, vchName, prevTx))
+      throw std::runtime_error ("could not find a coin with this name");
+    const uint256 prevTxHash = prevTx.GetHash();
+    const int nTxOut = IndexOfNameOutput (prevTx);
+
+    CTxIn in(COutPoint(prevTxHash, nTxOut));
+    tx.vin.push_back (in);
+  }
+
+  /* Construct the transaction output.  */
+
+  CScript scriptPubKeyOrig;
+  scriptPubKeyOrig.SetBitcoinAddress (address);
+
+  CScript scriptPubKey;
+  scriptPubKey << OP_NAME_UPDATE << vchName << vchFromString (value)
+               << OP_2DROP << OP_DROP;
+  scriptPubKey += scriptPubKeyOrig;
+
+  CTxOut out(MIN_AMOUNT, scriptPubKey);
+  tx.vout.push_back (out);
 }
 
 void UnspendInputs(CWalletTx& wtx)
@@ -1595,7 +1721,7 @@ bool CNameDB::ReconstructNameIndex()
         {  
             TxnBegin();
             CBlock block;
-            block.ReadFromDisk(pindex, true);
+            block.ReadFromDisk(pindex);
             int nHeight = pindex->nHeight;
             
             BOOST_FOREACH(CTransaction& tx, block.vtx)
@@ -1672,6 +1798,7 @@ CHooks* InitHook()
     mapCallTable.insert(make_pair("name_debug", &name_debug));
     mapCallTable.insert(make_pair("name_debug1", &name_debug1));
     mapCallTable.insert(make_pair("name_clean", &name_clean));
+    mapCallTable.insert(make_pair("name_pending", &name_pending));
     mapCallTable.insert(make_pair("sendtoname", &sendtoname));
     mapCallTable.insert(make_pair("deletetransaction", &deletetransaction));
     hashGenesisBlock = hashNameCoinGenesisBlock;
@@ -1884,7 +2011,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx)
     const CTxOut& txout = tx.vout[nOut];
     if (IsMyName(tx, txout))
     {
-        printf("IsMine() hook : found my transaction %s nout %d\n", tx.GetHash().GetHex().c_str(), nOut);
+        //printf("IsMine() hook : found my transaction %s nout %d\n", tx.GetHash().GetHex().c_str(), nOut);
         return true;
     }
     return false;
@@ -1908,7 +2035,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
 
     if (IsMyName(tx, txout))
     {
-        printf("IsMine() hook : found my transaction %s value %ld\n", tx.GetHash().GetHex().c_str(), txout.nValue);
+        //printf("IsMine() hook : found my transaction %s value %ld\n", tx.GetHash().GetHex().c_str(), txout.nValue);
         return true;
     }
     return false;

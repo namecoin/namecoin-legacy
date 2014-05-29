@@ -7,6 +7,12 @@
 
 #include "json/json_spirit.h"
 
+#include <map>
+#include <list>
+#include <set>
+#include <string>
+#include <vector>
+
 void ThreadRPCServer(void* parg);
 json_spirit::Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams);
 void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params);
@@ -30,6 +36,10 @@ void RPCTypeCheck(const json_spirit::Object& o,
 
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
+
+typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
+extern std::map<std::string, rpcfn_type> mapCallTable;
+extern std::set<std::string> setCallAsync;
 
 // Bitcoin RPC error codes
 enum RPCErrorCode
@@ -65,6 +75,9 @@ enum RPCErrorCode
     RPC_WALLET_WRONG_ENC_STATE      = -15, // Command given in wrong wallet encryption state (encrypting an encrypted wallet etc.)
     RPC_WALLET_ENCRYPTION_FAILED    = -16, // Failed to encrypt the wallet
     RPC_WALLET_ALREADY_UNLOCKED     = -17, // Wallet is already unlocked
+
+    // Async method call interrupted.
+    RPC_ASYNC_INTERRUPT             = -100,
 };
 
 #endif

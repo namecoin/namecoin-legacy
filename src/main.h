@@ -12,6 +12,7 @@
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 
 #ifdef __WXMSW__
 #include <io.h> /* for _commit */
@@ -77,6 +78,11 @@ extern int64 nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
 
+/* Synchronisation and condition variable for threads waiting to be notified
+   when a new block arrives.  */
+extern boost::mutex mut_newBlock;
+extern boost::condition_variable cv_newBlock;
+
 // Settings
 extern int fGenerateBitcoins;
 extern int64 nTransactionFee;
@@ -109,6 +115,7 @@ CBlockIndex* FindBlockByHeight(int nHeight);
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
+int64 GetBlockValue(int nHeight, int64 nFees);
 CBlock* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime);
 void IncrementExtraNonceWithAux(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime, std::vector<unsigned char>& vchAux);
@@ -1054,7 +1061,7 @@ public:
 
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
+    bool ReadFromDisk(const CBlockIndex* pindex);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock(int nHeight) const;
@@ -1092,9 +1099,7 @@ public:
     unsigned int nBits;
     unsigned int nNonce;
 
-    // if this is an aux work block
-    boost::shared_ptr<CAuxPow> auxpow;
-
+public:
 
     CBlockIndex()
     {
@@ -1111,7 +1116,6 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
-        auxpow.reset();
     }
 
     CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, CBlock& block)
@@ -1129,12 +1133,28 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-        auxpow         = block.auxpow;
     }
 
+    /* GetBlockHeader is never actually used in the code, thus disable
+       it since it can't reliably be tested.  It can be re-enabled
+       when necessary later.  */
+#if 0
     CBlock GetBlockHeader() const
     {
         CBlock block;
+
+        /* If this block has auxpow but it is not yet loaded, do this
+           now and keep it in memory.  */
+        if (hasAuxpow && !auxpow)
+          {
+            printf ("GetBlockHeader(): reading auxpow from disk");
+            if (!block.ReadFromDisk (nFile, nBlockPos, false))
+              throw std::runtime_error ("CBlock::ReadFromDisk failed while"
+                                        " retrieving auxpow");
+            auxpow = block.auxpow;
+            return block;
+          }
+
         block.nVersion       = nVersion;
         if (pprev)
             block.hashPrevBlock = pprev->GetBlockHash();
@@ -1143,8 +1163,11 @@ public:
         block.nBits          = nBits;
         block.nNonce         = nNonce;
         block.auxpow         = auxpow;
+        assert ((hasAuxpow && block.auxpow) || (!hasAuxpow && !block.auxpow));
+
         return block;
     }
+#endif
 
     uint256 GetBlockHash() const
     {
@@ -1169,8 +1192,6 @@ public:
     {
         return (pnext || this == pindexBest);
     }
-
-    bool CheckIndex() const;
 
     bool EraseBlockFromDisk()
     {
@@ -1250,9 +1271,10 @@ public:
 
     IMPLEMENT_SERIALIZE
     (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
+        /* This is only written to disk.  */
+        assert (nType & SER_DISK);
 
+        READWRITE(nVersion);
         READWRITE(hashNext);
         READWRITE(nFile);
         READWRITE(nBlockPos);
@@ -1266,7 +1288,12 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
 
-        ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
+        /* In the old format, the auxpow is stored.  Load it and ignore.  */
+        if (fRead && nVersion < 37400)
+        {
+            boost::shared_ptr<CAuxPow> auxpow;
+            ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
+        }
     )
 
     uint256 GetBlockHash() const
