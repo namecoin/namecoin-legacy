@@ -89,6 +89,7 @@
 #include <netinet/in.h>
 #endif
 
+typedef std::vector<unsigned char> vchType;
 
 #pragma hdrstop
 

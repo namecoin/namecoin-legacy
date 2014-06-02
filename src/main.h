@@ -678,7 +678,7 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
-    bool DisconnectInputs(CTxDB& txdb, CBlockIndex* pindex);
+    bool DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex);
     
     /** Fetch from memory and/or disk. inputsRet keys are transaction hashes.
 
@@ -693,11 +693,14 @@ public:
     bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
                      bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
-    bool ConnectInputs(CTxDB& txdb, std::map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
-                       CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
+    bool ConnectInputs(DatabaseSet& dbset,
+                       std::map<uint256, CTxIndex>& mapTestPool,
+                       CDiskTxPos posThisTx, CBlockIndex* pindexBlock,
+                       int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
+    bool AcceptToMemoryPool(DatabaseSet& dbset, bool fCheckInputs=true,
+                            bool fLimitFree=true, bool* pfMissingInputs=NULL);
     bool AcceptToMemoryPool(bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
 protected:
     bool AddToMemoryPoolUnchecked();
@@ -756,7 +759,7 @@ public:
     int GetDepthInMainChain() const { int nHeight; return GetDepthInMainChain(nHeight); }
     bool IsInMainChain() const { return GetDepthInMainChain() > 0; }
     int GetBlocksToMaturity() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
+    bool AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs = true);
     bool AcceptToMemoryPool();
 };
 
@@ -1059,10 +1062,10 @@ public:
     }
 
 
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool DisconnectBlock (DatabaseSet& dbset, CBlockIndex* pindex);
+    bool ConnectBlock (DatabaseSet& dbset, CBlockIndex* pindex);
     bool ReadFromDisk(const CBlockIndex* pindex);
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    bool SetBestChain (DatabaseSet& dbset, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock(int nHeight) const;
     bool AcceptBlock();

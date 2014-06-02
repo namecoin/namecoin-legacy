@@ -12,7 +12,7 @@ public:
     virtual bool IsStandard(const CScript& scriptPubKey);
     virtual void AddToWallet(CWalletTx& tx);
     virtual bool CheckTransaction(const CTransaction& tx);
-    virtual bool ConnectInputs(CTxDB& txdb,
+    virtual bool ConnectInputs(DatabaseSet& dbset,
             map<uint256, CTxIndex>& mapTestPool,
             const CTransaction& tx,
             vector<CTransaction>& vTxPrev,
@@ -21,11 +21,13 @@ public:
             CDiskTxPos& txPos,
             bool fBlock,
             bool fMiner);
-    virtual bool DisconnectInputs(CTxDB& txdb,
+    virtual bool DisconnectInputs (DatabaseSet& txdb,
             const CTransaction& tx,
             CBlockIndex* pindexBlock);
-    virtual bool ConnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex);
-    virtual bool DisconnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex);
+    virtual bool ConnectBlock (CBlock& block, DatabaseSet& dbset,
+                               CBlockIndex* pindex);
+    virtual bool DisconnectBlock (CBlock& block, DatabaseSet& txdb,
+                                  CBlockIndex* pindex);
     virtual bool ExtractAddress(const CScript& script, string& address);
     virtual bool GenesisBlock(CBlock& block)
     {
@@ -37,7 +39,7 @@ public:
     virtual void MessageStart(char* pchMessageStart)
     {
     }
-    void AcceptToMemoryPool(CTxDB& txdb, const CTransaction& tx)
+    void AcceptToMemoryPool (DatabaseSet& dbset, const CTransaction& tx)
     {
     }
     virtual bool IsMine(const CTransaction& tx)
@@ -105,7 +107,7 @@ bool CStandardHooks::CheckTransaction(const CTransaction& tx)
     return true;
 }
 
-bool CStandardHooks::ConnectInputs(CTxDB& txdb,
+bool CStandardHooks::ConnectInputs(DatabaseSet& dbset,
         map<uint256, CTxIndex>& mapTestPool,
         const CTransaction& tx,
         vector<CTransaction>& vTxPrev,
@@ -118,19 +120,23 @@ bool CStandardHooks::ConnectInputs(CTxDB& txdb,
     return true;
 }
 
-bool CStandardHooks::DisconnectInputs(CTxDB& txdb,
-        const CTransaction& tx,
-        CBlockIndex* pindexBlock)
+bool
+CStandardHooks::DisconnectInputs (DatabaseSet& dbset, const CTransaction& tx,
+                                  CBlockIndex* pindexBlock)
 {
     return true;
 }
 
-bool CStandardHooks::ConnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex)
+bool
+CStandardHooks::ConnectBlock (CBlock& block, DatabaseSet& dbset,
+                              CBlockIndex* pindex)
 {
     return true;
 }
 
-bool CStandardHooks::DisconnectBlock(CBlock& block, CTxDB& txdb, CBlockIndex* pindex)
+bool
+CStandardHooks::DisconnectBlock (CBlock& block, DatabaseSet& dbset,
+                                 CBlockIndex* pindex)
 {
     return true;
 }
