@@ -915,7 +915,7 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
 
     set<string> setOptions;
     setOptions.insert("*");
-    
+
     for (pod::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
     {
         // Don't overwrite existing settings so command line settings override bitcoin.conf
@@ -1077,7 +1077,7 @@ string FormatFullVersion()
     string s = FormatVersion(VERSION) + pszSubVer;
     if (VERSION_IS_BETA) {
         s += "-";
-        s += _("beta");
+        s += _("rc1");
     }
     return s;
 }
