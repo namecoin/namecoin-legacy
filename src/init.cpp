@@ -281,6 +281,18 @@ bool AppInit2(int argc, char* argv[])
         return false;
     }
 
+    /* Debugging feature:  Read a BDB database file and print out some
+       statistics about which keys it contains and how much data they
+       use up in the file.  */
+    if (GetBoolArg ("-dbstats"))
+      {
+        const std::string dbfile = GetArg ("-dbstatsfile", "blkindex.dat");
+        printf ("Database storage stats for '%s' requested.\n",
+                dbfile.c_str ());
+        CDB::PrintStorageStats (dbfile);
+        return true;
+      }
+
     //
     // Limit to single instance per user
     // Required to protect the database files if we're going to keep deleting log.*
