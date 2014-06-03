@@ -12,6 +12,7 @@
 
 #include <db_cxx.h>
 
+class CNameIndex;
 class CTxIndex;
 class CDiskBlockIndex;
 class CDiskTxPos;
@@ -40,7 +41,14 @@ class CDB
 protected:
     Db* pdb;
     std::string strFile;
+
+    /* Keep track of the database transactions open.  Also remember for
+       each one whether or not it is owned by us or was instead passed
+       to TxnBegin.  If it is the latter, it should not be committed/aborted
+       but only removed from the vector when done.  */
     std::vector<DbTxn*> vTxn;
+    std::vector<bool> ownTxn;
+
     bool fReadOnly;
 
     explicit CDB(const char* pszFile, const char* pszMode="r+");
@@ -51,6 +59,10 @@ private:
     CDB(const CDB&);
     void operator=(const CDB&);
 
+    /* Store version of the DB here that will be set as version
+       for serialisation on the streams.  */
+    int nVersion;
+
 protected:
     template<typename K, typename T>
     bool Read(const K& key, T& value)
@@ -59,7 +71,7 @@ protected:
             return false;
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -73,7 +85,9 @@ protected:
             return false;
 
         // Unserialize value
-        CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK);
+        CDataStream ssValue((char*)datValue.get_data(),
+                            (char*)datValue.get_data() + datValue.get_size(),
+                            SER_DISK, nVersion);
         ssValue >> value;
 
         // Clear and free memory
@@ -91,13 +105,13 @@ protected:
             assert(("Write called on database in read-only mode", false));
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
 
         // Value
-        CDataStream ssValue(SER_DISK);
+        CDataStream ssValue(SER_DISK, nVersion);
         ssValue.reserve(10000);
         ssValue << value;
         Dbt datValue(&ssValue[0], ssValue.size());
@@ -120,7 +134,7 @@ protected:
             assert(("Erase called on database in read-only mode", false));
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -140,7 +154,7 @@ protected:
             return false;
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -203,6 +217,14 @@ protected:
         return 0;
     }
 
+    /* Update the stream to our serialisation version.  This is useful
+       for ReadAtCursor users.  */
+    inline void
+    SetStreamVersion (CDataStream& ss) const
+    {
+      ss.nVersion = nVersion;
+    }
+
 public:
     DbTxn* GetTxn()
     {
@@ -212,16 +234,25 @@ public:
             return NULL;
     }
 
-    bool TxnBegin()
+    /* Start a new atomic DB transaction.  Optionally use the passed one
+       instead, which can be used to synchronise between multiple DBs.  */
+    inline bool
+    TxnBegin (DbTxn* ptxn = NULL)
     {
-        if (!pdb)
+      const bool own = (ptxn == NULL);
+
+      if (!pdb)
+        return false;
+      if (!ptxn)
+        {
+          const int ret = dbenv.txn_begin (GetTxn (), &ptxn, DB_TXN_NOSYNC);
+          if (!ptxn || ret != 0)
             return false;
-        DbTxn* ptxn = NULL;
-        int ret = dbenv.txn_begin(GetTxn(), &ptxn, DB_TXN_NOSYNC);
-        if (!ptxn || ret != 0)
-            return false;
-        vTxn.push_back(ptxn);
-        return true;
+        }
+      vTxn.push_back (ptxn);
+      ownTxn.push_back (own);
+
+      return true;
     }
 
     bool TxnCommit()
@@ -230,8 +261,12 @@ public:
             return false;
         if (vTxn.empty())
             return false;
-        int ret = vTxn.back()->commit(0);
+
+        int ret = 0;
+        if (ownTxn.back ())
+          ret = vTxn.back()->commit(0);
         vTxn.pop_back();
+        ownTxn.pop_back ();
         return (ret == 0);
     }
 
@@ -241,8 +276,12 @@ public:
             return false;
         if (vTxn.empty())
             return false;
-        int ret = vTxn.back()->abort();
+
+        int ret = 0;
+        if (ownTxn.back ())
+          ret = vTxn.back()->abort();
         vTxn.pop_back();
+        ownTxn.pop_back ();
         return (ret == 0);
     }
 
@@ -256,8 +295,18 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
+
+    /**
+     * Set version for stream serialisation.
+     * @param v Version to use for serialisation streams.
+     */
+    inline void
+    SetSerialisationVersion (int v)
+    {
+      nVersion = v;
+    }
     
-    bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
+    bool static Rewrite(const std::string& strFile);
 
     /* Rewrite the DB with this database's name.  This closes it.  */
     inline bool
@@ -266,6 +315,14 @@ public:
       Close ();
       Rewrite (strFile);
     }
+
+    /**
+     * Print some storage stats about the database file for debugging
+     * purposes.
+     * @param file Database file to analyse.
+     */
+    static void PrintStorageStats (const std::string& file);
+
 };
 
 
@@ -299,6 +356,124 @@ public:
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
     bool LoadBlockIndex();
+
+    /* Update txindex to new data format.  */
+    bool RewriteTxIndex (int oldVersion);
+};
+
+
+
+
+
+
+
+/**
+ * Name index.  Non-inline implementation code is in namecoin.cpp, but the
+ * class is declared here because it will be used for the "wrapper" database
+ * set class below and in general makes sense here.
+ */
+class CNameDB : public CDB
+{
+public:
+    CNameDB(const char* pszMode="r+") : CDB("nameindex.dat", pszMode) { }
+
+    bool WriteName(const vchType& name, const std::vector<CNameIndex>& vtxPos)
+    {
+        return Write(make_pair(std::string("namei"), name), vtxPos);
+    }
+
+    bool ReadName(const vchType& name, std::vector<CNameIndex>& vtxPos)
+    {
+        return Read(make_pair(std::string("namei"), name), vtxPos);
+    }
+
+    bool ExistsName(const vchType& name)
+    {
+        return Exists(make_pair(std::string("namei"), name));
+    }
+
+    bool EraseName(const vchType& name)
+    {
+        return Erase(make_pair(std::string("namei"), name));
+    }
+
+    bool ScanNames(
+            const vchType& vchName,
+            int nMax,
+            std::vector<std::pair<vchType, CNameIndex> >& nameScan);
+
+    bool test();
+
+    bool ReconstructNameIndex();
+};
+
+
+
+
+
+/**
+ * Multiple databases (blkindex, nameindex) are used to represent the "current
+ * blockchain state".  They are updated during block connecting/disconnecting,
+ * and this should happen atomically.  This class encapsulates all those
+ * databases into a single object for simplicity.
+ */
+class DatabaseSet
+{
+
+private:
+
+  CTxDB txDb;
+  CNameDB nameDb;
+
+public:
+
+  inline DatabaseSet (const char* pszMode = "r+")
+    : txDb(pszMode), nameDb(pszMode)
+  {}
+
+  /* Expose the bundled databases.  */
+
+  inline CTxDB&
+  tx ()
+  {
+    return txDb;
+  }
+
+  inline CNameDB&
+  name ()
+  {
+    return nameDb;
+  }
+
+  /* Transaction handling.  */
+
+  inline bool
+  TxnBegin ()
+  {
+    if (!txDb.TxnBegin ())
+      return false;
+    if (!nameDb.TxnBegin (txDb.GetTxn ()))
+      return error ("Failed to start child transaction in NameDB!");
+
+    return true;
+  }
+
+  inline bool
+  TxnAbort ()
+  {
+    if (!nameDb.TxnAbort ())
+      return error ("Failed to abort child transaction in NameDB!");
+    return txDb.TxnAbort ();
+  }
+
+  inline bool
+  TxnCommit ()
+  {
+    if (!nameDb.TxnCommit ())
+      return error ("Failed to commit child transaction in NameDB!");
+    return txDb.TxnCommit ();
+  }
+
 };
 
 

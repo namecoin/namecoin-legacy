@@ -524,12 +524,12 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 
 void CWallet::ReacceptWalletTransactions()
 {
-    CTxDB txdb("r");
+    DatabaseSet dbset("r");
     bool fRepeat = true;
     while (fRepeat) CRITICAL_BLOCK(cs_mapWallet)
     {
         fRepeat = false;
-        vector<CDiskTxPos> vMissingTx;
+        bool hasMissingTx = false;
         BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
         {
             CWalletTx& wtx = item.second;
@@ -538,23 +538,23 @@ void CWallet::ReacceptWalletTransactions()
 
             CTxIndex txindex;
             bool fUpdated = false;
-            if (txdb.ReadTxIndex(wtx.GetHash(), txindex))
+            if (dbset.tx ().ReadTxIndex (wtx.GetHash (), txindex))
             {
                 // Update fSpent if a tx got spent somewhere else by a copy of wallet.dat
-                if (txindex.vSpent.size() != wtx.vout.size())
+                if (txindex.GetOutputCount () != wtx.vout.size())
                 {
-                    printf("ERROR: ReacceptWalletTransactions() : txindex.vSpent.size() %d != wtx.vout.size() %d\n", txindex.vSpent.size(), wtx.vout.size());
+                    printf("ERROR: ReacceptWalletTransactions() : txindex.OutputCount %d != wtx.vout.size() %d\n", txindex.GetOutputCount (), wtx.vout.size());
                     continue;
                 }
-                for (int i = 0; i < txindex.vSpent.size(); i++)
+                for (int i = 0; i < txindex.GetOutputCount (); i++)
                 {
                     if (wtx.IsSpent(i))
                         continue;
-                    if (!txindex.vSpent[i].IsNull() && IsMine(wtx.vout[i]))
+                    if (txindex.IsSpent (i) && IsMine(wtx.vout[i]))
                     {
                         wtx.MarkSpent(i);
                         fUpdated = true;
-                        vMissingTx.push_back(txindex.vSpent[i]);
+                        hasMissingTx = true;
                     }
                 }
                 if (fUpdated)
@@ -568,10 +568,10 @@ void CWallet::ReacceptWalletTransactions()
             {
                 // Reaccept any txes of ours that aren't already in a block
                 if (!wtx.IsCoinBase())
-                    wtx.AcceptWalletTransaction(txdb, false);
+                  wtx.AcceptWalletTransaction (dbset, false);
             }
         }
-        if (!vMissingTx.empty())
+        if (hasMissingTx)
         {
             // TODO: optimize this to scan just part of the block chain?
             if (ScanForWalletTransactions(pindexGenesisBlock))

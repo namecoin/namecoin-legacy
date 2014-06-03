@@ -35,7 +35,7 @@ class CDataStream;
 class CAutoFile;
 static const unsigned int MAX_SIZE = 0x02000000;
 
-static const int VERSION = 37400;
+static const int VERSION = 37500;
 static const char* pszSubVer = "";
 static const bool VERSION_IS_BETA = true;
 
@@ -342,6 +342,17 @@ template<typename Stream, typename T, typename A> void Unserialize_impl(Stream& 
 template<typename Stream, typename T, typename A> void Unserialize_impl(Stream& is, std::vector<T, A>& v, int nType, int nVersion, const boost::false_type&);
 template<typename Stream, typename T, typename A> inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersion=VERSION);
 
+// bit vector
+template<typename A>
+  unsigned int GetSerializeSize (const std::vector<bool, A>& v,
+                                 int nType, int nVersion = VERSION);
+template<typename Stream, typename A>
+  void Serialize (Stream& os, const std::vector<bool, A>& v,
+                  int nType, int nVersion = VERSION);
+template<typename Stream, typename A>
+  void Unserialize (Stream& is, std::vector<bool, A>& v,
+                    int nType, int nVersion = VERSION);
+
 // others derived from vector
 extern inline unsigned int GetSerializeSize(const CScript& v, int nType, int nVersion=VERSION);
 template<typename Stream> void Serialize(Stream& os, const CScript& v, int nType, int nVersion=VERSION);
@@ -527,6 +538,64 @@ template<typename Stream, typename T, typename A>
 inline void Unserialize(Stream& is, std::vector<T, A>& v, int nType, int nVersion)
 {
     Unserialize_impl(is, v, nType, nVersion, boost::is_fundamental<T>());
+}
+
+
+
+
+/* bit vector  */
+
+inline unsigned
+GetBitvectorWordCount (unsigned n)
+{
+  return (n + 7) / 8;
+}
+
+template<typename A>
+  unsigned int
+  GetSerializeSize (const std::vector<bool, A>& v,
+                    int nType, int nVersion = VERSION)
+{
+  return GetSizeOfCompactSize (v.size ()) + GetBitvectorWordCount (v.size ());
+}
+
+template<typename Stream, typename A>
+  void
+  Serialize (Stream& os, const std::vector<bool, A>& v,
+             int nType, int nVersion = VERSION)
+{
+  WriteCompactSize (os, v.size ());
+
+  std::vector<unsigned char> words(GetBitvectorWordCount (v.size ()), 0);
+  for (unsigned i = 0; i < v.size (); ++i)
+    if (v[i])
+      {
+        const unsigned wordInd = i / 8;
+        const unsigned bitInd = i % 8;
+        words[wordInd] |= (1 << bitInd);
+      }
+
+  assert (sizeof (words[0]) == 1);
+  os.write (reinterpret_cast<const char*> (&words[0]), words.size ());
+}
+
+template<typename Stream, typename A>
+  void
+  Unserialize (Stream& is, std::vector<bool, A>& v,
+               int nType, int nVersion = VERSION)
+{
+  const unsigned size = ReadCompactSize (is);
+  std::vector<unsigned char> words(GetBitvectorWordCount (size));
+  assert (sizeof (words[0]) == 1);
+  is.read (reinterpret_cast<char*> (&words[0]), words.size ());
+
+  v.resize (size);
+  for (unsigned i = 0; i < v.size (); ++i)
+    {
+      const unsigned wordInd = i / 8;
+      const unsigned bitInd = i % 8;
+      v[i] = (words[wordInd] & (1 << bitInd));
+    }
 }
 
 

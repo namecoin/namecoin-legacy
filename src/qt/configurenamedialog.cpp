@@ -5,8 +5,7 @@
 #include "addressbookpage.h"
 #include "walletmodel.h"
 #include "guiconstants.h"
-#include "../main.h"
-#include "../hook.h"
+#include "../headers.h"
 #include "../wallet.h"
 #include "../namecoin.h"
 
