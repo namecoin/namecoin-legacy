@@ -1,4 +1,6 @@
-v0.3.74
+* Even smaller blkindex.dat. Not backward compatible. It will take a while for the rewrite on the first start. (Domob)
+
+v0.3.74-rc1 (never officially released)
 ======
 * allow for atomic name transactions via rpc commands (Domob)
 * new rpc commands: name_pending, getchains (Domob)

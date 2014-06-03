@@ -911,11 +911,11 @@ CTransaction::DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex)
             if (!dbset.tx ().ReadTxIndex (prevout.hash, txindex))
                 return error("DisconnectInputs() : ReadTxIndex failed");
 
-            if (prevout.n >= txindex.vSpent.size())
+            if (prevout.n >= txindex.GetOutputCount ())
                 return error("DisconnectInputs() : prevout.n out of range");
 
             // Mark outpoint as not spent
-            txindex.vSpent[prevout.n].SetNull();
+            txindex.SetSpent (prevout.n, false);
 
             // Write back
             if (!dbset.tx ().UpdateTxIndex (prevout.hash, txindex))
@@ -976,7 +976,7 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
                     txPrev = mi->second;
             }
             if (!fFound)
-                txindex.vSpent.resize(txPrev.vout.size());
+              txindex.ResizeOutputs (txPrev.vout.size ());
         }
         else
         {
@@ -993,12 +993,12 @@ bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTes
         assert(inputsRet.count(prevout.hash) != 0);
         const CTxIndex& txindex = inputsRet[prevout.hash].first;
         const CTransaction& txPrev = inputsRet[prevout.hash].second;
-        if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
+        if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.GetOutputCount ())
         {
             // Revisit this if/when transaction replacement is implemented and allows
             // adding inputs:
             fInvalid = true;
-            return /*DoS(100,*/ error("FetchInputs() : %s prevout.n out of range %d %"PRIszu" %"PRIszu" prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()) /* ) */ ;
+            return /*DoS(100,*/ error("FetchInputs() : %s prevout.n out of range %d %"PRIszu" %"PRIszu" prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.GetOutputCount (), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()) /* ) */ ;
         }
     }
 
@@ -1050,7 +1050,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                     txPrev = mapTransactions[prevout.hash];
                 }
                 if (!fFound)
-                    txindex.vSpent.resize(txPrev.vout.size());
+                  txindex.ResizeOutputs (txPrev.vout.size ());
             }
             else
             {
@@ -1059,8 +1059,8 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                     return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
             }
 
-            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.GetOutputCount ())
+                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.GetOutputCount (), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
 
             // If prev is coinbase, check that it's matured
             if (txPrev.IsCoinBase())
@@ -1073,8 +1073,8 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return error("ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str());
 
             // Check for conflicts
-            if (!txindex.vSpent[prevout.n].IsNull())
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+            if (txindex.IsSpent (prevout.n))
+                return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
             nValueIn += txPrev.vout[prevout.n].nValue;
@@ -1082,7 +1082,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
-            txindex.vSpent[prevout.n] = posThisTx;
+            txindex.SetSpent (prevout.n, true);
 
             // Write back
             if (fBlock)
@@ -1785,31 +1785,37 @@ bool LoadBlockIndex(bool fAllowNew)
     /* Load block index.  Update to the new format (without auxpow)
        if necessary.  */
     {
+      int nTxDbVersion = VERSION;
       CTxDB txdb("cr");
+      txdb.ReadVersion (nTxDbVersion);
+      txdb.SetSerialisationVersion (nTxDbVersion);
+
       if (!txdb.LoadBlockIndex())
           return false;
+      txdb.Close ();
 
-      int nVersion;
-      if (txdb.ReadVersion (nVersion))
-        if (nVersion < 37400)
-          {
-            txdb.Close ();
-            CTxDB wtxdb;
+      if (nTxDbVersion < 37500)
+        {
+          CTxDB wtxdb;
+          /* SerialisationVersion is set to VERSION by default.  */
 
-            /* Go through each blkindex object loaded into memory and
-               write it again to disk.  */
-            printf ("Updating blkindex.dat data format...\n");
-            map<uint256, CBlockIndex*>::const_iterator mi;
-            for (mi = mapBlockIndex.begin (); mi != mapBlockIndex.end (); ++mi)
-              {
-                CDiskBlockIndex disk(mi->second);
-                wtxdb.WriteBlockIndex (disk);
-              }
-            wtxdb.WriteVersion (37400);
+          /* Go through each blkindex object loaded into memory and
+             write it again to disk.  */
+          printf ("Updating blkindex.dat data format...\n");
+          map<uint256, CBlockIndex*>::const_iterator mi;
+          for (mi = mapBlockIndex.begin (); mi != mapBlockIndex.end (); ++mi)
+            {
+              CDiskBlockIndex disk(mi->second);
+              wtxdb.WriteBlockIndex (disk);
+            }
+          wtxdb.WriteVersion (VERSION);
 
-            /* Rewrite the database to compact the storage format.  */
-            wtxdb.Rewrite ();
-          }
+          /* Rewrite the txindex.  */
+          wtxdb.RewriteTxIndex (nTxDbVersion);
+
+          /* Rewrite the database to compact the storage format.  */
+          wtxdb.Rewrite ();
+        }
     }
 
     //

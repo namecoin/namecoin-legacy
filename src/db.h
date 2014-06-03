@@ -59,6 +59,10 @@ private:
     CDB(const CDB&);
     void operator=(const CDB&);
 
+    /* Store version of the DB here that will be set as version
+       for serialisation on the streams.  */
+    int nVersion;
+
 protected:
     template<typename K, typename T>
     bool Read(const K& key, T& value)
@@ -67,7 +71,7 @@ protected:
             return false;
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -81,7 +85,9 @@ protected:
             return false;
 
         // Unserialize value
-        CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK);
+        CDataStream ssValue((char*)datValue.get_data(),
+                            (char*)datValue.get_data() + datValue.get_size(),
+                            SER_DISK, nVersion);
         ssValue >> value;
 
         // Clear and free memory
@@ -99,13 +105,13 @@ protected:
             assert(("Write called on database in read-only mode", false));
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
 
         // Value
-        CDataStream ssValue(SER_DISK);
+        CDataStream ssValue(SER_DISK, nVersion);
         ssValue.reserve(10000);
         ssValue << value;
         Dbt datValue(&ssValue[0], ssValue.size());
@@ -128,7 +134,7 @@ protected:
             assert(("Erase called on database in read-only mode", false));
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -148,7 +154,7 @@ protected:
             return false;
 
         // Key
-        CDataStream ssKey(SER_DISK);
+        CDataStream ssKey(SER_DISK, nVersion);
         ssKey.reserve(1000);
         ssKey << key;
         Dbt datKey(&ssKey[0], ssKey.size());
@@ -209,6 +215,14 @@ protected:
         free(datKey.get_data());
         free(datValue.get_data());
         return 0;
+    }
+
+    /* Update the stream to our serialisation version.  This is useful
+       for ReadAtCursor users.  */
+    inline void
+    SetStreamVersion (CDataStream& ss) const
+    {
+      ss.nVersion = nVersion;
     }
 
 public:
@@ -281,8 +295,18 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
+
+    /**
+     * Set version for stream serialisation.
+     * @param v Version to use for serialisation streams.
+     */
+    inline void
+    SetSerialisationVersion (int v)
+    {
+      nVersion = v;
+    }
     
-    bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
+    bool static Rewrite(const std::string& strFile);
 
     /* Rewrite the DB with this database's name.  This closes it.  */
     inline bool
@@ -324,6 +348,9 @@ public:
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
     bool LoadBlockIndex();
+
+    /* Update txindex to new data format.  */
+    bool RewriteTxIndex (int oldVersion);
 };
 
 

@@ -44,7 +44,8 @@ public:
 instance_of_cdbinit;
 
 
-CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
+CDB::CDB(const char* pszFile, const char* pszMode)
+  : pdb(NULL), nVersion(VERSION)
 {
     int ret;
     if (pszFile == NULL)
@@ -186,7 +187,7 @@ void static CheckpointLSN(const std::string &strFile)
     dbenv.lsn_reset(strFile.c_str(), 0);
 }
 
-bool CDB::Rewrite(const string& strFile, const char* pszSkip)
+bool CDB::Rewrite(const string& strFile)
 {
     while (!fShutdown)
     {
@@ -235,15 +236,6 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
                                 pcursor->close();
                                 fSuccess = false;
                                 break;
-                            }
-                            if (pszSkip &&
-                                strncmp(&ssKey[0], pszSkip, std::min(ssKey.size(), strlen(pszSkip))) == 0)
-                                continue;
-                            if (strncmp(&ssKey[0], "\x07version", 8) == 0)
-                            {
-                                // Update version:
-                                ssValue.clear();
-                                ssValue << VERSION;
                             }
                             Dbt datKey(&ssKey[0], ssKey.size());
                             Dbt datValue(&ssValue[0], ssValue.size());
@@ -475,6 +467,7 @@ bool CTxDB::LoadBlockIndex()
         if (strType == "blockindex")
         {
             CDiskBlockIndex diskindex;
+            SetStreamVersion (ssValue);
             ssValue >> diskindex;
 
             // Construct block index object
@@ -561,6 +554,64 @@ bool CTxDB::LoadBlockIndex()
     }
 
     return true;
+}
+
+/* Rewrite all txindex objects in the DB to update the data format.  */
+bool
+CTxDB::RewriteTxIndex (int oldVersion)
+{
+  /* Load everything in memory first.  This avoids conflicts between reading
+     from the cursor and writing to the DB.  */
+  std::map<uint256, CTxIndex> txindex;
+
+  /* Get database cursor.  */
+  Dbc* pcursor = GetCursor ();
+  if (!pcursor)
+    return error ("RewriteTxIndex: could not get DB cursor");
+
+  /* Load to memory.  */
+  unsigned int fFlags = DB_SET_RANGE;
+  loop
+    {
+      /* Read next record.  */
+      CDataStream ssKey(SER_DISK, oldVersion);
+      if (fFlags == DB_SET_RANGE)
+        ssKey << std::make_pair (std::string ("tx"), uint256 (0));
+      CDataStream ssValue(SER_DISK, oldVersion);
+      int ret = ReadAtCursor (pcursor, ssKey, ssValue, fFlags);
+      fFlags = DB_NEXT;
+      if (ret == DB_NOTFOUND)
+        break;
+      if (ret != 0)
+        return error ("RewriteTxIndex: ReadAtCursor failed, ret = %d", ret);
+
+      /* Unserialize.  */
+
+      std::string strType;
+      ssKey >> strType;
+      if (strType != "tx")
+        break;
+      uint256 hash;
+      ssKey >> hash;
+
+      CTxIndex obj;
+      ssValue >> obj;
+
+      /* Store in map.  */
+      assert (txindex.find (hash) == txindex.end ());
+      txindex.insert (std::make_pair (hash, obj));
+    }
+  pcursor->close ();
+
+  /* Now write everything back.  */
+  SetSerialisationVersion (VERSION);
+  BOOST_FOREACH(const PAIRTYPE(uint256, CTxIndex)& item, txindex)
+    {
+      if (!UpdateTxIndex (item.first, item.second))
+        return error ("RewriteTxIndex: UpdateTxIndex failed");
+    }
+
+  return true;
 }
 
 

@@ -767,15 +767,18 @@ public:
 
 
 //
-// A txdb record that contains the disk location of a transaction and the
-// locations of transactions that spend its outputs.  vSpent is really only
-// used as a flag, but having the location is very helpful for debugging.
+// A txdb record that contains the disk location of a transaction and an array
+// of flags whether its outputs have already been spent.
 //
 class CTxIndex
 {
 public:
     CDiskTxPos pos;
-    std::vector<CDiskTxPos> vSpent;
+
+private:
+    std::vector<bool> isSpent;
+
+public:
 
     CTxIndex()
     {
@@ -785,21 +788,45 @@ public:
     CTxIndex(const CDiskTxPos& posIn, unsigned int nOutputs)
     {
         pos = posIn;
-        vSpent.resize(nOutputs);
+        isSpent.resize (nOutputs, false);
     }
 
     IMPLEMENT_SERIALIZE
     (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
+        assert (nType == SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
+
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nVersionDummy;
+            READWRITE(nVersionDummy);
+            assert (nVersionDummy < 37500);
+          }
         READWRITE(pos);
-        READWRITE(vSpent);
+
+        if (nVersion < 37500)
+          {
+            assert (fRead); 
+            std::vector<CDiskTxPos> vSpent;
+            READWRITE (vSpent);
+
+            std::vector<bool>& newIsSpent = const_cast<std::vector<bool>&> (isSpent);
+            newIsSpent.resize (vSpent.size ());
+            for (unsigned i = 0; i < vSpent.size (); ++i)
+              newIsSpent[i] = !vSpent[i].IsNull ();
+          }
+        else
+          READWRITE(isSpent);
     )
 
     void SetNull()
     {
         pos.SetNull();
-        vSpent.clear();
+        isSpent.clear ();
     }
 
     bool IsNull()
@@ -807,10 +834,37 @@ public:
         return pos.IsNull();
     }
 
+    inline unsigned
+    GetOutputCount () const
+    {
+      return isSpent.size ();
+    }
+
+    inline void
+    ResizeOutputs (unsigned n)
+    {
+      isSpent.resize (n, false);
+    }
+
+    inline bool
+    IsSpent (unsigned n) const
+    {
+      assert (n < isSpent.size ());
+      return isSpent[n];
+    }
+
+    inline void
+    SetSpent (unsigned n, bool spent)
+    {
+      assert (n < isSpent.size ());
+      assert (isSpent[n] != spent);
+      isSpent[n] = spent;
+    }
+
     friend bool operator==(const CTxIndex& a, const CTxIndex& b)
     {
         return (a.pos    == b.pos &&
-                a.vSpent == b.vSpent);
+                a.isSpent == b.isSpent);
     }
 
     friend bool operator!=(const CTxIndex& a, const CTxIndex& b)
@@ -1276,8 +1330,22 @@ public:
     (
         /* This is only written to disk.  */
         assert (nType & SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
 
-        READWRITE(nVersion);
+        /* Previously, the version was stored in each entry.  This is
+           now replaced with having serialisation version set.  In the old
+           format, read and ignore the version.  */
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nDummyVersion;
+            READWRITE(nDummyVersion);
+            assert (nDummyVersion < 37500);
+          }
+
         READWRITE(hashNext);
         READWRITE(nFile);
         READWRITE(nBlockPos);
@@ -1292,11 +1360,12 @@ public:
         READWRITE(nNonce);
 
         /* In the old format, the auxpow is stored.  Load it and ignore.  */
-        if (fRead && nVersion < 37400)
-        {
+        if (nVersion < 37400)
+          {
+            assert (fRead);
             boost::shared_ptr<CAuxPow> auxpow;
-            ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
-        }
+            ReadWriteAuxPow (s, auxpow, nType, this->nVersion, ser_action);
+          }
     )
 
     uint256 GetBlockHash() const
