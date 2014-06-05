@@ -47,7 +47,7 @@ CFLAGS=${ADDITIONALCCFLAGS} -mthreads -O2 -w -Wall -Wextra -Wformat -Wformat-sec
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
     script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
 
-BASE_OBJS= \
+OBJS= \
     obj/auxpow.o \
     obj/util.o \
     obj/key.o \
@@ -64,10 +64,6 @@ BASE_OBJS= \
     obj/init.o \
     cryptopp/obj/sha.o \
     cryptopp/obj/cpu.o
-
-OBJS = \
-    $(BASE_OBJS) \
-    obj/hook.o
 
 all: namecoind
 
@@ -86,7 +82,7 @@ obj/test/%.o: test/%.cpp $(HEADERS)
 
 obj/nogui/namecoin.o: namecoin.h
 
-namecoind: $(BASE_OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
+namecoind: $(OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
 	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
 clean:
