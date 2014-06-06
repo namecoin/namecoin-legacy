@@ -111,9 +111,9 @@ ManageNamesPage::ManageNamesPage(QWidget *parent) :
 
     ui->registerName->setMaxLength(MAX_NAME_LENGTH);
     
-    ui->nameFilter->setMaxLength(MAX_NAME_LENGTH);
-    ui->valueFilter->setMaxLength(GUI_MAX_VALUE_LENGTH);
-    GUIUtil::setupAddressWidget(ui->addressFilter, this, true);
+    ui->nameFilter->setMaxLength (MAX_NAME_LENGTH);
+    ui->valueFilter->setMaxLength (UI_MAX_VALUE_LENGTH);
+    GUIUtil::setupAddressWidget (ui->addressFilter, this, true);
     
 #if QT_VERSION >= 0x040700
     /* Do not move this to the XML file, Qt before 4.7 will choke on it */

@@ -28,10 +28,6 @@ static const int TOOLTIP_WRAP_THRESHOLD = 80;
 /* Maximum allowed URI length */
 static const int MAX_URI_LENGTH = 255;
 
-// Should be set to MAX_VALUE_LENGTH (from namecoin.h) when it's supported by the network
-// (currently due to limitations of CScript the limit is 519 bytes)
-static const int GUI_MAX_VALUE_LENGTH = 519;
-
 /* QRCodeDialog -- size of exported QR Code image */
 #define EXPORT_IMAGE_SIZE 256
 
