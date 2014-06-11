@@ -14,6 +14,12 @@ static const int OP_NAME_UPDATE = 0x03;
 static const int OP_NAME_NOP = 0x04;
 static const int MIN_FIRSTUPDATE_DEPTH = 12;
 
+/* Maximum value length that is allowed by the UIs.  Currently,
+   if the value is set above 520 bytes, it can't ever be updated again
+   due to limitations in the scripting system.  Enforce this
+   in the UIs.  */
+static const int UI_MAX_VALUE_LENGTH = 520;
+
 class CNameDB;
 class CNameIndex;
 class CDiskTxPos;

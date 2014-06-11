@@ -123,15 +123,19 @@ int64 getAmount(Value value)
     return nAmount;
 }
 
-vector<unsigned char> vchFromValue(const Value& value) {
-    string strName = value.get_str();
-    unsigned char *strbeg = (unsigned char*)strName.c_str();
-    return vector<unsigned char>(strbeg, strbeg + strName.size());
+vchType
+vchFromValue (const Value& value)
+{
+  const std::string str = value.get_str ();
+  return vchFromString (str);
 }
 
-std::vector<unsigned char> vchFromString(const std::string &str) {
-    unsigned char *strbeg = (unsigned char*)str.c_str();
-    return vector<unsigned char>(strbeg, strbeg + str.size());
+vchType
+vchFromString (const std::string& str)
+{
+  const unsigned char* strbeg;
+  strbeg = reinterpret_cast<const unsigned char*> (str.c_str ());
+  return vchType(strbeg, strbeg + str.size ());
 }
 
 string stringFromVch(const vector<unsigned char> &vch) {
@@ -1000,18 +1004,18 @@ Value name_firstupdate(const Array& params, bool fHelp)
                 "Perform a first update after a name_new reservation.\n"
                 "Note that the first update will go into a block 12 blocks after the name_new, at the soonest."
                 + HelpRequiringPassphrase());
-    vector<unsigned char> vchName = vchFromValue(params[0]);
-    vector<unsigned char> vchRand = ParseHex(params[1].get_str());
-    vector<unsigned char> vchValue;
 
-    if (params.size() == 3)
-    {
-        vchValue = vchFromValue(params[2]);
-    }
+    const vchType vchName = vchFromValue (params[0]);
+    const vchType vchRand = ParseHex (params[1].get_str ());
+
+    vchType vchValue;
+    if (params.size () == 3)
+      vchValue = vchFromValue (params[2]);
     else
-    {
-        vchValue = vchFromValue(params[3]);
-    }
+      vchValue = vchFromValue (params[3]);
+
+    if (vchValue.size () > UI_MAX_VALUE_LENGTH)
+      throw JSONRPCError(RPC_INVALID_PARAMETER, "the value is too long");
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
@@ -1130,8 +1134,11 @@ Value name_update(const Array& params, bool fHelp)
                 "name_update <name> <value> [<toaddress>]\nUpdate and possibly transfer a name"
                 + HelpRequiringPassphrase());
 
-    vector<unsigned char> vchName = vchFromValue(params[0]);
-    vector<unsigned char> vchValue = vchFromValue(params[1]);
+    const vchType vchName = vchFromValue (params[0]);
+    const vchType vchValue = vchFromValue (params[1]);
+
+    if (vchValue.size () > UI_MAX_VALUE_LENGTH)
+      throw JSONRPCError(RPC_INVALID_PARAMETER, "the value is too long");
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
