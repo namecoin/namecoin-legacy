@@ -32,12 +32,12 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     <message>
         <location filename="../aboutdialog.cpp" line="+17"/>
         <source>Copyright</source>
-        <translation type="unfinished"></translation>
+        <translation>Copyright</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>2009-%1 The Bitcoin and Namecoin developers</source>
-        <translation type="unfinished"></translation>
+        <translation>2009-%1 Vývojáři Bitcoin a Namecoin</translation>
     </message>
 </context>
 <context>
@@ -125,7 +125,7 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     <message>
         <location line="+1"/>
         <source>Send &amp;Coins</source>
-        <translation type="unfinished"></translation>
+        <translation>Pošli &amp;Mince</translation>
     </message>
     <message>
         <location line="+263"/>
@@ -263,7 +263,7 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     <message>
         <location line="-56"/>
         <source>Namecoin will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your Namecoins from being stolen by malware infecting your computer.</source>
-        <translation type="unfinished">Namecoin se teď ukončí, aby dokončil zašifrování. Pamatuj však, že pouhé zašifrování peněženky úplně nezabraňuje krádeži tvých namecoinů malwarem, kterým se může počítač nakazit.</translation>
+        <translation>Namecoin se teď ukončí, aby dokončil zašifrování. Pamatuj však, že pouhé zašifrování peněženky úplně nezabraňuje krádeži tvých namecoinů malwarem, kterým se může počítač nakazit.</translation>
     </message>
     <message>
         <location line="+13"/>
@@ -312,240 +312,240 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     <message>
         <location filename="../bitcoin.cpp" line="+118"/>
         <source>A fatal error occurred. Namecoin can no longer continue safely and will quit.</source>
-        <translation type="unfinished">Stala se fatální chyba. Namecoin nemůže bezpečně pokračovat v činnosti, a proto skončí.</translation>
+        <translation>Stala se fatální chyba. Namecoin nemůže bezpečně pokračovat v činnosti, a proto skončí.</translation>
     </message>
     <message>
         <location filename="../bitcoingui.cpp" line="+74"/>
         <location line="+565"/>
         <source>Namecoin</source>
-        <translation type="unfinished">Namecoin</translation>
+        <translation>Namecoin</translation>
     </message>
     <message>
         <location line="-565"/>
         <source>Wallet</source>
-        <translation type="unfinished">Peněženka</translation>
+        <translation>Peněženka</translation>
     </message>
     <message>
         <location line="+142"/>
         <source>&amp;Overview</source>
-        <translation type="unfinished">&amp;Přehled</translation>
+        <translation>&amp;Přehled</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show general overview of wallet</source>
-        <translation type="unfinished">Zobraz celkový přehled peněženky</translation>
+        <translation>Zobraz celkový přehled peněženky</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Send coins</source>
-        <translation type="unfinished">P&amp;oslání mincí</translation>
+        <translation>P&amp;oslání mincí</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send coins to a Namecoin address</source>
-        <translation type="unfinished">Pošli mince na Namecoinovou adresu</translation>
+        <translation>Pošli mince na Namecoinovou adresu</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Receive coins</source>
-        <translation type="unfinished">Pří&amp;jem mincí</translation>
+        <translation>Pří&amp;jem mincí</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show the list of addresses for receiving payments</source>
-        <translation type="unfinished">Zobraz seznam adres pro příjem plateb</translation>
+        <translation>Zobraz seznam adres pro příjem plateb</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Transactions</source>
-        <translation type="unfinished">&amp;Transakce</translation>
+        <translation>&amp;Transakce</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Browse transaction history</source>
-        <translation type="unfinished">Procházet historii transakcí</translation>
+        <translation>Procházet historii transakcí</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Address Book</source>
-        <translation type="unfinished">&amp;Adresář</translation>
+        <translation>&amp;Adresář</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Edit the list of stored addresses and labels</source>
-        <translation type="unfinished">Uprav seznam uložených adres a jejich označení</translation>
+        <translation>Uprav seznam uložených adres a jejich označení</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Manage Names</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Správa Jmen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Manage names registered via Namecoin</source>
-        <translation type="unfinished"></translation>
+        <translation>Správa jmen registrovaných skrze Namecoin</translation>
     </message>
     <message>
         <location line="+19"/>
         <source>E&amp;xit</source>
-        <translation type="unfinished">&amp;Konec</translation>
+        <translation>&amp;Konec</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Quit application</source>
-        <translation type="unfinished">Ukončit aplikaci</translation>
+        <translation>Ukončit aplikaci</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>&amp;About Namecoin</source>
-        <translation type="unfinished">O &amp;Namecoinu</translation>
+        <translation>O &amp;Namecoinu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show information about Namecoin</source>
-        <translation type="unfinished">Zobraz informace o Namecoinu</translation>
+        <translation>Zobraz informace o Namecoinu</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>About &amp;Qt</source>
-        <translation type="unfinished">O &amp;Qt</translation>
+        <translation>O &amp;Qt</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show information about Qt</source>
-        <translation type="unfinished">Zobraz informace o Qt</translation>
+        <translation>Zobraz informace o Qt</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Options...</source>
-        <translation type="unfinished">&amp;Možnosti...</translation>
+        <translation>&amp;Možnosti...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Modify configuration options for Namecoin</source>
-        <translation type="unfinished">Uprav nastavení Namecoinu</translation>
+        <translation>Uprav nastavení Namecoinu</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Show / Hide</source>
-        <translation type="unfinished">&amp;Zobraz/Skryj</translation>
+        <translation>&amp;Zobraz/Skryj</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Show or hide the main Window</source>
-        <translation type="unfinished">Zobraz nebo skryj hlavní okno</translation>
+        <translation>Zobraz nebo skryj hlavní okno</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>&amp;Encrypt Wallet...</source>
-        <translation type="unfinished">Zaši&amp;fruj peněženku...</translation>
+        <translation>Zaši&amp;fruj peněženku...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Encrypt the private keys that belong to your wallet</source>
-        <translation type="unfinished">Zašifruj soukromé klíče ve své peněžence</translation>
+        <translation>Zašifruj soukromé klíče ve své peněžence</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Backup Wallet...</source>
-        <translation type="unfinished">&amp;Zazálohuj peněženku...</translation>
+        <translation>&amp;Zazálohuj peněženku...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Backup wallet to another location</source>
-        <translation type="unfinished">Zazálohuj peněženku na jiné místo</translation>
+        <translation>Zazálohuj peněženku na jiné místo</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>&amp;Change Passphrase...</source>
-        <translation type="unfinished">Změň &amp;heslo...</translation>
+        <translation>Změň &amp;heslo...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Change the passphrase used for wallet encryption</source>
-        <translation type="unfinished">Změň heslo k šifrování peněženky</translation>
+        <translation>Změň heslo k šifrování peněženky</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Sign &amp;message...</source>
-        <translation type="unfinished">Po&amp;depiš zprávu...</translation>
+        <translation>Po&amp;depiš zprávu...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Sign messages with your Namecoin addresses to prove you own them</source>
-        <translation type="unfinished">Podepiš zprávy svými Namecoinovými adresami, čímž prokážeš, že jsi jejich vlastníkem</translation>
+        <translation>Podepiš zprávy svými Namecoinovými adresami, čímž prokážeš, že jsi jejich vlastníkem</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>&amp;Verify message...</source>
-        <translation type="unfinished">&amp;Ověř zprávu...</translation>
+        <translation>&amp;Ověř zprávu...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Verify messages to ensure they were signed with specified Namecoin addresses</source>
-        <translation type="unfinished">Ověř zprávy, aby ses ujistil, že byly podepsány danými Namecoinovými adresami</translation>
+        <translation>Ověř zprávy, aby ses ujistil, že byly podepsány danými Namecoinovými adresami</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Export...</source>
-        <translation type="unfinished">&amp;Export...</translation>
+        <translation>&amp;Export...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Export the data in the current tab to a file</source>
-        <translation type="unfinished">Exportovat data z tohoto panelu do souboru</translation>
+        <translation>Exportovat data z tohoto panelu do souboru</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>&amp;Debug window</source>
-        <translation type="unfinished">&amp;Ladicí okno</translation>
+        <translation>&amp;Ladicí okno</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Open debugging and diagnostic console</source>
-        <translation type="unfinished">Otevři ladicí a diagnostickou konzoli</translation>
+        <translation>Otevři ladicí a diagnostickou konzoli</translation>
     </message>
     <message>
         <location line="+25"/>
         <source>&amp;File</source>
-        <translation type="unfinished">&amp;Soubor</translation>
+        <translation>&amp;Soubor</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>&amp;Settings</source>
-        <translation type="unfinished">&amp;Nastavení</translation>
+        <translation>&amp;Nastavení</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>&amp;Help</source>
-        <translation type="unfinished">Ná&amp;pověda</translation>
+        <translation>Ná&amp;pověda</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Tabs toolbar</source>
-        <translation type="unfinished">Panel s listy</translation>
+        <translation>Panel s listy</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Actions toolbar</source>
-        <translation type="unfinished">Panel akcí</translation>
+        <translation>Panel akcí</translation>
     </message>
     <message>
         <location line="+13"/>
         <location line="+81"/>
         <source>[testnet]</source>
-        <translation type="unfinished">[testnet]</translation>
+        <translation>[testnet]</translation>
     </message>
     <message>
         <location line="-5"/>
         <location line="+5"/>
         <source>Namecoin client</source>
-        <translation type="unfinished">Namecoin klient</translation>
+        <translation>Namecoin klient</translation>
     </message>
     <message numerus="yes">
         <location line="+81"/>
         <source>%n active connection(s) to Namecoin network</source>
-        <translation type="unfinished">
+        <translation>
             <numerusform>%n aktivní spojení do Namecoinové sítě</numerusform>
             <numerusform>%n aktivní spojení do Namecoinové sítě</numerusform>
             <numerusform>%n aktivních spojení do Namecoinové sítě</numerusform>
@@ -554,114 +554,114 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     <message>
         <location line="+24"/>
         <source>Synchronizing with network...</source>
-        <translation type="unfinished">Synchronizuji se sítí...</translation>
+        <translation>Synchronizuji se sítí...</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Importing blocks from disk...</source>
-        <translation type="unfinished">Importuji bloky z disku...</translation>
+        <translation>Importuji bloky z disku...</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Reindexing blocks on disk...</source>
-        <translation type="unfinished">Vytvářím nový index bloků na disku...</translation>
+        <translation>Vytvářím nový index bloků na disku...</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Processed %1 of %2 (estimated) blocks of transaction history.</source>
-        <translation type="unfinished"></translation>
+        <translation>Zpracováno %1 z přibližně %2 bloků transakční historie.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Processed %1 blocks of transaction history.</source>
-        <translation type="unfinished">Zpracováno %1 bloků transakční historie.</translation>
+        <translation>Zpracováno %1 bloků transakční historie.</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Up to date</source>
-        <translation type="unfinished">Aktuální</translation>
+        <translation>Aktuální</translation>
     </message>
     <message numerus="yes">
         <location line="+14"/>
         <source>%n hour(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>hodinu</numerusform>
+            <numerusform>%n hodiny</numerusform>
+            <numerusform>%n hodin</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <source>%n day(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>den</numerusform>
+            <numerusform>%n dny</numerusform>
+            <numerusform>%n dnů</numerusform>
         </translation>
     </message>
     <message numerus="yes">
         <location line="+4"/>
         <source>%n week(s)</source>
-        <translation type="unfinished">
-            <numerusform></numerusform>
-            <numerusform></numerusform>
-            <numerusform></numerusform>
+        <translation>
+            <numerusform>týden</numerusform>
+            <numerusform>%n týdny</numerusform>
+            <numerusform>%n týdnů</numerusform>
         </translation>
     </message>
     <message>
         <location line="+5"/>
         <source>%1 behind</source>
-        <translation type="unfinished"></translation>
+        <translation>Stahuji ještě bloky transakcí za poslední %1</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Catching up...</source>
-        <translation type="unfinished">Stahuji...</translation>
+        <translation>Stahuji...</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>Last received block was generated %1 ago.</source>
-        <translation type="unfinished"></translation>
+        <translation>Poslední stažený blok byl vygenerován %1 zpátky.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Transactions after this will not yet be visible.</source>
-        <translation type="unfinished"></translation>
+        <translation>Následné transakce ještě nebudou vidět.</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>Error</source>
-        <translation type="unfinished">Chyba</translation>
+        <translation>Chyba</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Warning</source>
-        <translation type="unfinished">Upozornění</translation>
+        <translation>Upozornění</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Information</source>
-        <translation type="unfinished">Informace</translation>
+        <translation>Informace</translation>
     </message>
     <message>
         <location line="+68"/>
         <source>This transaction is over the size limit. You can still send it for a fee of %1, which goes to the nodes that process your transaction and helps to support the network. Do you want to pay the fee?</source>
-        <translation type="unfinished">Tahle transakce přesahuje velikostní limit. I tak ji ale můžeš poslat, pokud za ni zaplatíš poplatek %1, který půjde uzlům, které tvou transakci zpracují, a navíc tak podpoříš síť. Chceš zaplatit poplatek?</translation>
+        <translation>Tahle transakce přesahuje velikostní limit. I tak ji ale můžeš poslat, pokud za ni zaplatíš poplatek %1, který půjde uzlům, které tvou transakci zpracují, a navíc tak podpoříš síť. Chceš zaplatit poplatek?</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Confirm transaction fee</source>
-        <translation type="unfinished">Potvrď transakční poplatek</translation>
+        <translation>Potvrď transakční poplatek</translation>
     </message>
     <message>
         <location line="+23"/>
         <source>Sent transaction</source>
-        <translation type="unfinished">Odeslané transakce</translation>
+        <translation>Odeslané transakce</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Incoming transaction</source>
-        <translation type="unfinished">Příchozí transakce</translation>
+        <translation>Příchozí transakce</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -670,7 +670,7 @@ Amount: %2
 Type: %3
 Address: %4
 </source>
-        <translation type="unfinished">Datum: %1
+        <translation>Datum: %1
 Částka: %2
 Typ: %3
 Adresa: %4
@@ -680,53 +680,53 @@ Adresa: %4
         <location line="+112"/>
         <location line="+28"/>
         <source>URI handling</source>
-        <translation type="unfinished">Zpracování URI</translation>
+        <translation>Zpracování URI</translation>
     </message>
     <message>
         <location line="-28"/>
         <location line="+28"/>
         <source>URI can not be parsed! This can be caused by an invalid Namecoin address or malformed URI parameters.</source>
-        <translation type="unfinished">Nepodařilo se analyzovat URI! Důvodem může být neplatná Namecoinová adresa nebo poškozené parametry URI.</translation>
+        <translation>Nepodařilo se analyzovat URI! Důvodem může být neplatná Namecoinová adresa nebo poškozené parametry URI.</translation>
     </message>
     <message>
         <location line="+17"/>
         <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;unlocked&lt;/b&gt;</source>
-        <translation type="unfinished">Peněženka je &lt;b&gt;zašifrovaná&lt;/b&gt; a momentálně &lt;b&gt;odemčená&lt;/b&gt;</translation>
+        <translation>Peněženka je &lt;b&gt;zašifrovaná&lt;/b&gt; a momentálně &lt;b&gt;odemčená&lt;/b&gt;</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>Wallet is &lt;b&gt;encrypted&lt;/b&gt; and currently &lt;b&gt;locked&lt;/b&gt;</source>
-        <translation type="unfinished">Peněženka je &lt;b&gt;zašifrovaná&lt;/b&gt; a momentálně &lt;b&gt;zamčená&lt;/b&gt;</translation>
+        <translation>Peněženka je &lt;b&gt;zašifrovaná&lt;/b&gt; a momentálně &lt;b&gt;zamčená&lt;/b&gt;</translation>
     </message>
     <message>
         <location line="+23"/>
         <source>Backup Wallet</source>
-        <translation type="unfinished">Záloha peněženky</translation>
+        <translation>Záloha peněženky</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Wallet Data (*.dat)</source>
-        <translation type="unfinished">Data peněženky (*.dat)</translation>
+        <translation>Data peněženky (*.dat)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Backup Failed</source>
-        <translation type="unfinished">Zálohování selhalo</translation>
+        <translation>Zálohování selhalo</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>There was an error trying to save the wallet data to the new location.</source>
-        <translation type="unfinished">Při ukládání peněženky na nové místo se přihodila nějaká chyba.</translation>
+        <translation>Při ukládání peněženky na nové místo se přihodila nějaká chyba.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Backup Successful</source>
-        <translation type="unfinished">Úspěšně zazálohováno</translation>
+        <translation>Úspěšně zazálohováno</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>The wallet data was successfully saved to the new location.</source>
-        <translation type="unfinished">Data z peněženky byly v pořádku uloženy na nové místo.</translation>
+        <translation>Data z peněženky byly v pořádku uloženy na nové místo.</translation>
     </message>
 </context>
 <context>
@@ -734,34 +734,36 @@ Adresa: %4
     <message>
         <location filename="../forms/configurenamedialog.ui" line="+20"/>
         <source>Configure Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Nastavení Jména</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>Name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno:</translation>
     </message>
     <message>
         <location line="+41"/>
         <source>&amp;Data:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Data:</translation>
     </message>
     <message>
         <location line="+17"/>
         <source>D&amp;NS Configuration</source>
-        <translation type="unfinished"></translation>
+        <translation>Nastavení D&amp;NS</translation>
     </message>
     <message>
         <location line="+9"/>
         <source>&amp;Name servers:
 (one per line,
 host or IP)</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Nameservery:
+(jeden na řádku,
+adresa nebo IP)</translation>
     </message>
     <message>
         <location line="+44"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter substitution name that will be used in DNS queries.&lt;/p&gt;&lt;p&gt;For example: bitcoin.org&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Zadej náhradní jméno které bude použito pro DNS dotazy.&lt;/p&gt;&lt;p&gt;Příklad: bitcoin.org&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location line="-29"/>
@@ -771,51 +773,58 @@ ns1.web-sweet-web.net
 ns0.xname.org
 1.2.3.4
 1.2.3.5</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej nameservery v podobě hostname (vhodnější) nebo IP adresy. Příklad:
+ns0.web-sweet-web.net
+ns1.web-sweet-web.net
+ns0.xname.org
+1.2.3.4
+1.2.3.5</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>T&amp;ranslate name:
 (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Překlad jména:
+(nepovinný)</translation>
     </message>
     <message>
         <location line="+21"/>
         <location line="+94"/>
         <source>&amp;SSL fingerprint:
 (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Otisk SSL:
+(nepovinný)</translation>
     </message>
     <message>
         <location line="-80"/>
         <location line="+73"/>
         <source>Enter SSL certificate fingerprint if you want to use HTTPS</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej otisk (fingerprint) SSL certifikátu, jestli chceš používat HTTPS</translation>
     </message>
     <message>
         <location line="-33"/>
         <source>&amp;IP Configuration</source>
-        <translation type="unfinished"></translation>
+        <translation>Nastavení &amp;IP</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>I&amp;P Address:</source>
-        <translation type="unfinished"></translation>
+        <translation>I&amp;P Adresa:</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>IP address, e.g. 1.2.3.4</source>
-        <translation type="unfinished"></translation>
+        <translation>IP adresa, např. 1.2.3.4</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Subdomains will be mapped to the same IP</source>
-        <translation type="unfinished"></translation>
+        <translation>Subdomény budou směrovány na stejné IP</translation>
     </message>
     <message>
         <location line="+45"/>
         <source>&amp;Custom Configuration</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Vlastní nastavení</translation>
     </message>
     <message>
         <location line="+6"/>
@@ -825,58 +834,63 @@ p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;MS Shell Dlg 2&apos;; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Enter JSON string, e.g. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;See &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:&apos;MS Shell Dlg 2&apos;; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Zadej řetězec ve formátu JSON, např. {&amp;quot;ns&amp;quot;: [&amp;quot;1.2.3.4&amp;quot;, &amp;quot;1.2.3.5&amp;quot;]}&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Návod: &lt;a href=&quot;http://dot-bit.org/HowToRegisterAndConfigureBitDomains&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;How to Register and Configure Bit Domains&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location line="+15"/>
         <source>Enter JSON string that will be associated with the name</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej řetězec JSON který bude přiřazen k tomuto jménu</translation>
     </message>
     <message>
         <location line="+44"/>
         <source>&amp;Address:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Adresa:</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>&amp;Transfer to:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Komu předat:</translation>
     </message>
     <message>
         <location line="+35"/>
         <source>Choose address from address book</source>
-        <translation type="unfinished">Vyber adresu z adresáře</translation>
+        <translation>Vyber adresu z adresáře</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Alt+A</source>
-        <translation type="unfinished">Alt+A</translation>
+        <translation>Alt+A</translation>
     </message>
     <message>
         <location line="+7"/>
         <source>Paste address from clipboard</source>
-        <translation type="unfinished">Vlož adresu ze schránky</translation>
+        <translation>Vlož adresu ze schránky</translation>
     </message>
     <message>
         <location line="+10"/>
         <location line="+56"/>
         <source>Alt+P</source>
-        <translation type="unfinished">Alt+P</translation>
+        <translation>Alt+P</translation>
     </message>
     <message>
         <location line="-26"/>
         <source>Namecoin address to which the name is assigned</source>
-        <translation type="unfinished"></translation>
+        <translation>Namecoinová adresa které toto jméno patří</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Copy address to clipboard</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopíruj adresu do schránky</translation>
     </message>
     <message>
         <location line="-412"/>
         <source>Domain name:</source>
-        <translation type="unfinished"></translation>
+        <translation>Doména:</translation>
     </message>
     <message>
         <location line="+322"/>
@@ -885,52 +899,56 @@ the domain to, e.g.
 N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9
 
 Leave empty, if not needed.</source>
-        <translation type="unfinished"></translation>
+        <translation>Namecoinová addresa, které má být
+doména předána, např.
+N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9
+
+Nech pole prázdné, pokud to není třeba.</translation>
     </message>
     <message>
         <location line="+53"/>
         <source>(can be left empty)</source>
-        <translation type="unfinished"></translation>
+        <translation>(pole může být prázdné)</translation>
     </message>
     <message>
         <location filename="../configurenamedialog.cpp" line="+51"/>
         <source>(not a domain name)</source>
-        <translation type="unfinished"></translation>
+        <translation>(není to doména)</translation>
     </message>
     <message>
         <location line="+121"/>
         <source>Name_firstupdate transaction will be queued and broadcasted when corresponding name_new is %1 blocks old</source>
-        <translation type="unfinished"></translation>
+        <translation>Transakce name_firstupdate bude zařazena do fronty, a vyslána až bude příslušné name_new %1 bloků staré</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Do not close your client while the name is pending!</source>
-        <translation type="unfinished"></translation>
+        <translation>Během zpracovávání jména nezavírej aplikaci!</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Name_update transaction will be issued immediately</source>
-        <translation type="unfinished"></translation>
+        <translation>Transakce name_update bude hned vydána</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Update Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Aktualizovat Jméno</translation>
     </message>
     <message>
         <location line="+58"/>
         <source>Name update error</source>
-        <translation type="unfinished"></translation>
+        <translation>Chyba při aktualizaci jména</translation>
     </message>
     <message>
         <location line="+86"/>
         <source>Valid JSON string</source>
-        <translation type="unfinished"></translation>
+        <translation>Platný řetězec JSON</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Invalid JSON string (can still be used, if not intended as JSON string)</source>
-        <translation type="unfinished"></translation>
+        <translation>Neplatný řetězec JSON (ale i tak je možné ho použít, pokud není myšlený jako JSON)</translation>
     </message>
 </context>
 <context>
@@ -1050,170 +1068,171 @@ Leave empty, if not needed.</source>
     <message>
         <location filename="../forms/managenamespage.ui" line="+20"/>
         <source>Manage Names</source>
-        <translation type="unfinished"></translation>
+        <translation>Správa Jmen</translation>
     </message>
     <message>
         <location line="+14"/>
         <source>&amp;New name:</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Nové jméno:</translation>
     </message>
     <message>
         <location line="+13"/>
         <source>Enter a name or domain name (prefixed with d/) to be registered via Namecoin.</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej jméno nebo doménové jméno (začínající d/) které má být zaregistrováno skrze Namecoin.</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Use &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt; prefix for domain names. E.g. &lt;span style=&quot; font-weight:600;&quot;&gt;d/mysite&lt;/span&gt; will register &lt;span style=&quot; font-weight:600;&quot;&gt;mysite.bit&lt;/span&gt; (note: domains can be lower-case only, valid characters are alphanumeric and hyphen; hyphen can&apos;t be first/last character).&lt;/p&gt;&lt;p&gt;See &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; in Namecoin wiki for reference. Other prefixes can be used for miscellaneous purposes (not domain names).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
-        <translation type="unfinished"></translation>
+        <translation>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Pro doménová jména použij předponu &lt;span style=&quot; font-weight:600;&quot;&gt;d/&lt;/span&gt;. Například &lt;span style=&quot; font-weight:600;&quot;&gt;d/mujweb&lt;/span&gt; zaregistruje doménu &lt;span style=&quot; font-weight:600;&quot;&gt;mujweb.bit&lt;/span&gt; (poznámka: doména může obsahovat pouze malá písmena, čísla a pomlčky; první ani poslední znak nesmí být pomlčka).&lt;/p&gt;&lt;p&gt;Více na stránce &lt;a href=&quot;http://dot-bit.org/Namespace:Domain_names&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#0000ff;&quot;&gt;Domain names&lt;/span&gt;&lt;/a&gt; na Namecoin wiki. Jiné předpony mohou být použity pro různé jiné účely (mimo doménových jmen).&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location line="+28"/>
         <source>Confirm the new name action. Sends name_new transaction
 to the network and creates a pending name_firstupdate transaction.</source>
-        <translation type="unfinished"></translation>
+        <translation>Potvrdit vytvoření nového jména. Vyšle do sítě transakci name_new
+a po ní zařadí do fronty transakci name_firstupdate.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>&amp;Submit</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Odeslat</translation>
     </message>
     <message>
         <location line="+36"/>
         <source>Your registered names:</source>
-        <translation type="unfinished"></translation>
+        <translation>Tvá registrovaná jména:</translation>
     </message>
     <message>
         <location line="+29"/>
         <source>Enter part of name to search for</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej část jména k vyhledání</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Enter part of value to search for</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej část hodnoty k vyhledání</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Enter Namecoin address (or prefix of it)</source>
-        <translation type="unfinished"></translation>
+        <translation>Zadej Namecoinovou adresu (nebo její začátek)</translation>
     </message>
     <message>
         <location line="+31"/>
         <source>Double-click name to configure</source>
-        <translation type="unfinished"></translation>
+        <translation>Dvojklikem myši na jméno otevřeš nastavení</translation>
     </message>
     <message>
         <location line="+42"/>
         <source>Configure name and submit update operation</source>
-        <translation type="unfinished"></translation>
+        <translation>Nastavit jméno a odeslat operaci update</translation>
     </message>
     <message>
         <location line="+3"/>
         <location filename="../managenamespage.cpp" line="+86"/>
         <source>&amp;Configure Name...</source>
-        <translation type="unfinished"></translation>
+        <translation>&amp;Nastavení jména...</translation>
     </message>
     <message>
         <location filename="../managenamespage.cpp" line="-3"/>
         <source>Copy &amp;Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopíruj &amp;Jméno</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Copy &amp;Value</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopíruj &amp;Hodnotu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Copy &amp;Address</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopíruj &amp;Adresu</translation>
     </message>
     <message>
         <location line="+37"/>
         <source>Name filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtr jména</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Value filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtr hodnoty</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Address filter</source>
-        <translation type="unfinished"></translation>
+        <translation>Filtr adresy</translation>
     </message>
     <message>
         <location line="+90"/>
         <source>Name registration</source>
-        <translation type="unfinished"></translation>
+        <translation>Registrace jména</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Name not available</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno není dostupné</translation>
     </message>
     <message>
         <location line="+9"/>
         <location line="+10"/>
         <source>Name registration warning</source>
-        <translation type="unfinished"></translation>
+        <translation>Varování kvůli registraci jména</translation>
     </message>
     <message>
         <location line="-9"/>
         <source>The name you entered contains whitespace characters. It is probably invalid. Are you sure you want to use this name?</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno, které jsi zadal, obsahuje mezery. Je tedy nejspíše neplatné. Opravdu chceš použít toto jméno?</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>The name you entered does not start with prefix (such as &quot;d/&quot;). It may be invalid for certain tasks. Are you sure you want to use this name?</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno, které jsi zadal, nezačíná předponou (jako je &quot;d/&quot;). Pro některé účely může být neplatné. Opravdu chceš použít toto jméno?</translation>
     </message>
     <message>
         <location line="+10"/>
         <source>Are you sure you want to register domain name %1, which corresponds to domain %2?</source>
-        <translation type="unfinished"></translation>
+        <translation>Opravdu chceš zaregistrovat doménové jméno %1, které odpovídá doméně %2?</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Are you sure you want to register non-domain name %1?</source>
-        <translation type="unfinished"></translation>
+        <translation>Opravdu chceš zaregistrovat ne-doménové jméno %1?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>This will issue both a name_new and a postponed name_firstupdate. Let the program run for three hours to make sure the process can finish.</source>
-        <translation type="unfinished"></translation>
+        <translation>Bude vyslán příkaz name_new a po něm name_firstupdate. Nech program běžet tři hodiny, aby bylo zajištěno, že bude proces řádně dokončen.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Confirm name registration</source>
-        <translation type="unfinished"></translation>
+        <translation>Potvrzení registrace jména</translation>
     </message>
     <message>
         <location line="+57"/>
         <source>Name registration failed</source>
-        <translation type="unfinished"></translation>
+        <translation>Registrace jména selhala</translation>
     </message>
     <message>
         <location line="+93"/>
         <source>Export Registered Names Data</source>
-        <translation type="unfinished"></translation>
+        <translation>Exportovat Data Registrovaných Jmen</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Comma separated file (*.csv)</source>
-        <translation type="unfinished">CSV formát (*.csv)</translation>
+        <translation>CSV formát (*.csv)</translation>
     </message>
     <message>
         <location line="+16"/>
         <source>Error exporting</source>
-        <translation type="unfinished">Chyba při exportu</translation>
+        <translation>Chyba při exportu</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Could not write to file %1.</source>
-        <translation type="unfinished">Nemohu zapisovat do souboru %1.</translation>
+        <translation>Nemohu zapisovat do souboru %1.</translation>
     </message>
 </context>
 <context>
@@ -1221,42 +1240,42 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location filename="../nametablemodel.cpp" line="+365"/>
         <source>Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Value</source>
-        <translation type="unfinished"></translation>
+        <translation>Hodnota</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Expires in</source>
-        <translation type="unfinished"></translation>
+        <translation>Vyprší za</translation>
     </message>
     <message>
         <location line="+0"/>
         <source>Address</source>
-        <translation type="unfinished">Adresa</translation>
+        <translation>Adresa</translation>
     </message>
     <message>
         <location line="+140"/>
         <source>Name registered using Namecoin.</source>
-        <translation type="unfinished"></translation>
+        <translation>Jméno registrované skrze Namecoin.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Data associated with the name.</source>
-        <translation type="unfinished"></translation>
+        <translation>Data přiřazená ke jménu.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Namecoin address to which the name is registered.</source>
-        <translation type="unfinished"></translation>
+        <translation>Namecoinová adresa, na kterou je jméno registrováno.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Number of blocks, after which the name will expire. Update name to renew it.</source>
-        <translation type="unfinished"></translation>
+        <translation>Počet bloků, po kterém jméno vyprší. Aktualizováním můžeš jméno obnovit.</translation>
     </message>
 </context>
 <context>
@@ -1544,7 +1563,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location filename="../paymentserver.cpp" line="+108"/>
         <source>Cannot start namecoin: click-to-pay handler</source>
-        <translation type="unfinished"></translation>
+        <translation>Nelze spustit namecoin: click-to-pay handler</translation>
     </message>
 </context>
 <context>
@@ -2212,7 +2231,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location line="+74"/>
         <source>Name operation</source>
-        <translation type="unfinished"></translation>
+        <translation>Operace se Jmény</translation>
     </message>
     <message>
         <location line="+40"/>
@@ -2398,7 +2417,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location line="+2"/>
         <source>Name operation</source>
-        <translation type="unfinished"></translation>
+        <translation>Operace se Jmény</translation>
     </message>
     <message>
         <location line="+41"/>
@@ -2492,7 +2511,7 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location line="+1"/>
         <source>Name operation</source>
-        <translation type="unfinished"></translation>
+        <translation>Operace se Jmény</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2605,37 +2624,37 @@ to the network and creates a pending name_firstupdate transaction.</source>
     <message>
         <location filename="../walletmodel.cpp" line="+565"/>
         <source>Error: The transaction was rejected.  This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.</source>
-        <translation type="unfinished"></translation>
+        <translation>Chyba: Transakce byla odmítnuta. Tohle může nastat, pokud nějaké mince z tvé peněženky už jednou byly utraceny, například pokud používáš kopii souboru wallet.dat a mince byly utraceny v druhé kopii, ale nebyly označeny jako utracené v této.</translation>
     </message>
     <message>
         <location line="+36"/>
         <source>Cannot find stored tx hash for name</source>
-        <translation type="unfinished"></translation>
+        <translation>Nelze najít uložený tx hash pro jméno</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Cannot find stored rand value for name</source>
-        <translation type="unfinished"></translation>
+        <translation>Nelze najít uloženou náhodnou hodnotu pro jméno</translation>
     </message>
     <message>
         <location line="+38"/>
         <source>Invalid Namecoin address</source>
-        <translation type="unfinished"></translation>
+        <translation>Neplatná Namecoinová adresa</translation>
     </message>
     <message>
         <location line="+21"/>
         <source>There are pending operations on that name</source>
-        <translation type="unfinished"></translation>
+        <translation>Na tomto jméně probíhají operace</translation>
     </message>
     <message>
         <location line="+6"/>
         <source>Could not find a coin with this name</source>
-        <translation type="unfinished"></translation>
+        <translation>Mince s tímto jménem nebyla nalezena</translation>
     </message>
     <message>
         <location line="+8"/>
         <source>This coin is not in your wallet</source>
-        <translation type="unfinished"></translation>
+        <translation>Tato mince není ve tvé peněžence</translation>
     </message>
 </context>
 <context>
@@ -2651,7 +2670,7 @@ rpcpassword=%s
 The username and password MUST NOT be the same.
 If the file does not exist, create it with owner-readable-only file permissions.
 </source>
-        <translation type="unfinished">%s, musíš nastavit rpcpassword v konfiguračním souboru:
+        <translation>%s, musíš nastavit rpcpassword v konfiguračním souboru:
  %s
 Je vhodné použít následující náhodné heslo:
 rpcuser=namecoinrpc
@@ -2664,711 +2683,711 @@ Pokud konfigurační soubor ještě neexistuje, vytvoř ho tak, aby ho mohl čí
     <message>
         <location line="+10"/>
         <source>Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</source>
-        <translation type="unfinished">Akceptovatelné šifry (výchozí: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</translation>
+        <translation>Akceptovatelné šifry (výchozí: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>An error occurred while setting up the RPC port %u for listening on IPv4: %s</source>
-        <translation type="unfinished">Při nastavování naslouchacího RPC portu %i pro IPv4 nastala chyba: %s</translation>
+        <translation>Při nastavování naslouchacího RPC portu %i pro IPv4 nastala chyba: %s</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>An error occurred while setting up the RPC port %u for listening on IPv6, falling back to IPv4: %s</source>
-        <translation type="unfinished">Při nastavování naslouchacího RPC portu %u pro IPv6 nastala chyba, vracím se k IPv4: %s</translation>
+        <translation>Při nastavování naslouchacího RPC portu %u pro IPv6 nastala chyba, vracím se k IPv4: %s</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Bind to given address and always listen on it. Use [host]:port notation for IPv6</source>
-        <translation type="unfinished">Poslouchat na zadané adrese. Pro zápis IPv6 adresy použij notaci [adresa]:port</translation>
+        <translation>Poslouchat na zadané adrese. Pro zápis IPv6 adresy použij notaci [adresa]:port</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Cannot obtain a lock on data directory %s. Namecoin is probably already running.</source>
-        <translation type="unfinished">Nedaří se mi získat zámek na datový adresář %s. Namecoin pravděpodobně už jednou běží.</translation>
+        <translation>Nedaří se mi získat zámek na datový adresář %s. Namecoin pravděpodobně už jednou běží.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Error initializing database environment %s! To recover, BACKUP THAT DIRECTORY, then remove everything from it except for wallet.dat.</source>
-        <translation type="unfinished">Nastala chyba při inicializaci databázového prostředí %s! Řešení: ZAZÁLOHUJ TENTO ADRESÁŘ, a pak v něm smaž vše kromě wallet.dat.</translation>
+        <translation>Nastala chyba při inicializaci databázového prostředí %s! Řešení: ZAZÁLOHUJ TENTO ADRESÁŘ, a pak v něm smaž vše kromě wallet.dat.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Error: The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.</source>
-        <translation type="unfinished">Chyba: Transakce byla odmítnuta! Tohle může nastat, pokud nějaké mince z tvé peněženky už jednou byly utraceny, například pokud používáš kopii souboru wallet.dat a mince byly utraceny v druhé kopii, ale nebyly označeny jako utracené v této.</translation>
+        <translation>Chyba: Transakce byla odmítnuta! Tohle může nastat, pokud nějaké mince z tvé peněženky už jednou byly utraceny, například pokud používáš kopii souboru wallet.dat a mince byly utraceny v druhé kopii, ale nebyly označeny jako utracené v této.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>Error: This transaction requires a transaction fee of at least %s because of its amount, complexity, or use of recently received funds!</source>
-        <translation type="unfinished">Chyba: Tahle transakce vyžaduje transakční poplatek nejméně %s kvůli velikosti zasílané částky, komplexnosti nebo použití nedávno přijatých mincí!</translation>
+        <translation>Chyba: Tahle transakce vyžaduje transakční poplatek nejméně %s kvůli velikosti zasílané částky, komplexnosti nebo použití nedávno přijatých mincí!</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)</source>
-        <translation type="unfinished"></translation>
+        <translation>Spustit příkaz, když se objeví transakce týkající se peněženky (%s se v příkazu nahradí za TxID)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Execute command when the best block changes (%s in cmd is replaced by block hash)</source>
-        <translation type="unfinished">Spustit příkaz, když se změní nejlepší blok (%s se v příkazu nahradí hashem bloku)</translation>
+        <translation>Spustit příkaz, když se změní nejlepší blok (%s se v příkazu nahradí hashem bloku)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Listen for JSON-RPC connections on &lt;port&gt; (default: 8336 or testnet: 18336)</source>
-        <translation type="unfinished">Čekat na JSON RPC spojení na &lt;portu&gt; (výchozí: 8336 nebo testnet: 18336)</translation>
+        <translation>Čekat na JSON RPC spojení na &lt;portu&gt; (výchozí: 8336 nebo testnet: 18336)</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Number of seconds to keep misbehaving peers from reconnecting (default: 86400)</source>
-        <translation type="unfinished">Doba ve vteřinách, po kterou se nebudou moci nesprávně se chovající uzly znovu připojit (výchozí: 86400)</translation>
+        <translation>Doba ve vteřinách, po kterou se nebudou moci nesprávně se chovající uzly znovu připojit (výchozí: 86400)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Set maximum size of high-priority/low-fee transactions in bytes (default: 27000)</source>
-        <translation type="unfinished">Nastavit maximální velikost prioritních/nízkopoplatkových transakcí v bajtech (výchozí: 27000)</translation>
+        <translation>Nastavit maximální velikost prioritních/nízkopoplatkových transakcí v bajtech (výchozí: 27000)</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Set the number of script verification threads (1-16, 0=auto, default: 0)</source>
-        <translation type="unfinished"></translation>
+        <translation>Nastavení počtu vláken pro verifikaci skriptů (%u až %d, 0 = automaticky, &lt;0 = nechat daný počet jader volný, výchozí: 0)</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>This is a pre-release test build - use at your own risk - do not use for mining or merchant applications</source>
-        <translation type="unfinished">Tohle je testovací verze - používej ji jen na vlastní riziko - ale rozhodně ji nepoužívej k těžbě nebo pro obchodní aplikace</translation>
+        <translation>Tohle je testovací verze - používej ji jen na vlastní riziko - ale rozhodně ji nepoužívej k těžbě nebo pro obchodní aplikace</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Unable to bind to %s on this computer. Namecoin is probably already running.</source>
-        <translation type="unfinished">Nedaří se mi připojit na %s na tomhle počítači. Namecoin už pravděpodobně jednou běží.</translation>
+        <translation>Nedaří se mi připojit na %s na tomhle počítači. Namecoin už pravděpodobně jednou běží.</translation>
     </message>
     <message>
         <location line="+2"/>
         <source>Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction.</source>
-        <translation type="unfinished">Upozornění: -paytxfee je nastaveno velmi vysoko! Toto je transakční poplatek, který zaplatíš za každou poslanou transakci.</translation>
+        <translation>Upozornění: -paytxfee je nastaveno velmi vysoko! Toto je transakční poplatek, který zaplatíš za každou poslanou transakci.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Warning: Displayed transactions may not be correct! You may need to upgrade, or other nodes may need to upgrade.</source>
-        <translation type="unfinished">Upozornění: Zobrazené transakce nemusí být správné! Možná potřebuješ aktualizovat nebo ostatní uzly potřebují aktualizovat.</translation>
+        <translation>Upozornění: Zobrazené transakce nemusí být správné! Možná potřebuješ aktualizovat nebo ostatní uzly potřebují aktualizovat.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong Namecoin will not work properly.</source>
-        <translation type="unfinished">Upozornění: Zkontroluj, že máš v počítači správně nastavený datum a čas! Pokud jsou nastaveny špatně, Namecoin nebude fungovat správně.</translation>
+        <translation>Upozornění: Zkontroluj, že máš v počítači správně nastavený datum a čas! Pokud jsou nastaveny špatně, Namecoin nebude fungovat správně.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Warning: error reading wallet.dat! All keys read correctly, but transaction data or address book entries might be missing or incorrect.</source>
-        <translation type="unfinished">Upozornění: nastala chyba při čtení souboru wallet.dat! Všechny klíče se přečetly správně, ale data o transakcích nebo záznamy v adresáři mohou chybět či být nesprávné.</translation>
+        <translation>Upozornění: nastala chyba při čtení souboru wallet.dat! Všechny klíče se přečetly správně, ale data o transakcích nebo záznamy v adresáři mohou chybět či být nesprávné.</translation>
     </message>
     <message>
         <location line="+3"/>
         <source>Warning: wallet.dat corrupt, data salvaged! Original wallet.dat saved as wallet.{timestamp}.bak in %s; if your balance or transactions are incorrect you should restore from a backup.</source>
-        <translation type="unfinished">Upozornění: soubor wallet.dat je poškozený, data jsou však zachráněna! Původní soubor wallet.dat je uložený jako wallet.{timestamp}.bak v %s. Pokud je stav tvého účtu nebo transakce nesprávné, zřejmě bys měl obnovit zálohu.</translation>
+        <translation>Upozornění: soubor wallet.dat je poškozený, data jsou však zachráněna! Původní soubor wallet.dat je uložený jako wallet.{timestamp}.bak v %s. Pokud je stav tvého účtu nebo transakce nesprávné, zřejmě bys měl obnovit zálohu.</translation>
     </message>
     <message>
         <location line="+4"/>
         <source>You must set rpcpassword=&lt;password&gt; in the configuration file:
 %s
 If the file does not exist, create it with owner-readable-only file permissions.</source>
-        <translation type="unfinished">Musíš nastavit rpcpassword=&lt;heslo&gt; v konfiguračním souboru:
+        <translation>Musíš nastavit rpcpassword=&lt;heslo&gt; v konfiguračním souboru:
 %s
 Pokud konfigurační soubor ještě neexistuje, vytvoř ho tak, aby ho mohl číst pouze vlastník.</translation>
     </message>
     <message>
         <location line="+5"/>
         <source>Accept command line and JSON-RPC commands</source>
-        <translation type="unfinished">Akceptovat příkazy z příkazové řádky a přes JSON-RPC</translation>
+        <translation>Akceptovat příkazy z příkazové řádky a přes JSON-RPC</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Accept connections from outside (default: 1 if no -proxy or -connect)</source>
-        <translation type="unfinished">Přijímat spojení zvenčí (výchozí: 1, pokud není zadáno -proxy nebo -connect)</translation>
+        <translation>Přijímat spojení zvenčí (výchozí: 1, pokud není zadáno -proxy nebo -connect)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Add a node to connect to and attempt to keep the connection open</source>
-        <translation type="unfinished">Přidat uzel, ke kterému se připojit a snažit se spojení udržet</translation>
+        <translation>Přidat uzel, ke kterému se připojit a snažit se spojení udržet</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Allow DNS lookups for -addnode, -seednode and -connect</source>
-        <translation type="unfinished">Povolit DNS dotazy pro -addnode (přidání uzlu), -seednode a -connect (připojení)</translation>
+        <translation>Povolit DNS dotazy pro -addnode (přidání uzlu), -seednode a -connect (připojení)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Allow JSON-RPC connections from specified IP address</source>
-        <translation type="unfinished">Povolit JSON-RPC spojení ze specifikované IP adresy</translation>
+        <translation>Povolit JSON-RPC spojení ze specifikované IP adresy</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Attempt to recover private keys from a corrupt wallet.dat</source>
-        <translation type="unfinished">Pokusit se zachránit soukromé klíče z poškozeného souboru wallet.dat</translation>
+        <translation>Pokusit se zachránit soukromé klíče z poškozeného souboru wallet.dat</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Namecoin version</source>
-        <translation type="unfinished">Verze Namecoinu</translation>
+        <translation>Verze Namecoinu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Block creation options:</source>
-        <translation type="unfinished">Možnosti vytvoření bloku:</translation>
+        <translation>Možnosti vytvoření bloku:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cannot downgrade wallet</source>
-        <translation type="unfinished">Nemohu převést peněženku do staršího formátu</translation>
+        <translation>Nemohu převést peněženku do staršího formátu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cannot initialize keypool</source>
-        <translation type="unfinished">Nemohu inicializovat zásobník klíčů</translation>
+        <translation>Nemohu inicializovat zásobník klíčů</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cannot resolve -bind address: &apos;%s&apos;</source>
-        <translation type="unfinished">Nemohu přeložit -bind adresu: &apos;%s&apos;</translation>
+        <translation>Nemohu přeložit -bind adresu: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cannot resolve -externalip address: &apos;%s&apos;</source>
-        <translation type="unfinished">Nemohu přeložit -externalip adresu: &apos;%s&apos;</translation>
+        <translation>Nemohu přeložit -externalip adresu: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Cannot write default address</source>
-        <translation type="unfinished">Nemohu napsat výchozí adresu</translation>
+        <translation>Nemohu napsat výchozí adresu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Connect only to the specified node(s)</source>
-        <translation type="unfinished">Připojovat se pouze k zadaným uzlům</translation>
+        <translation>Připojovat se pouze k zadaným uzlům</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Connect through socks proxy</source>
-        <translation type="unfinished">Připojovat se přes socks proxy</translation>
+        <translation>Připojovat se přes socks proxy</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Connect to a node to retrieve peer addresses, and disconnect</source>
-        <translation type="unfinished">Připojit se k uzlu, získat adresy jeho protějšků a odpojit se</translation>
+        <translation>Připojit se k uzlu, získat adresy jeho protějšků a odpojit se</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Corrupted block database detected</source>
-        <translation type="unfinished"></translation>
+        <translation>Bylo zjištěno poškození databáze bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Discover own IP address (default: 1 when listening and no -externalip)</source>
-        <translation type="unfinished">Zjistit vlastní IP adresu (výchozí: 1, pokud naslouchá a není zadáno -externalip)</translation>
+        <translation>Zjistit vlastní IP adresu (výchozí: 1, pokud naslouchá a není zadáno -externalip)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Do you want to rebuild the block database now?</source>
-        <translation type="unfinished"></translation>
+        <translation>Chceš přestavět databázi bloků hned teď?</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Don&apos;t generate coins</source>
-        <translation type="unfinished">Negenerovat mince</translation>
+        <translation>Negenerovat mince</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Done loading</source>
-        <translation type="unfinished">Načítání dokončeno</translation>
+        <translation>Načítání dokončeno</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error initializing block database</source>
-        <translation type="unfinished"></translation>
+        <translation>Chyba při zakládání databáze bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error loading block database</source>
-        <translation type="unfinished">Chyba při načítání databáze bloků</translation>
+        <translation>Chyba při načítání databáze bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error loading wallet.dat</source>
-        <translation type="unfinished">Chyba při načítání wallet.dat</translation>
+        <translation>Chyba při načítání wallet.dat</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error loading wallet.dat: Wallet corrupted</source>
-        <translation type="unfinished">Chyba při načítání wallet.dat: peněženka je poškozená</translation>
+        <translation>Chyba při načítání wallet.dat: peněženka je poškozená</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error loading wallet.dat: Wallet requires newer version of Namecoin</source>
-        <translation type="unfinished">Chyba při načítání wallet.dat: peněženka vyžaduje novější verzi Namecoinu</translation>
+        <translation>Chyba při načítání wallet.dat: peněženka vyžaduje novější verzi Namecoinu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error opening block database</source>
-        <translation type="unfinished"></translation>
+        <translation>Chyba při otevírání databáze bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error</source>
-        <translation type="unfinished">Chyba</translation>
+        <translation>Chyba</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error: Disk space is low!</source>
-        <translation type="unfinished">Problém: Na disku je málo místa!</translation>
+        <translation>Problém: Na disku je málo místa!</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error: Transaction creation failed!</source>
-        <translation type="unfinished">Chyba: Vytvoření transakce selhalo!</translation>
+        <translation>Chyba: Vytvoření transakce selhalo!</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error: Wallet locked, unable to create transaction!</source>
-        <translation type="unfinished">Chyba: Peněženka je zamčená, nemohu vytvořit transakci!</translation>
+        <translation>Chyba: Peněženka je zamčená, nemohu vytvořit transakci!</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error: could not start node</source>
-        <translation type="unfinished">Chyba: nemohu nastartovat uzel</translation>
+        <translation>Chyba: nemohu nastartovat uzel</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Error: system error: </source>
-        <translation type="unfinished"></translation>
+        <translation>Chyba: systémová chyba: </translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to listen on any port. Use -listen=0 if you want this.</source>
-        <translation type="unfinished">Nepodařilo se naslouchat na žádném portu. Použij -listen=0, pokud to byl tvůj záměr.</translation>
+        <translation>Nepodařilo se naslouchat na žádném portu. Použij -listen=0, pokud to byl tvůj záměr.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to read block info</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se přečíst informace o bloku</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to read block</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se přečíst blok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to sync block index</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se synchronizovat index bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write block index</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat index bloků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write block info</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat informace o bloku</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write block</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat blok</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write file info</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat informace o souboru</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write to coin database</source>
-        <translation type="unfinished"></translation>
+        <translation>Selhal zápis do databáze mincí</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write transaction index</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat index transakcí</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Failed to write undo data</source>
-        <translation type="unfinished"></translation>
+        <translation>Nepodařilo se zapsat data o vracení změn</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Fee per KB to add to transactions you send</source>
-        <translation type="unfinished">Poplatek za KB, který se přidá ke každé odeslané transakci</translation>
+        <translation>Poplatek za KB, který se přidá ke každé odeslané transakci</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Find peers using DNS lookup (default: 1 unless -connect)</source>
-        <translation type="unfinished">Hledat uzly přes DNS (výchozí: 1, pokud není zadáno -connect)</translation>
+        <translation>Hledat uzly přes DNS (výchozí: 1, pokud není zadáno -connect)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Find peers using internet relay chat (default: 0)</source>
-        <translation type="unfinished">Hledat uzly přes IRC (výchozí: 0)</translation>
+        <translation>Hledat uzly přes IRC (výchozí: 0)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Generate coins</source>
-        <translation type="unfinished">Generovat mince</translation>
+        <translation>Generovat mince</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Get help for a command</source>
-        <translation type="unfinished">Získat nápovědu pro příkaz</translation>
+        <translation>Získat nápovědu pro příkaz</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>How many blocks to check at startup (default: 288, 0 = all)</source>
-        <translation type="unfinished">Kolik bloků při startu zkontrolovat (výchozí: 2500, 0 = všechny) {288, 0 ?}</translation>
+        <translation>Kolik bloků při startu zkontrolovat (výchozí: 2500, 0 = všechny) {288, 0 ?}</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>How thorough the block verification is (0-4, default: 3)</source>
-        <translation type="unfinished">Jak moc důkladná má být verifikace bloků (0–4, výchozí: 3)</translation>
+        <translation>Jak moc důkladná má být verifikace bloků (0–4, výchozí: 3)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Importing blocks from block database...</source>
-        <translation type="unfinished">Importuji bloky z databáze bloků...</translation>
+        <translation>Importuji bloky z databáze bloků...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Imports blocks from external blk000??.dat file</source>
-        <translation type="unfinished">Importuje bloky z externího souboru blk000?.dat</translation>
+        <translation>Importuje bloky z externího souboru blk000?.dat</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Information</source>
-        <translation type="unfinished">Informace</translation>
+        <translation>Informace</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Insufficient funds</source>
-        <translation type="unfinished">Nedostatek prostředků</translation>
+        <translation>Nedostatek prostředků</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Invalid -proxy address: &apos;%s&apos;</source>
-        <translation type="unfinished">Neplatná -proxy adresa: &apos;%s&apos;</translation>
+        <translation>Neplatná -proxy adresa: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Invalid -tor address: &apos;%s&apos;</source>
-        <translation type="unfinished">Neplatná -tor adresa: &apos;%s&apos;</translation>
+        <translation>Neplatná -tor adresa: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Invalid amount for -paytxfee=&lt;amount&gt;: &apos;%s&apos;</source>
-        <translation type="unfinished">Neplatná částka pro -paytxfee=&lt;částka&gt;: &apos;%s&apos;</translation>
+        <translation>Neplatná částka pro -paytxfee=&lt;částka&gt;: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Invalid amount</source>
-        <translation type="unfinished">Neplatná částka</translation>
+        <translation>Neplatná částka</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>List commands</source>
-        <translation type="unfinished">Výpis příkazů</translation>
+        <translation>Výpis příkazů</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Listen for connections on &lt;port&gt; (default: 8334 or testnet: 18334)</source>
-        <translation type="unfinished">Čekat na spojení na &lt;portu&gt; (výchozí: 8334 nebo testnet: 18334)</translation>
+        <translation>Čekat na spojení na &lt;portu&gt; (výchozí: 8334 nebo testnet: 18334)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Loading addresses...</source>
-        <translation type="unfinished">Načítám adresy...</translation>
+        <translation>Načítám adresy...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Loading block index...</source>
-        <translation type="unfinished">Načítám index bloků...</translation>
+        <translation>Načítám index bloků...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Loading wallet...</source>
-        <translation type="unfinished">Načítám peněženku...</translation>
+        <translation>Načítám peněženku...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Maintain a full transaction index (default: 0)</source>
-        <translation type="unfinished"></translation>
+        <translation>Spravovat úplný index transakcí (výchozí: 0)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Maintain at most &lt;n&gt; connections to peers (default: 125)</source>
-        <translation type="unfinished">Povol nejvýše &lt;n&gt; připojení k uzlům (výchozí: 125)</translation>
+        <translation>Povol nejvýše &lt;n&gt; připojení k uzlům (výchozí: 125)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Maximum per-connection receive buffer, &lt;n&gt;*1000 bytes (default: 5000)</source>
-        <translation type="unfinished">Maximální velikost přijímacího bufferu pro každé spojení, &lt;n&gt;*1000 bajtů (výchozí: 5000)</translation>
+        <translation>Maximální velikost přijímacího bufferu pro každé spojení, &lt;n&gt;*1000 bajtů (výchozí: 5000)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Maximum per-connection send buffer, &lt;n&gt;*1000 bytes (default: 1000)</source>
-        <translation type="unfinished">Maximální velikost odesílacího bufferu pro každé spojení, &lt;n&gt;*1000 bajtů (výchozí: 1000)</translation>
+        <translation>Maximální velikost odesílacího bufferu pro každé spojení, &lt;n&gt;*1000 bajtů (výchozí: 1000)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Only accept block chain matching built-in checkpoints (default: 1)</source>
-        <translation type="unfinished">Uznávat pouze řetěz bloků, který odpovídá vnitřním kontrolním bodům (výchozí: 1)</translation>
+        <translation>Uznávat pouze řetěz bloků, který odpovídá vnitřním kontrolním bodům (výchozí: 1)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Only connect to nodes in network &lt;net&gt; (IPv4, IPv6 or Tor)</source>
-        <translation type="unfinished">Připojovat se pouze k uzlům v &lt;net&gt; síti (IPv4, IPv6 nebo Tor)</translation>
+        <translation>Připojovat se pouze k uzlům v &lt;net&gt; síti (IPv4, IPv6 nebo Tor)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Options:</source>
-        <translation type="unfinished">Možnosti:</translation>
+        <translation>Možnosti:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Output extra debugging information. Implies all other -debug* options</source>
-        <translation type="unfinished">Tisknout speciální ladicí informace. Implikuje použití všechny -debug* voleb</translation>
+        <translation>Tisknout speciální ladicí informace. Implikuje použití všechny -debug* voleb</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Output extra network debugging information</source>
-        <translation type="unfinished">Tisknout speciální ladicí informace o síti</translation>
+        <translation>Tisknout speciální ladicí informace o síti</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Password for JSON-RPC connections</source>
-        <translation type="unfinished">Heslo pro JSON-RPC spojení</translation>
+        <translation>Heslo pro JSON-RPC spojení</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Prepend debug output with timestamp</source>
-        <translation type="unfinished">Připojit před ladicí výstup časové razítko</translation>
+        <translation>Připojit před ladicí výstup časové razítko</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Rebuild blockchain index from current blk000??.dat files</source>
-        <translation type="unfinished">Znovu vytvořit index řetězce bloků z aktuálních blk000??.dat souborů</translation>
+        <translation>Znovu vytvořit index řetězce bloků z aktuálních blk000??.dat souborů</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Rescan the block chain for missing wallet transactions</source>
-        <translation type="unfinished">Přeskenovat řetězec bloků na chybějící transakce tvé pěněženky</translation>
+        <translation>Přeskenovat řetězec bloků na chybějící transakce tvé pěněženky</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Rescanning...</source>
-        <translation type="unfinished">Přeskenovávám...</translation>
+        <translation>Přeskenovávám...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Run in the background as a daemon and accept commands</source>
-        <translation type="unfinished">Běžet na pozadí jako démon a akceptovat příkazy</translation>
+        <translation>Běžet na pozadí jako démon a akceptovat příkazy</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>SSL options: (see the Bitcoin Wiki for SSL setup instructions)</source>
-        <translation type="unfinished">Možnosti SSL: (viz instrukce nastavení SSL v Bitcoin Wiki)</translation>
+        <translation>Možnosti SSL: (viz instrukce nastavení SSL v Bitcoin Wiki)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Select the version of socks proxy to use (4-5, default: 5)</source>
-        <translation type="unfinished">Zvol verzi socks proxy (4-5, výchozí: 5)</translation>
+        <translation>Zvol verzi socks proxy (4-5, výchozí: 5)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send command to -server or namecoind</source>
-        <translation type="unfinished">Poslat příkaz pro -server nebo namecoind</translation>
+        <translation>Poslat příkaz pro -server nebo namecoind</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send commands to node running on &lt;ip&gt; (default: 127.0.0.1)</source>
-        <translation type="unfinished">Posílat příkazy uzlu běžícím na &lt;ip&gt; (výchozí: 127.0.0.1)</translation>
+        <translation>Posílat příkazy uzlu běžícím na &lt;ip&gt; (výchozí: 127.0.0.1)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send trace/debug info to console instead of debug.log file</source>
-        <translation type="unfinished">Posílat stopovací/ladicí informace do konzole místo do souboru debug.log</translation>
+        <translation>Posílat stopovací/ladicí informace do konzole místo do souboru debug.log</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Send trace/debug info to debugger</source>
-        <translation type="unfinished">Posílat stopovací/ladicí informace do debuggeru</translation>
+        <translation>Posílat stopovací/ladicí informace do debuggeru</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Server certificate file (default: server.cert)</source>
-        <translation type="unfinished">Soubor se serverovým certifikátem (výchozí: server.cert)</translation>
+        <translation>Soubor se serverovým certifikátem (výchozí: server.cert)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Server private key (default: server.pem)</source>
-        <translation type="unfinished">Soubor se serverovým soukromým klíčem (výchozí: server.pem)</translation>
+        <translation>Soubor se serverovým soukromým klíčem (výchozí: server.pem)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Set database cache size in megabytes (default: 25)</source>
-        <translation type="unfinished">Nastavit velikost databázové vyrovnávací paměti v megabajtech (výchozí: 25)</translation>
+        <translation>Nastavit velikost databázové vyrovnávací paměti v megabajtech (výchozí: 25)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Set key pool size to &lt;n&gt; (default: 100)</source>
-        <translation type="unfinished">Nastavit zásobník klíčů na velikost &lt;n&gt; (výchozí: 100)</translation>
+        <translation>Nastavit zásobník klíčů na velikost &lt;n&gt; (výchozí: 100)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Set maximum block size in bytes (default: 250000)</source>
-        <translation type="unfinished">Nastavit maximální velikost bloku v bajtech (výchozí: 250000)</translation>
+        <translation>Nastavit maximální velikost bloku v bajtech (výchozí: 250000)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Set minimum block size in bytes (default: 0)</source>
-        <translation type="unfinished">Nastavit minimální velikost bloku v bajtech (výchozí: 0)</translation>
+        <translation>Nastavit minimální velikost bloku v bajtech (výchozí: 0)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Shrink debug.log file on client startup (default: 1 when no -debug)</source>
-        <translation type="unfinished">Při spuštění klienta zmenšit soubor debug.log (výchozí: 1, pokud není zadáno -debug)</translation>
+        <translation>Při spuštění klienta zmenšit soubor debug.log (výchozí: 1, pokud není zadáno -debug)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify configuration file (default: bitcoin.conf)</source>
-        <translation type="unfinished"></translation>
+        <translation>Konfigurační soubor (výchozí: bitcoin.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify connection timeout in milliseconds (default: 5000)</source>
-        <translation type="unfinished">Zadej časový limit spojení v milisekundách (výchozí: 5000)</translation>
+        <translation>Zadej časový limit spojení v milisekundách (výchozí: 5000)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify data directory</source>
-        <translation type="unfinished">Adresář pro data</translation>
+        <translation>Adresář pro data</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify pid file (default: namecoind.pid)</source>
-        <translation type="unfinished">PID soubor (výchozí: namecoind.pid)</translation>
+        <translation>PID soubor (výchozí: namecoind.pid)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify your own public address</source>
-        <translation type="unfinished">Specifikuj svou veřejnou adresu</translation>
+        <translation>Specifikuj svou veřejnou adresu</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>System error: </source>
-        <translation type="unfinished"></translation>
+        <translation>Systémová chyba: </translation>
     </message>
     <message>
         <location line="+1"/>
         <source>This help message</source>
-        <translation type="unfinished">Tato nápověda</translation>
+        <translation>Tato nápověda</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Threshold for disconnecting misbehaving peers (default: 100)</source>
-        <translation type="unfinished">Práh pro odpojování nesprávně se chovajících uzlů (výchozí: 100)</translation>
+        <translation>Práh pro odpojování nesprávně se chovajících uzlů (výchozí: 100)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>To use the %s option</source>
-        <translation type="unfinished">K použití volby %s</translation>
+        <translation>K použití volby %s</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Unable to bind to %s on this computer (bind returned error %d, %s)</source>
-        <translation type="unfinished">Nedaří se mi připojit na %s na tomhle počítači (operace bind vrátila chybu %d, %s)</translation>
+        <translation>Nedaří se mi připojit na %s na tomhle počítači (operace bind vrátila chybu %d, %s)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Unknown -socks proxy version requested: %i</source>
-        <translation type="unfinished">V -socks byla požadována neznámá verze proxy: %i</translation>
+        <translation>V -socks byla požadována neznámá verze proxy: %i</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Unknown network specified in -onlynet: &apos;%s&apos;</source>
-        <translation type="unfinished">V -onlynet byla uvedena neznámá síť: &apos;%s&apos;</translation>
+        <translation>V -onlynet byla uvedena neznámá síť: &apos;%s&apos;</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Upgrade wallet to latest format</source>
-        <translation type="unfinished">Převést peněženku na nejnovější formát</translation>
+        <translation>Převést peněženku na nejnovější formát</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Usage:</source>
-        <translation type="unfinished">Užití:</translation>
+        <translation>Užití:</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Use OpenSSL (https) for JSON-RPC connections</source>
-        <translation type="unfinished">Použít OpenSSL (https) pro JSON-RPC spojení</translation>
+        <translation>Použít OpenSSL (https) pro JSON-RPC spojení</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Use UPnP to map the listening port (default: 0)</source>
-        <translation type="unfinished">Použít UPnP k namapování naslouchacího portu (výchozí: 0)</translation>
+        <translation>Použít UPnP k namapování naslouchacího portu (výchozí: 0)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Use UPnP to map the listening port (default: 1 when listening)</source>
-        <translation type="unfinished">Použít UPnP k namapování naslouchacího portu (výchozí: 1, pokud naslouchá)</translation>
+        <translation>Použít UPnP k namapování naslouchacího portu (výchozí: 1, pokud naslouchá)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Use proxy to reach tor hidden services (default: same as -proxy)</source>
-        <translation type="unfinished">Použít proxy k připojení ke skryté služby (výchozí: stejné jako -proxy)</translation>
+        <translation>Použít proxy k připojení ke skryté služby (výchozí: stejné jako -proxy)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Use the test network</source>
-        <translation type="unfinished">Použít testovací síť (testnet)</translation>
+        <translation>Použít testovací síť (testnet)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Username for JSON-RPC connections</source>
-        <translation type="unfinished">Uživatelské jméno pro JSON-RPC spojení</translation>
+        <translation>Uživatelské jméno pro JSON-RPC spojení</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Verifying database...</source>
-        <translation type="unfinished"></translation>
+        <translation>Ověřuji databázi...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Verifying wallet integrity...</source>
-        <translation type="unfinished">Kontroluji integritu peněženky...</translation>
+        <translation>Kontroluji integritu peněženky...</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Wallet needed to be rewritten: restart Namecoin to complete</source>
-        <translation type="unfinished">Soubor s peněženkou potřeboval přepsat: restartuj Namecoin, aby se operace dokončila</translation>
+        <translation>Soubor s peněženkou potřeboval přepsat: restartuj Namecoin, aby se operace dokončila</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Warning</source>
-        <translation type="unfinished">Upozornění</translation>
+        <translation>Upozornění</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Warning: This version is obsolete, upgrade required!</source>
-        <translation type="unfinished">Upozornění: tahle verze je zastaralá, měl bys ji aktualizovat!</translation>
+        <translation>Upozornění: tahle verze je zastaralá, měl bys ji aktualizovat!</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>You need to rebuild the databases using -reindex to change -txindex</source>
-        <translation type="unfinished"></translation>
+        <translation>Je třeba přestavět databázi použitím -reindex, aby bylo možné změnit -txindex</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>wallet.dat corrupt, salvage failed</source>
-        <translation type="unfinished">Soubor wallet.dat je poškozen, jeho záchrana se nezdařila</translation>
+        <translation>Soubor wallet.dat je poškozen, jeho záchrana se nezdařila</translation>
     </message>
 </context>
 </TS>
