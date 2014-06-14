@@ -1,11 +1,14 @@
 v0.3.75
 =======
+* Czech localization (digital-dreamer)
+* Windows installer script for Innsetup (phelix)
+* Enforce value length of 520 characters in RPC and Qt (domob)
 * New command line argument -dbstats runs a DB file storage statistics analysis and prints it to the debug log. (Domob)
 * Atomic handling of TxDB/NameDB operations, DB code cleanup and optimization. (Domob)
 * Even smaller blkindex.dat. Not backward compatible. It will take a while for the rewrite on the first start. (Domob)
 
 v0.3.74-rc1 (never officially released)
-======
+=======================================
 * allow for atomic name transactions via rpc commands (Domob)
 * new rpc commands: name_pending, getchains (Domob)
 * Simplified blkindex.dat for smaller file size and faster startup - not backward compatible ("remove auxpow", Domob) - IT WILL TAKE A WHILE FOR THE REWRITE ON THE FIRST START
@@ -20,7 +23,7 @@ v0.3.74-rc1 (never officially released)
 * Small updates and fixes, code cleanup
 
 v0.3.73-rc1 (never officially released)
-============================
+=======================================
 * Modified testnet difficulty calculation (Khal)
 * GUI: ID-tab (Domob)
 * improve name_filter speed (Khal)
