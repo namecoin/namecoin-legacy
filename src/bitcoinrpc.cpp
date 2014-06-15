@@ -22,7 +22,7 @@
 #include <memory>
 
 #ifdef USE_SSL
-#include <boost/asio/ssl.hpp> 
+#include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
@@ -102,7 +102,7 @@ void EnsureWalletIsUnlocked()
     if (pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 }
-  
+
 void RPCTypeCheck(const Array& params,
                   const list<Value_type>& typesExpected,
                   bool fAllowNull)
@@ -626,7 +626,7 @@ Value getnewaddress(const Array& params, bool fHelp)
     string strAccount;
     if (params.size() > 0)
         strAccount = AccountFromValue(params[0]);
-        
+
     // Generate a new key that is added to wallet
     string strAddress = PubKeyToAddress(pwalletMain->GetKeyFromKeyPool());
 
@@ -845,7 +845,7 @@ Value sendtoaddress(const Array& params, bool fHelp)
     CRITICAL_BLOCK(cs_main)
     {
         EnsureWalletIsUnlocked();
-    
+
         string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
         if (strError != "")
             throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -862,7 +862,7 @@ Value listaddressgroupings(const Array& params, bool fHelp)
             "Lists groups of addresses which have had their common ownership\n"
             "made public by common use as inputs or as the resulting change\n"
             "in past transactions");
-            
+
     Array jsonGroupings;
     map<string, int64> balances = pwalletMain->GetAddressBalances();
     BOOST_FOREACH(set<string> grouping, pwalletMain->GetAddressGroupings())
@@ -1197,7 +1197,7 @@ Value sendmany(const Array& params, bool fHelp)
         CScript scriptPubKey;
         if (!scriptPubKey.SetBitcoinAddress(strAddress))
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Namecoin address:")+strAddress);
-        int64 nAmount = AmountFromValue(s.value_); 
+        int64 nAmount = AmountFromValue(s.value_);
         totalAmount += nAmount;
 
         vecSend.push_back(make_pair(scriptPubKey, nAmount));
@@ -1542,7 +1542,7 @@ Value listtransactions(const Array& params, bool fHelp)
         }
         // ret is now newest to oldest
     }
-    
+
     // Make sure we return only last nCount items (sends-to-self might give us an extra):
     if (ret.size() > nCount)
     {
@@ -1745,7 +1745,7 @@ void ThreadCleanWalletPassphrase(void* parg)
                 break;
 
             cs_nWalletUnlockTime.Leave();
-            Sleep(nToSleep);
+            MilliSleep(nToSleep);
             cs_nWalletUnlockTime.Enter();
 
         } while(1);
@@ -2528,7 +2528,7 @@ Value dumpprivkey(const Array& params, bool fHelp)
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
-        
+
     CPrivKey privKey;
     bool found = false;
     CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
@@ -2562,7 +2562,7 @@ Value signmessage(const Array& params, bool fHelp)
 
     string strAddress = params[0].get_str();
     string strMessage = params[1].get_str();
-    
+
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
@@ -2585,9 +2585,9 @@ Value signmessage(const Array& params, bool fHelp)
     std::vector<unsigned char> vchSig;
     CKey key;
     key.SetPrivKey(privKey);
-    if (!key.SignCompact(Hash(ss.begin(), ss.end()), vchSig)) 
+    if (!key.SignCompact(Hash(ss.begin(), ss.end()), vchSig))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
-    
+
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
@@ -2617,7 +2617,7 @@ Value verifymessage(const Array& params, bool fHelp)
     ss << strMessage;
 
     CKey key;
-    if (!key.SetCompactSignature(Hash(ss.begin(), ss.end()), vchSig)) 
+    if (!key.SetCompactSignature(Hash(ss.begin(), ss.end()), vchSig))
         return false;
 
     return Hash160(key.GetPubKey()) == hash160;
@@ -3764,7 +3764,7 @@ class ClientConnectionOutput
 
 private:
 
-    /* The stream for outputting.  */   
+    /* The stream for outputting.  */
 #ifdef USE_SSL
   SSLStream* sslStream;
   SSLIOStreamDevice* d;
@@ -4021,7 +4021,7 @@ void ThreadRPCServer2(void* parg)
         {
             // Deter brute-forcing short passwords
             if (mapArgs["-rpcpassword"].size() < 15)
-                Sleep(50);
+                MilliSleep(50);
 
             out->getStream() << HTTPReply(401, "") << std::flush;
             printf("ThreadRPCServer incorrect password attempt\n");
@@ -4190,7 +4190,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     BOOST_FOREACH(const std::string &param, strParams)
         params.push_back(param);
     RPCConvertValues(strMethod, params);
-    return params;   
+    return params;
 }
 
 void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
