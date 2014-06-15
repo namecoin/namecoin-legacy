@@ -376,7 +376,7 @@ bool CreateTransactionWithInputTx(const vector<pair<CScript, int64> >& vecSend, 
             }
         }
     }
-    printf("CreateTransactionWithInputTx succeeded:\n%s", wtxNew.ToString().c_str()); 
+    printf("CreateTransactionWithInputTx succeeded:\n%s", wtxNew.ToString().c_str());
     return true;
 }
 
@@ -514,17 +514,17 @@ Value sendtoname(const Array& params, bool fHelp)
             "sendtoname <namecoinname> <amount> [comment] [comment-to]\n"
             "<amount> is a real and is rounded to the nearest 0.01"
             + HelpRequiringPassphrase());
-    
+
     vector<unsigned char> vchName = vchFromValue(params[0]);
     CNameDB dbName("r");
     if (!dbName.ExistsName(vchName))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Name not found");
-    
+
     string strAddress;
     CTransaction tx;
     GetTxOfName(dbName, vchName, tx);
     GetNameAddress(tx, strAddress);
-    
+
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No valid namecoin address");
@@ -540,7 +540,7 @@ Value sendtoname(const Array& params, bool fHelp)
         wtx.mapValue["to"]      = params[3].get_str();
 
     CRITICAL_BLOCK(cs_main)
-    {  
+    {
         EnsureWalletIsUnlocked();
 
         string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
@@ -637,7 +637,7 @@ Value name_list(const Array& params, bool fHelp)
 
     BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Object)& item, vNamesO)
         oRes.push_back(item.second);
-    
+
     return oRes;
 }
 
@@ -675,7 +675,7 @@ Value name_debug1(const Array& params, bool fHelp)
         throw runtime_error(
             "name_debug1 <name>\n"
             "Dump name blocks number and transactions id in the debug file.\n");
-    
+
     vector<unsigned char> vchName = vchFromValue(params[0]);
     printf("Dump name:\n");
     CRITICAL_BLOCK(cs_main)
@@ -712,7 +712,7 @@ Value name_show(const Array& params, bool fHelp)
             "name_show <name>\n"
             "Show values of a name.\n"
             );
-    
+
     Object oLastName;
     vector<unsigned char> vchName = vchFromValue(params[0]);
     string name = stringFromVch(vchName);
@@ -723,7 +723,7 @@ Value name_show(const Array& params, bool fHelp)
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
             throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
-       
+
         if (vtxPos.size() < 1)
             throw JSONRPCError(RPC_WALLET_ERROR, "no result returned");
 
@@ -762,7 +762,7 @@ Value name_history(const Array& params, bool fHelp)
         throw runtime_error(
             "name_history <name>\n"
             "List all name values of a name.\n");
-    
+
     Array oRes;
     vector<unsigned char> vchName = vchFromValue(params[0]);
     string name = stringFromVch(vchName);
@@ -773,7 +773,7 @@ Value name_history(const Array& params, bool fHelp)
         CNameDB dbName("r");
         if (!dbName.ReadName(vchName, vtxPos))
             throw JSONRPCError(RPC_WALLET_ERROR, "failed to read from name DB");
-        
+
         CNameIndex txPos2;
         CDiskTxPos txPos;
         BOOST_FOREACH(txPos2, vtxPos)
@@ -1019,7 +1019,7 @@ Value name_firstupdate(const Array& params, bool fHelp)
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
-    
+
     CRITICAL_BLOCK(cs_main)
     {
         if (mapNamePending.count(vchName) && mapNamePending[vchName].size())
@@ -1173,7 +1173,7 @@ Value name_update(const Array& params, bool fHelp)
                     mapNamePending[vchName].begin()->GetHex().c_str());
             throw runtime_error("there are pending operations on that name");
         }
-        
+
         EnsureWalletIsUnlocked();
 
         CNameDB dbName("r");
@@ -1534,7 +1534,7 @@ Value name_clean(const Array& params, bool fHelp)
             if (GetNameOfTx(wtx, vchName) && mapNamePending.count(vchName))
             {
                 string name = stringFromVch(vchName);
-                printf("name_clean() : erase %s from pending of name %s", 
+                printf("name_clean() : erase %s from pending of name %s",
                         wtx.GetHash().GetHex().c_str(), name.c_str());
                 if (!mapNamePending[vchName].erase(wtx.GetHash()))
                     error("name_clean() : erase but it was not pending");
@@ -1727,17 +1727,17 @@ bool CNameDB::ReconstructNameIndex()
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
     {
         while (pindex)
-        {  
+        {
             TxnBegin();
             CBlock block;
             block.ReadFromDisk(pindex);
             int nHeight = pindex->nHeight;
-            
+
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (tx.nVersion != NAMECOIN_TX_VERSION)
                     continue;
-                    
+
                 vector<vector<unsigned char> > vvchArgs;
                 int op;
                 int nOut;
@@ -1781,7 +1781,7 @@ bool CNameDB::ReconstructNameIndex()
                 txPos2.txPos = txindex.pos;
                 vtxPos.push_back(txPos2);
                 if (!WriteName(vchName, vtxPos))
-                {   
+                {
                     return error("Rescanfornames() : failed to write to name DB");
                 }
 
@@ -1883,7 +1883,7 @@ bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsi
             nHeight = BUG_WORKAROUND_BLOCK;
         */
     }
-    
+
     // Bug workaround
     if (nHeight >= BUG_WORKAROUND_BLOCK)
     {
@@ -1919,7 +1919,7 @@ bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsi
         for (int i = 0; i < tx.vout.size(); i++)
         {
             const CTxOut& out = tx.vout[i];
-            
+
             int nOldSize = vvch.size();
             if (DecodeNameScript(out.scriptPubKey, op, vvch))
             {
@@ -2035,7 +2035,7 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
 
     int op;
     int nOut;
- 
+
     if (!DecodeNameScript(txout.scriptPubKey, op, vvch))
         return false;
 
@@ -2249,7 +2249,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
                 return error("ConnectInputsHook() : got tx %s with fee too low %d", tx.GetHash().GetHex().c_str(), nNetFee);
             if (!found || prevOp != OP_NAME_NEW)
                 return error("ConnectInputsHook() : name_firstupdate tx without previous name_new tx");
-                
+
             // HACK: The following two checks are redundant after hard-fork at block 150000, because it is performed
             // in CheckTransaction. However, before that, we do not know height during CheckTransaction
             // and cannot apply the right set of rules
@@ -2312,7 +2312,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         case OP_NAME_UPDATE:
             if (!found || (prevOp != OP_NAME_FIRSTUPDATE && prevOp != OP_NAME_UPDATE))
                 return error("name_update tx without previous update tx");
-                
+
             // HACK: The following check is redundant after hard-fork at block 150000, because it is performed
             // in CheckTransaction. However, before that, we do not know height during CheckTransaction
             // and cannot apply the right set of rules
@@ -2603,7 +2603,7 @@ int CNamecoinHooks::LockinHeight()
     if (fTestNet)
         return 0;
 
-    return 112896;
+    return 182000;
 }
 
 bool CNamecoinHooks::Lockin(int nHeight, uint256 hash)
@@ -2620,7 +2620,8 @@ bool CNamecoinHooks::Lockin(int nHeight, uint256 hash)
                 (nHeight ==  18940 && hash != uint256("0x00000000000087f7fc0c8085217503ba86f796fa4984f7e5a08b6c4c12906c05")) ||
                 (nHeight ==  30240 && hash != uint256("0xe1c8c862ff342358384d4c22fa6ea5f669f3e1cdcf34111f8017371c3c0be1da")) ||
                 (nHeight ==  57000 && hash != uint256("0xaa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203")) ||
-                (nHeight == 112896 && hash != uint256("0x73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf")))
+                (nHeight == 112896 && hash != uint256("0x73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf")) ||
+                (nHeight == 182000 && hash != uint256("0xd47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9")))
             return false;
     return true;
 }
