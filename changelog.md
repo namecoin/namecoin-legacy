@@ -1,5 +1,6 @@
 v0.3.75
 =======
+* Update to openssl 1.0.1h (security fix for ssl http RPC)
 * New command line argument -dbstats runs a DB file storage statistics analysis and prints it to the debug log. (Domob)
 * Atomic handling of TxDB/NameDB operations, DB code cleanup and optimization. (Domob)
 * Even smaller blkindex.dat. Not backward compatible. It will take a while for the rewrite on the first start. (Domob)
