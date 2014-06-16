@@ -7,7 +7,7 @@ D:\Qt4.8.4\bin\qmake.exe ^
 	BOOST_INCLUDE_PATH=libs/boost_1_50_0 ^
 	BOOST_LIB_PATH=libs/boost_1_50_0/stage/lib ^
 	BOOST_LIB_SUFFIX=-mgw46-mt-1_50 ^
-	OPENSSL_INCLUDE_PATH=libs/openssl-1.0.1e/include ^
+	OPENSSL_INCLUDE_PATH=libs/openssl-1.0.1h/include ^
 	BDB_INCLUDE_PATH=libs/db-4.7.25.NC/build_unix ^
 	BDB_LIB_PATH=libs/db-4.7.25.NC/build_unix ^
 	OPENSSL_LIB_PATH=libs/openssl-1.0.1e ^

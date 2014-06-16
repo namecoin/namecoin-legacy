@@ -586,7 +586,7 @@ CWalletTx::AcceptWalletTransaction (DatabaseSet& dbset, bool fCheckInputs)
     return false;
 }
 
-bool CWalletTx::AcceptWalletTransaction() 
+bool CWalletTx::AcceptWalletTransaction()
 {
     DatabaseSet dbset("r");
     return AcceptWalletTransaction (dbset);
@@ -1456,7 +1456,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos)
 
 
 // Start accepting AUX POW at this block
-// 
+//
 // Even if we do not accept AUX POW ourselves, we can always be the parent chain.
 
 int GetAuxPowStartBlock()
@@ -2048,7 +2048,7 @@ bool CAlert::ProcessAlert()
             {
                 printf("cancelling alert %d\n", alert.nID);
 #ifdef GUI
-                uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);  
+                uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);
 #endif
                 mapAlerts.erase(mi++);
             }
@@ -2080,7 +2080,7 @@ bool CAlert::ProcessAlert()
 #ifdef GUI
         // Notify UI if it applies to me
         if (AppliesToMe())
-            uiInterface.NotifyAlertChanged(GetHash(), CT_NEW); 
+            uiInterface.NotifyAlertChanged(GetHash(), CT_NEW);
 #endif
     }
 
@@ -3319,7 +3319,7 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
             return error("BitcoinMiner : ProcessBlock, block not accepted");
     }
 
-    Sleep(2000);
+    MilliSleep(2000);
     return true;
 }
 
@@ -3343,7 +3343,7 @@ void static BitcoinMiner(CWallet *pwallet)
             return;
         while (vNodes.empty() || IsInitialBlockDownload())
         {
-            Sleep(1000);
+            MilliSleep(1000);
             if (fShutdown)
                 return;
             if (!fGenerateBitcoins)
@@ -3513,7 +3513,7 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
         {
             if (!CreateThread(ThreadBitcoinMiner, pwallet))
                 printf("Error: CreateThread(ThreadBitcoinMiner) failed\n");
-            Sleep(10);
+            MilliSleep(10);
         }
     }
 }

@@ -1,5 +1,6 @@
 v0.3.75
 =======
+* Update to OpenSSL1.0.1h (security fix for SSL http RPC)
 * Czech localization (digital-dreamer)
 * Windows installer script for Innsetup (phelix)
 * Enforce value length of 520 characters in RPC and Qt (domob)
