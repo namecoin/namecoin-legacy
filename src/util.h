@@ -15,6 +15,7 @@
 #include <vector>
 #include <string>
 
+#include <boost/version.hpp>
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/interprocess_recursive_mutex.hpp>
 #include <boost/date_time/gregorian/gregorian_types.hpp>
