@@ -1,9 +1,12 @@
 v0.3.75
 =======
+* Add difficulty to RPC block output JSON (Domob)
+* Bitcoin port: skip signature verification on blocks before last checkpoint (phelix)
+* New checkpoint at 182000
 * Update to OpenSSL1.0.1h (security fix for SSL http RPC)
 * Czech localization (digital-dreamer)
 * Windows installer script for Innsetup (phelix)
-* Enforce value length of 520 characters in RPC and Qt (domob)
+* Enforce value length of 520 characters in RPC and Qt (Domob)
 * New command line argument -dbstats runs a DB file storage statistics analysis and prints it to the debug log. (Domob)
 * Atomic handling of TxDB/NameDB operations, DB code cleanup and optimization. (Domob)
 * Even smaller blkindex.dat. Not backward compatible. It will take a while for the rewrite on the first start. (Domob)
