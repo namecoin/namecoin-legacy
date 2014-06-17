@@ -278,6 +278,39 @@ Value getblocknumber(const Array& params, bool fHelp)
     return nBestHeight;
 }
 
+static double
+GetDifficulty (unsigned int nBits)
+{
+    // Floating point number that is a multiple of the minimum difficulty,
+    // minimum difficulty = 1.0.
+
+    int nShift = (nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+
+static double
+GetDifficulty ()
+{
+  if (pindexBest == NULL)
+    return 1.0;
+
+  return GetDifficulty (pindexBest->nBits);
+}
 
 Value BlockToValue(CBlock &block)
 {
@@ -288,6 +321,7 @@ Value BlockToValue(CBlock &block)
     obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
     obj.push_back(Pair("time", (uint64_t)block.nTime));
     obj.push_back(Pair("bits", (uint64_t)block.nBits));
+    obj.push_back(Pair("difficulty", GetDifficulty (block.nBits)));
     obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
     obj.push_back(Pair("n_tx", (int)block.vtx.size()));
     obj.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK)));
@@ -490,33 +524,6 @@ Value getconnectioncount(const Array& params, bool fHelp)
             "Returns the number of connections to other nodes.");
 
     return (int)vNodes.size();
-}
-
-
-double GetDifficulty()
-{
-    // Floating point number that is a multiple of the minimum difficulty,
-    // minimum difficulty = 1.0.
-
-    if (pindexBest == NULL)
-        return 1.0;
-    int nShift = (pindexBest->nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
 }
 
 Value getdifficulty(const Array& params, bool fHelp)
