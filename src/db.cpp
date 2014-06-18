@@ -5,6 +5,7 @@
 #include "headers.h"
 #include "db.h"
 #include "net.h"
+#include "auxpow.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
