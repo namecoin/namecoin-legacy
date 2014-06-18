@@ -1,12 +1,12 @@
 ; also in the code
-#define version "0.x.xx"
+#define version "0.3.75"
 
 #define sourceFolder "..\release"
 #define progname "Namecoin"
 
 [Messages]
-WelcomeLabel2=%nThis will install [name/ver] on your computer.%n
-ClickFinish=ATTENTION:  Please note it may take a couple of hours for the initial blockchain download to complete.%n%nClick Finish to exit Setup.
+WelcomeLabel2=%nThis will install [name/ver] on your computer.%n%nNote that once you start this version due to a database change you can not go back without redownloading the blockchain.%n
+ClickFinish=ATTENTION:  Please note it may take a couple of hours for the initial blockchain download to complete.%n%nIf you are upgrading from a previous version the first start will take a couple of minutes doing some database optimization.%n%nClick Finish to exit Setup.
 ConfirmUninstall=Are you sure you want to completely remove %1 and all of its components?%n%nThis will leave blockchain data and your wallet.dat file alone.
 UninstalledAll=%1 was successfully removed from your computer.%n%nThere might still be blockchain data and your wallet.dat file in %APPDATA%\Namecoin
 
