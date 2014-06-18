@@ -5,8 +5,7 @@
 #include "addressbookpage.h"
 #include "walletmodel.h"
 #include "guiconstants.h"
-#include "../main.h"
-#include "../hook.h"
+#include "../headers.h"
 #include "../wallet.h"
 #include "../namecoin.h"
 
@@ -41,7 +40,7 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
     ui->labelAddress->setText(GUIUtil::HtmlEscape(address));
     ui->labelAddress->setFont(GUIUtil::bitcoinAddressFont());
 
-    ui->dataEdit->setMaxLength(GUI_MAX_VALUE_LENGTH);
+    ui->dataEdit->setMaxLength (UI_MAX_VALUE_LENGTH);
 
     returnData = data;
 

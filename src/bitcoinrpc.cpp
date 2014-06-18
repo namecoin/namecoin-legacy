@@ -17,9 +17,12 @@
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/assign/list_of.hpp>
+#include <boost/thread/thread.hpp>
+
+#include <memory>
 
 #ifdef USE_SSL
-#include <boost/asio/ssl.hpp> 
+#include <boost/asio/ssl.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> SSLStream;
@@ -45,8 +48,6 @@ using namespace boost::asio;
 using namespace json_spirit;
 
 void ThreadRPCServer2(void* parg);
-typedef Value(*rpcfn_type)(const Array& params, bool fHelp);
-extern map<string, rpcfn_type> mapCallTable;
 Value sendtoaddress(const Array& params, bool fHelp);
 
 int64 nWalletUnlockTime;
@@ -101,7 +102,7 @@ void EnsureWalletIsUnlocked()
     if (pwalletMain->IsLocked())
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with walletpassphrase first.");
 }
-  
+
 void RPCTypeCheck(const Array& params,
                   const list<Value_type>& typesExpected,
                   bool fAllowNull)
@@ -277,6 +278,39 @@ Value getblocknumber(const Array& params, bool fHelp)
     return nBestHeight;
 }
 
+static double
+GetDifficulty (unsigned int nBits)
+{
+    // Floating point number that is a multiple of the minimum difficulty,
+    // minimum difficulty = 1.0.
+
+    int nShift = (nBits >> 24) & 0xff;
+
+    double dDiff =
+        (double)0x0000ffff / (double)(nBits & 0x00ffffff);
+
+    while (nShift < 29)
+    {
+        dDiff *= 256.0;
+        nShift++;
+    }
+    while (nShift > 29)
+    {
+        dDiff /= 256.0;
+        nShift--;
+    }
+
+    return dDiff;
+}
+
+static double
+GetDifficulty ()
+{
+  if (pindexBest == NULL)
+    return 1.0;
+
+  return GetDifficulty (pindexBest->nBits);
+}
 
 Value BlockToValue(CBlock &block)
 {
@@ -287,6 +321,7 @@ Value BlockToValue(CBlock &block)
     obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
     obj.push_back(Pair("time", (uint64_t)block.nTime));
     obj.push_back(Pair("bits", (uint64_t)block.nBits));
+    obj.push_back(Pair("difficulty", GetDifficulty (block.nBits)));
     obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
     obj.push_back(Pair("n_tx", (int)block.vtx.size()));
     obj.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK)));
@@ -371,6 +406,115 @@ Value getblock(const Array& params, bool fHelp)
     return BlockToValue(block);
 }
 
+/* Comparison function for sorting the getchains heads.  */
+static bool
+compareBlocksByHeight (const uint256& a, const uint256& b)
+{
+  std::map<uint256, CBlockIndex*>::const_iterator ia, ib;
+
+  ia = mapBlockIndex.find (a);
+  ib = mapBlockIndex.find (b);
+
+  assert (ia != mapBlockIndex.end () && ib != mapBlockIndex.end ());
+
+  return (ia->second->nHeight > ib->second->nHeight);
+}
+
+/* Return the state of all known chains.  */
+static Value
+getchains (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 0)
+    throw runtime_error (
+      "getchains\n"
+      "Return status of all known chains.");
+
+  /* Lock everything.  Not sure if this is needed for the whole duration
+     of the call, but better be safe than sorry.  */
+  CCriticalBlock lock(cs_main);
+
+  /* For each block known, keep track if there are follow-ups (which have
+     the block as pprev) so that we find the chain heads.  */
+
+  std::map<uint256, bool> blockIsHead;
+  std::map<uint256, CBlockIndex*>::const_iterator i;
+
+  for (i = mapBlockIndex.begin (); i != mapBlockIndex.end (); ++i)
+    blockIsHead.insert (std::make_pair (i->first, true));
+
+  for (i = mapBlockIndex.begin (); i != mapBlockIndex.end (); ++i)
+    {
+      const CBlockIndex* pprev = i->second->pprev;
+      if (!pprev)
+        continue;
+
+      const uint256 prevHash = *pprev->phashBlock;
+      const std::map<uint256, bool>::iterator j = blockIsHead.find (prevHash);
+      assert (j != blockIsHead.end ());
+      j->second = false;
+    }
+
+  /* Get chain heads and sort them by height.  */
+
+  std::vector<uint256> heads;
+  for (std::map<uint256, bool>::const_iterator j = blockIsHead.begin ();
+       j != blockIsHead.end (); ++j)
+    if (j->second)
+      heads.push_back (j->first);
+
+  std::sort (heads.begin (), heads.end (), &compareBlocksByHeight);
+
+  /* Construct the output array.  */
+
+  Array res;
+  for (std::vector<uint256>::const_iterator j = heads.begin ();
+       j != heads.end (); ++j)
+    {
+      i = mapBlockIndex.find (*j);
+      assert (i != mapBlockIndex.end ());
+
+      const CBlockIndex& block = *i->second;
+      assert (*j == *block.phashBlock);
+
+      Object obj;
+      obj.push_back (Pair ("height", block.nHeight));
+      obj.push_back (Pair ("hash", block.phashBlock->GetHex ()));
+
+      const bool isMain = (&block == pindexBest);
+      obj.push_back (Pair ("is_best", isMain));
+
+      /* If the block is not the main head, construct the branch that
+         connects it to the main chain.  */
+      if (!isMain)
+        {
+          Array branch;
+          int len = 0;
+
+          const CBlockIndex* pcur = &block;
+          while (true)
+            {
+              assert (pcur->pprev);
+              pcur = pcur->pprev;
+
+              branch.push_back (pcur->phashBlock->GetHex ());
+              ++len;
+
+              /* We are on the main chain if there's a next pointer.  */
+              if (pcur->pnext)
+                break;
+            }
+
+          obj.push_back (Pair ("branch_len", len));
+          obj.push_back (Pair ("branch", branch));
+        }
+      else
+        obj.push_back (Pair ("branch_len", 0));
+
+      res.push_back (obj);
+    }
+
+  return res;
+}
 
 Value getconnectioncount(const Array& params, bool fHelp)
 {
@@ -380,33 +524,6 @@ Value getconnectioncount(const Array& params, bool fHelp)
             "Returns the number of connections to other nodes.");
 
     return (int)vNodes.size();
-}
-
-
-double GetDifficulty()
-{
-    // Floating point number that is a multiple of the minimum difficulty,
-    // minimum difficulty = 1.0.
-
-    if (pindexBest == NULL)
-        return 1.0;
-    int nShift = (pindexBest->nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(pindexBest->nBits & 0x00ffffff);
-
-    while (nShift < 29)
-    {
-        dDiff *= 256.0;
-        nShift++;
-    }
-    while (nShift > 29)
-    {
-        dDiff /= 256.0;
-        nShift--;
-    }
-
-    return dDiff;
 }
 
 Value getdifficulty(const Array& params, bool fHelp)
@@ -516,7 +633,7 @@ Value getnewaddress(const Array& params, bool fHelp)
     string strAccount;
     if (params.size() > 0)
         strAccount = AccountFromValue(params[0]);
-        
+
     // Generate a new key that is added to wallet
     string strAddress = PubKeyToAddress(pwalletMain->GetKeyFromKeyPool());
 
@@ -735,7 +852,7 @@ Value sendtoaddress(const Array& params, bool fHelp)
     CRITICAL_BLOCK(cs_main)
     {
         EnsureWalletIsUnlocked();
-    
+
         string strError = pwalletMain->SendMoneyToBitcoinAddress(strAddress, nAmount, wtx);
         if (strError != "")
             throw JSONRPCError(RPC_WALLET_ERROR, strError);
@@ -752,7 +869,7 @@ Value listaddressgroupings(const Array& params, bool fHelp)
             "Lists groups of addresses which have had their common ownership\n"
             "made public by common use as inputs or as the resulting change\n"
             "in past transactions");
-            
+
     Array jsonGroupings;
     map<string, int64> balances = pwalletMain->GetAddressBalances();
     BOOST_FOREACH(set<string> grouping, pwalletMain->GetAddressGroupings())
@@ -1087,7 +1204,7 @@ Value sendmany(const Array& params, bool fHelp)
         CScript scriptPubKey;
         if (!scriptPubKey.SetBitcoinAddress(strAddress))
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Namecoin address:")+strAddress);
-        int64 nAmount = AmountFromValue(s.value_); 
+        int64 nAmount = AmountFromValue(s.value_);
         totalAmount += nAmount;
 
         vecSend.push_back(make_pair(scriptPubKey, nAmount));
@@ -1432,7 +1549,7 @@ Value listtransactions(const Array& params, bool fHelp)
         }
         // ret is now newest to oldest
     }
-    
+
     // Make sure we return only last nCount items (sends-to-self might give us an extra):
     if (ret.size() > nCount)
     {
@@ -1635,7 +1752,7 @@ void ThreadCleanWalletPassphrase(void* parg)
                 break;
 
             cs_nWalletUnlockTime.Leave();
-            Sleep(nToSleep);
+            MilliSleep(nToSleep);
             cs_nWalletUnlockTime.Enter();
 
         } while(1);
@@ -2418,7 +2535,7 @@ Value dumpprivkey(const Array& params, bool fHelp)
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Namecoin address");
-        
+
     CPrivKey privKey;
     bool found = false;
     CRITICAL_BLOCK(pwalletMain->cs_mapKeys)
@@ -2452,7 +2569,7 @@ Value signmessage(const Array& params, bool fHelp)
 
     string strAddress = params[0].get_str();
     string strMessage = params[1].get_str();
-    
+
     uint160 hash160;
     if (!AddressToHash160(strAddress, hash160))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid address");
@@ -2475,9 +2592,9 @@ Value signmessage(const Array& params, bool fHelp)
     std::vector<unsigned char> vchSig;
     CKey key;
     key.SetPrivKey(privKey);
-    if (!key.SignCompact(Hash(ss.begin(), ss.end()), vchSig)) 
+    if (!key.SignCompact(Hash(ss.begin(), ss.end()), vchSig))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Sign failed");
-    
+
     return EncodeBase64(&vchSig[0], vchSig.size());
 }
 
@@ -2507,7 +2624,7 @@ Value verifymessage(const Array& params, bool fHelp)
     ss << strMessage;
 
     CKey key;
-    if (!key.SetCompactSignature(Hash(ss.begin(), ss.end()), vchSig)) 
+    if (!key.SetCompactSignature(Hash(ss.begin(), ss.end()), vchSig))
         return false;
 
     return Hash160(key.GetPubKey()) == hash160;
@@ -2553,15 +2670,76 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
     string address;
     int nRequired = 1;
 
-    out.push_back(Pair("asm", scriptPubKey.ToString()));
+    /* If this is a name transaction, try to strip off the initial
+       script and decode the rest for better results.  */
+    std::string nameAsmPrefix = "";
+    CScript script(scriptPubKey);
+    int op;
+    vector<vector<unsigned char> > vvch;
+    CScript::const_iterator pc = script.begin();
+    if (DecodeNameScript(script, op, vvch, pc))
+    {
+        Object nameOp;
+
+        switch (op)
+        {
+        case OP_NAME_NEW:
+        {
+            assert(vvch.size() == 1);
+            const std::string rand = HexStr(vvch[0].begin(), vvch[0].end());
+            nameOp.push_back(Pair("op", "name_new"));
+            nameOp.push_back(Pair("rand", rand));
+            break;
+        }
+
+        case OP_NAME_FIRSTUPDATE:
+        {
+            assert(vvch.size() == 3);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string rand = HexStr(vvch[1].begin(), vvch[1].end());
+            const std::string val(vvch[2].begin(), vvch[2].end());
+            nameOp.push_back(Pair("op", "name_firstupdate"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("rand", rand));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        case OP_NAME_UPDATE:
+        {
+            assert(vvch.size() == 2);
+            const std::string name(vvch[0].begin(), vvch[0].end());
+            const std::string val(vvch[1].begin(), vvch[1].end());
+            nameOp.push_back(Pair("op", "name_update"));
+            nameOp.push_back(Pair("name", name));
+            nameOp.push_back(Pair("value", val));
+            break;
+        }
+
+        default:
+            nameOp.push_back(Pair("op", "unknown"));
+            break;
+        }
+
+        out.push_back(Pair("nameOp", nameOp));
+        nameAsmPrefix = "NAME_OPERATION ";
+        script = CScript(pc, script.end());
+    }
+
+    /* Write out the results.  */
+    out.push_back(Pair("asm", nameAsmPrefix + script.ToString()));
     out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
     //if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
-    if (!ExtractDestination(scriptPubKey, address))
+    if (!ExtractDestination(script, address))
     {
         out.push_back(Pair("type", "nonstandard" /*GetTxnOutputType(TX_NONSTANDARD)*/ ));
         return;
     }
+
+    /* Note:  ExtractDestination handles both pubkey hash and pubkey,
+       but the code below prints pubkeyhash as type in both cases.  That
+       is not so big a deal, presumably.  */
 
     out.push_back(Pair("reqSigs", nRequired));
     out.push_back(Pair("type", "pubkeyhash" /*GetTxnOutputType(type)*/ ));
@@ -2579,46 +2757,15 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
     entry.push_back(Pair("version", tx.nVersion));
     entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
-    Array vin;
-    BOOST_FOREACH(const CTxIn& txin, tx.vin)
-    {
-        Object in;
-        if (tx.IsCoinBase())
-            in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-        else
-        {
-            in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
-            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
-            Object o;
-            o.push_back(Pair("asm", txin.scriptSig.ToString()));
-            o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
-            in.push_back(Pair("scriptSig", o));
-        }
-        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
-        vin.push_back(in);
-    }
-    entry.push_back(Pair("vin", vin));
-    Array vout;
-    for (unsigned int i = 0; i < tx.vout.size(); i++)
-    {
-        const CTxOut& txout = tx.vout[i];
-        Object out;
-        out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
-        out.push_back(Pair("n", (boost::int64_t)i));
-        Object o;
-        ScriptPubKeyToJSON(txout.scriptPubKey, o);
-        out.push_back(Pair("scriptPubKey", o));
-        vout.push_back(out);
-    }
-    entry.push_back(Pair("vout", vout));
 
+    const CBlockIndex* pindex = NULL;
     if (hashBlock != 0)
     {
         entry.push_back(Pair("blockhash", hashBlock.GetHex()));
-        map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+        map<uint256, CBlockIndex*>::const_iterator mi = mapBlockIndex.find(hashBlock);
         if (mi != mapBlockIndex.end() && (*mi).second)
         {
-            CBlockIndex* pindex = (*mi).second;
+            pindex = (*mi).second;
             if (pindex->IsInMainChain())
             {
                 entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
@@ -2629,6 +2776,76 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
                 entry.push_back(Pair("confirmations", 0));
         }
     }
+
+    Array vin;
+    int64 nValueIn = 0;
+    bool fullValueIn = true;
+    BOOST_FOREACH(const CTxIn& txin, tx.vin)
+    {
+        Object in;
+        if (tx.IsCoinBase())
+        {
+            in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+
+            if (pindex)
+            {
+                const int64 val = GetBlockValue(pindex->nHeight, 0);
+                nValueIn += val;
+                in.push_back(Pair("value", ValueFromAmount(val)));
+            }
+            else
+                fullValueIn = false;
+        }
+        else
+        {
+            in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
+            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+            Object o;
+            o.push_back(Pair("asm", txin.scriptSig.ToString()));
+            o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
+            in.push_back(Pair("scriptSig", o));
+
+            /* Try to retrieve previous transaction output to find
+               its value in order to calculate transaction fees.  */
+            CTransaction prevTx;
+            uint256 prevHashBlock = 0;
+            if (GetTransaction(txin.prevout.hash, prevTx, prevHashBlock))
+            {
+                if (prevTx.vout.size () > txin.prevout.n)
+                {
+                    const int64 val = prevTx.vout[txin.prevout.n].nValue;
+                    nValueIn += val;
+                    in.push_back(Pair("value", ValueFromAmount(val)));
+                }
+                else
+                    fullValueIn = false;
+            }
+            else
+                fullValueIn = false;
+        }
+        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+        vin.push_back(in);
+    }
+    entry.push_back(Pair("vin", vin));
+
+    Array vout;
+    int64 nValueOut = 0;
+    for (unsigned int i = 0; i < tx.vout.size(); i++)
+    {
+        const CTxOut& txout = tx.vout[i];
+        nValueOut += txout.nValue;
+        Object out;
+        out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
+        out.push_back(Pair("n", (boost::int64_t)i));
+        Object o;
+        ScriptPubKeyToJSON(txout.scriptPubKey, o);
+        out.push_back(Pair("scriptPubKey", o));
+        vout.push_back(out);
+    }
+    entry.push_back(Pair("vout", vout));
+
+    if (fullValueIn)
+        entry.push_back(Pair("fees", ValueFromAmount(nValueIn - nValueOut)));
 }
 
 Value getrawtransaction(const Array& params, bool fHelp)
@@ -2746,17 +2963,23 @@ Value listunspent(const Array& params, bool fHelp)
 
 Value createrawtransaction(const Array& params, bool fHelp)
 {
-    if (fHelp || params.size() != 2)
+    if (fHelp || (params.size() != 2 && params.size() != 3))
         throw runtime_error(
             "createrawtransaction [{\"txid\":txid,\"vout\":n},...] {address:amount,...}\n"
+            "optional third argument:\n"
+            "  {\"op\":\"name_update\", \"name\":name, \"value\":value, \"address\":address}\n\n"
             "Create a transaction spending given inputs\n"
             "(array of objects containing transaction id and output number),\n"
             "sending to given address(es).\n"
-            "Returns hex-encoded raw transaction.\n"
+            "Optionally, a name_update operation can be performed.\n\n"
+            "Returns hex-encoded raw transaction.\n\n"
             "Note that the transaction's inputs are not signed, and\n"
             "it is not stored in the wallet or transmitted to the network.");
 
-    RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    if (params.size() == 2)
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type));
+    else
+        RPCTypeCheck(params, boost::assign::list_of(array_type)(obj_type)(obj_type));
 
     Array inputs = params[0].get_array();
     Object sendTo = params[1].get_obj();
@@ -2797,6 +3020,12 @@ Value createrawtransaction(const Array& params, bool fHelp)
 
         CTxOut out(nAmount, scriptPubKey);
         rawTx.vout.push_back(out);
+    }
+
+    if (params.size() == 3)
+    {
+        Object nameOp = params[2].get_obj();
+        AddRawTxNameOperation(rawTx, nameOp);
     }
 
     CDataStream ss(SER_NETWORK, VERSION);
@@ -3047,8 +3276,8 @@ Value sendrawtransaction(const Array& params, bool fHelp)
     else
     {
         // push to local node
-        CTxDB txdb("r");
-        if (!tx.AcceptToMemoryPool(txdb, true, false))
+        DatabaseSet dbset("r");
+        if (!tx.AcceptToMemoryPool (dbset, true, false))
             throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX rejected");
 
         SyncWithWallets(tx, NULL, true);
@@ -3079,6 +3308,43 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
+/* Block until a new block is found and return only then.  */
+static Value
+waitforblock (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () > 1)
+    throw runtime_error (
+      "waitforblock [blockHash]\n"
+      "Wait for a change in the best chain (a new block being found)"
+      " and return the new block's hash when it arrives.  If blockHash"
+      " is given, wait until a block with different hash is found.\n");
+
+  if (IsInitialBlockDownload ())
+    throw JSONRPCError (RPC_CLIENT_IN_INITIAL_DOWNLOAD,
+                        "huntercoin is downloading blocks...");
+
+  uint256 lastHash;
+  if (params.size () > 0)
+    lastHash = ParseHashV (params[0], "blockHash");
+  else
+    lastHash = hashBestChain;
+
+  boost::unique_lock<boost::mutex> lock(mut_newBlock);
+  while (true)
+    {
+      /* Atomically check whether we have found a new best block and return
+         it if that's the case.  We use a lock on cs_main in order to
+         prevent race conditions.  */
+      CRITICAL_BLOCK(cs_main)
+        {
+          if (lastHash != hashBestChain)
+            return hashBestChain.GetHex ();
+        }
+
+      /* Wait on the condition variable.  */
+      cv_newBlock.wait (lock);
+    }
+}
 
 
 //
@@ -3094,6 +3360,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("getblockcount",         &getblockcount),
     make_pair("getblockhash",          &getblockhash),
     make_pair("getblocknumber",        &getblocknumber),
+    make_pair("getchains",             &getchains),
     make_pair("getconnectioncount",    &getconnectioncount),
     make_pair("getdifficulty",         &getdifficulty),
     make_pair("getgenerate",           &getgenerate),
@@ -3151,6 +3418,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
     make_pair("getrawmempool",         &getrawmempool),
+    make_pair("waitforblock",          &waitforblock),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
 
@@ -3185,6 +3453,14 @@ string pAllowInSafeMode[] =
     "getrawmempool",
 };
 set<string> setAllowInSafeMode(pAllowInSafeMode, pAllowInSafeMode + sizeof(pAllowInSafeMode)/sizeof(pAllowInSafeMode[0]));
+
+/* Methods that will be called in a new thread and can block waiting for
+   some condition without hurting the RPC server performance.  */
+string pCallAsync[] =
+{
+    "waitforblock",
+};
+set<string> setCallAsync(pCallAsync, pCallAsync + sizeof(pCallAsync)/sizeof(pCallAsync[0]));
 
 
 
@@ -3486,6 +3762,107 @@ private:
 };
 #endif
 
+/**
+ * Class encapsulating the state necessary for writing to a client connection.
+ * This is used to hold the state for async method calls.
+ */
+class ClientConnectionOutput
+{
+
+private:
+
+    /* The stream for outputting.  */
+#ifdef USE_SSL
+  SSLStream* sslStream;
+  SSLIOStreamDevice* d;
+  iostreams::stream<SSLIOStreamDevice>* stream;
+#else
+  ip::tcp::iostream* stream;
+#endif
+
+public:
+
+  /* Basic constructor.  */
+#ifdef USE_SSL
+  inline ClientConnectionOutput (asio::io_service& io, ssl::context& c,
+                                 bool fUseSSL)
+    : sslStream(new SSLStream (io, c)),
+      d(new SSLIOStreamDevice (*sslStream, fUseSSL)),
+      stream(new iostreams::stream<SSLIOStreamDevice> (*d))
+  {}
+#else
+  inline ClientConnectionOutput ()
+    : stream(new ip::tcp::iostream ())
+  {}
+#endif
+
+  /* Destructor freeing everything.  */
+  inline ~ClientConnectionOutput ()
+  {
+    delete stream;
+#ifdef USE_SSL
+    delete d;
+    delete sslStream;
+#endif
+  }
+
+  /* Wait for incoming connection.  */
+  inline void
+  waitForConnection (ip::tcp::acceptor& acc, ip::tcp::endpoint& peer)
+  {
+#ifdef USE_SSL
+    acc.accept(sslStream->lowest_layer(), peer);
+#else
+    acc.accept(*stream->rdbuf(), peer);
+#endif
+  }
+
+  /* Return the stream held.  */
+#ifdef USE_SSL
+  inline iostreams::stream<SSLIOStreamDevice>&
+#else
+  inline ip::tcp::iostream&
+#endif
+  getStream ()
+  {
+    return *stream;
+  }
+
+};
+
+/* Execute an RPC call, can be used as thread object for async calls.  */
+static void
+ExecuteRpcCall (ClientConnectionOutput* out, rpcfn_type method,
+                json_spirit::Array params, json_spirit::Value id)
+{
+  try
+    {
+      // Execute
+      Value result = method (params, false);
+
+      // Send reply
+      string strReply = JSONRPCReply (result, json_spirit::Value::null, id);
+      out->getStream () << HTTPReply (200, strReply) << std::flush;
+    }
+  catch (Object& objError)
+    {
+      ErrorReply (out->getStream (), objError, id);
+    }
+  catch (const boost::thread_interrupted& e)
+    {
+      ErrorReply (out->getStream (),
+                  JSONRPCError (RPC_ASYNC_INTERRUPT,
+                                "async method interrupted"), id);
+    }
+  catch (const std::exception& e)
+    {
+      ErrorReply (out->getStream (),
+                  JSONRPCError (RPC_MISC_ERROR, e.what ()), id);
+    }
+
+  delete out;
+}
+
 void ThreadRPCServer(void* parg)
 {
     IMPLEMENT_RANDOMIZE_STACK(ThreadRPCServer(parg));
@@ -3557,41 +3934,83 @@ void ThreadRPCServer2(void* parg)
         throw runtime_error("-rpcssl=1, but namecoin compiled without full openssl libraries.");
 #endif
 
+    // Threads running async methods at the moment.
+    typedef std::list<boost::thread*> ThreadList;
+    ThreadList asyncThreads;
+
     loop
     {
+        /* Shut down.  Do this here before we block again in the accept call
+           below, when the last command was "stop", it can exit now.  */
+        if (fShutdown)
+        {
+            printf("Waiting for %d async RPC call threads to finish...\n",
+                   asyncThreads.size());
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->interrupt();
+            }
+
+            for (ThreadList::iterator i = asyncThreads.begin();
+                 i != asyncThreads.end(); ++i)
+            {
+                (*i)->join();
+                delete *i;
+            }
+
+            return;
+        }
+
+        // Clean up async threads.
+        printf("Trying to clean up %d async RPC call threads...\n",
+               asyncThreads.size());
+        for (ThreadList::iterator i = asyncThreads.begin();
+             i != asyncThreads.end(); )
+        {
+            if ((*i)->timed_join(boost::posix_time::seconds(0)))
+            {
+                printf("Async RPC call thread finished.\n");
+                delete *i;
+                i = asyncThreads.erase (i);
+            }
+            else
+            {
+                /* Explicitly increment iterator here in case we didn't
+                   delete the element above.  */
+                ++i;
+            }
+        }
+
         // Accept connection
+        std::auto_ptr<ClientConnectionOutput> out;
 #ifdef USE_SSL
-        SSLStream sslStream(io_service, context);
-        SSLIOStreamDevice d(sslStream, fUseSSL);
-        iostreams::stream<SSLIOStreamDevice> stream(d);
+        out.reset(new ClientConnectionOutput(io_service, context, fUseSSL));
 #else
-        ip::tcp::iostream stream;
+        out.reset(new ClientConnectionOutput());
 #endif
 
         ip::tcp::endpoint peer;
         vnThreadsRunning[4]--;
-#ifdef USE_SSL
-        acceptor.accept(sslStream.lowest_layer(), peer);
-#else
-        acceptor.accept(*stream.rdbuf(), peer);
-#endif
+        out->waitForConnection (acceptor, peer);
         vnThreadsRunning[4]++;
-        if (fShutdown)
-            return;
 
         // Restrict callers by IP
         if (!ClientAllowed(peer.address().to_string()))
         {
             // Only send a 403 if we're not using SSL to prevent a DoS during the SSL handshake.
             if (!fUseSSL)
-                stream << HTTPReply(403, "") << std::flush;
+                out->getStream() << HTTPReply(403, "") << std::flush;
             continue;
         }
 
         map<string, string> mapHeaders;
         string strRequest;
 
-        boost::thread api_caller(ReadHTTP, boost::ref(stream), boost::ref(mapHeaders), boost::ref(strRequest));
+        boost::thread api_caller(ReadHTTP, boost::ref(out->getStream()),
+                                 boost::ref(mapHeaders),
+                                 boost::ref(strRequest));
         if (!api_caller.timed_join(boost::posix_time::seconds(GetArg("-rpctimeout", 30))))
         {   // Timed out:
             acceptor.cancel();
@@ -3602,16 +4021,16 @@ void ThreadRPCServer2(void* parg)
         // Check authorization
         if (mapHeaders.count("authorization") == 0)
         {
-            stream << HTTPReply(401, "") << std::flush;
+            out->getStream() << HTTPReply(401, "") << std::flush;
             continue;
         }
         if (!HTTPAuthorized(mapHeaders))
         {
             // Deter brute-forcing short passwords
             if (mapArgs["-rpcpassword"].size() < 15)
-                Sleep(50);
+                MilliSleep(50);
 
-            stream << HTTPReply(401, "") << std::flush;
+            out->getStream() << HTTPReply(401, "") << std::flush;
             printf("ThreadRPCServer incorrect password attempt\n");
             continue;
         }
@@ -3658,27 +4077,27 @@ void ThreadRPCServer2(void* parg)
             if (strWarning != "" && !GetBoolArg("-disablesafemode") && !setAllowInSafeMode.count(strMethod))
                 throw JSONRPCError(RPC_FORBIDDEN_BY_SAFE_MODE, string("Safe mode: ") + strWarning);
 
-            try
+            // Check for asynchronous execution and call the method.
+            const bool async = (setCallAsync.count(strMethod) > 0);
+            if (!async)
+                ExecuteRpcCall(out.release(), (*mi).second, params, id);
+            else
             {
-                // Execute
-                Value result = (*(*mi).second)(params, false);
-
-                // Send reply
-                string strReply = JSONRPCReply(result, Value::null, id);
-                stream << HTTPReply(200, strReply) << std::flush;
-            }
-            catch (std::exception& e)
-            {
-                ErrorReply(stream, JSONRPCError(RPC_MISC_ERROR, e.what()), id);
+                std::auto_ptr<boost::thread> runner;
+                runner.reset (new boost::thread (&ExecuteRpcCall,
+                                  out.release(),
+                                  (*mi).second, params, id));
+                asyncThreads.push_back (runner.release());
             }
         }
         catch (Object& objError)
         {
-            ErrorReply(stream, objError, id);
+            ErrorReply(out->getStream(), objError, id);
         }
         catch (std::exception& e)
         {
-            ErrorReply(stream, JSONRPCError(RPC_PARSE_ERROR, e.what()), id);
+            ErrorReply(out->getStream(),
+                       JSONRPCError(RPC_PARSE_ERROR, e.what()), id);
         }
     }
 }
@@ -3778,7 +4197,7 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     BOOST_FOREACH(const std::string &param, strParams)
         params.push_back(param);
     RPCConvertValues(strMethod, params);
-    return params;   
+    return params;
 }
 
 void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
@@ -3839,6 +4258,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<boost::int64_t>(params[1]);
     if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<Array>(params[0]);
     if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<Object>(params[1]);
+    if (strMethod == "createrawtransaction"   && n > 2) ConvertTo<Object>(params[2]);
     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);

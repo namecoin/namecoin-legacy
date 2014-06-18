@@ -2,6 +2,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 #include "headers.h"
+#include "namecoin.h"
 
 using namespace std;
 using namespace boost;
@@ -1248,58 +1249,35 @@ bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransa
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
 
+    /* Try to decode a name script and strip it if it is there.  */
+    int op;
+    std::vector<vchType> vvch;
+    CScript::const_iterator pc = fromPubKey.begin ();
+    CScript rawScript;
+    if (DecodeNameScript (fromPubKey, op, vvch, pc))
+        rawScript = CScript(pc, fromPubKey.end ());
+    else
+        rawScript = fromPubKey;
+
     // Leave out the signature from the hash, since a signature can't sign itself.
     // The checksig op will also drop the signatures from its hash.
-    uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
+    const uint256 hash = SignatureHash(fromPubKey, txTo, nIn, nHashType);
 
-    //txnouttype whichType;
-    if (!Solver(keystore, fromPubKey, hash, nHashType, txin.scriptSig /* , whichType */ ))
+    if (!Solver(keystore, rawScript, hash, nHashType, txin.scriptSig))
         return false;
 
-    /*if (whichType == TX_SCRIPTHASH)
-    {
-        // Solver returns the subscript that need to be evaluated;
-        // the final scriptSig is the signatures from that
-        // and then the serialized subscript:
-        CScript subscript = txin.scriptSig;
-
-        // Recompute txn hash using subscript in place of scriptPubKey:
-        uint256 hash2 = SignatureHash(subscript, txTo, nIn, nHashType);
-
-        txnouttype subType;
-        bool fSolved =
-            Solver(keystore, subscript, hash2, nHashType, txin.scriptSig, subType) && subType != TX_SCRIPTHASH;
-        // Append serialized subscript whether or not it is completely signed:
-        txin.scriptSig << static_cast<valtype>(subscript);
-        if (!fSolved) return false;
-    }*/
-
     // Test solution
-    return VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn /* , true, true */ , 0);
+    return VerifyScript(txin.scriptSig, fromPubKey, txTo, nIn, 0);
 }
 
-bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType, CScript scriptPrereq)
+bool SignSignature(const CKeyStore &keystore, const CTransaction& txFrom, CTransaction& txTo, unsigned int nIn, int nHashType)
 {
     assert(nIn < txTo.vin.size());
     CTxIn& txin = txTo.vin[nIn];
     assert(txin.prevout.n < txFrom.vout.size());
     const CTxOut& txout = txFrom.vout[txin.prevout.n];
 
-    // Leave out the signature from the hash, since a signature can't sign itself.
-    // The checksig op will also drop the signatures from its hash.
-    uint256 hash = SignatureHash(scriptPrereq + txout.scriptPubKey, txTo, nIn, nHashType);
-
-    if (!Solver(keystore, txout.scriptPubKey, hash, nHashType, txin.scriptSig))
-        return false;
-
-    txin.scriptSig = scriptPrereq + txin.scriptSig;
-
-    // Test solution
-    if (scriptPrereq.empty())
-        if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, 0))
-            return false;
-
-    return true;
+    return SignSignature (keystore, txout.scriptPubKey, txTo, nIn, nHashType);
 }
 
 
@@ -1322,11 +1300,8 @@ bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsig
 
 bool ExtractDestination(const CScript& scriptPubKey, std::string& addressRet)
 {
-    uint160 h;
-    if (!ExtractHash160(scriptPubKey, h))
-        return false;
-    addressRet = Hash160ToAddress(h);
-    return true;
+    addressRet = scriptPubKey.GetBitcoinAddress();
+    return (addressRet != "");
 }
 
 static CScript PushAll(const vector<valtype>& values)

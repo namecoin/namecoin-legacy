@@ -12,6 +12,7 @@
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+#include <boost/thread/thread.hpp>
 
 #ifdef __WXMSW__
 #include <io.h> /* for _commit */
@@ -77,6 +78,11 @@ extern int64 nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
 
+/* Synchronisation and condition variable for threads waiting to be notified
+   when a new block arrives.  */
+extern boost::mutex mut_newBlock;
+extern boost::condition_variable cv_newBlock;
+
 // Settings
 extern int fGenerateBitcoins;
 extern int64 nTransactionFee;
@@ -109,6 +115,7 @@ CBlockIndex* FindBlockByHeight(int nHeight);
 bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
+int64 GetBlockValue(int nHeight, int64 nFees);
 CBlock* CreateNewBlock(CReserveKey& reservekey);
 void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime);
 void IncrementExtraNonceWithAux(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce, int64& nPrevTime, std::vector<unsigned char>& vchAux);
@@ -671,7 +678,7 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet);
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
-    bool DisconnectInputs(CTxDB& txdb, CBlockIndex* pindex);
+    bool DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex);
     
     /** Fetch from memory and/or disk. inputsRet keys are transaction hashes.
 
@@ -686,11 +693,14 @@ public:
     bool FetchInputs(CTxDB& txdb, const std::map<uint256, CTxIndex>& mapTestPool,
                      bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid);
 
-    bool ConnectInputs(CTxDB& txdb, std::map<uint256, CTxIndex>& mapTestPool, CDiskTxPos posThisTx,
-                       CBlockIndex* pindexBlock, int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
+    bool ConnectInputs(DatabaseSet& dbset,
+                       std::map<uint256, CTxIndex>& mapTestPool,
+                       CDiskTxPos posThisTx, CBlockIndex* pindexBlock,
+                       int64& nFees, bool fBlock, bool fMiner, int64 nMinFee=0);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
+    bool AcceptToMemoryPool(DatabaseSet& dbset, bool fCheckInputs=true,
+                            bool fLimitFree=true, bool* pfMissingInputs=NULL);
     bool AcceptToMemoryPool(bool fCheckInputs=true, bool fLimitFree=true, bool* pfMissingInputs=NULL);
 protected:
     bool AddToMemoryPoolUnchecked();
@@ -749,7 +759,7 @@ public:
     int GetDepthInMainChain() const { int nHeight; return GetDepthInMainChain(nHeight); }
     bool IsInMainChain() const { return GetDepthInMainChain() > 0; }
     int GetBlocksToMaturity() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
+    bool AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs = true);
     bool AcceptToMemoryPool();
 };
 
@@ -757,15 +767,18 @@ public:
 
 
 //
-// A txdb record that contains the disk location of a transaction and the
-// locations of transactions that spend its outputs.  vSpent is really only
-// used as a flag, but having the location is very helpful for debugging.
+// A txdb record that contains the disk location of a transaction and an array
+// of flags whether its outputs have already been spent.
 //
 class CTxIndex
 {
 public:
     CDiskTxPos pos;
-    std::vector<CDiskTxPos> vSpent;
+
+private:
+    std::vector<bool> isSpent;
+
+public:
 
     CTxIndex()
     {
@@ -775,21 +788,45 @@ public:
     CTxIndex(const CDiskTxPos& posIn, unsigned int nOutputs)
     {
         pos = posIn;
-        vSpent.resize(nOutputs);
+        isSpent.resize (nOutputs, false);
     }
 
     IMPLEMENT_SERIALIZE
     (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
+        assert (nType == SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
+
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nVersionDummy;
+            READWRITE(nVersionDummy);
+            assert (nVersionDummy < 37500);
+          }
         READWRITE(pos);
-        READWRITE(vSpent);
+
+        if (nVersion < 37500)
+          {
+            assert (fRead); 
+            std::vector<CDiskTxPos> vSpent;
+            READWRITE (vSpent);
+
+            std::vector<bool>& newIsSpent = const_cast<std::vector<bool>&> (isSpent);
+            newIsSpent.resize (vSpent.size ());
+            for (unsigned i = 0; i < vSpent.size (); ++i)
+              newIsSpent[i] = !vSpent[i].IsNull ();
+          }
+        else
+          READWRITE(isSpent);
     )
 
     void SetNull()
     {
         pos.SetNull();
-        vSpent.clear();
+        isSpent.clear ();
     }
 
     bool IsNull()
@@ -797,10 +834,37 @@ public:
         return pos.IsNull();
     }
 
+    inline unsigned
+    GetOutputCount () const
+    {
+      return isSpent.size ();
+    }
+
+    inline void
+    ResizeOutputs (unsigned n)
+    {
+      isSpent.resize (n, false);
+    }
+
+    inline bool
+    IsSpent (unsigned n) const
+    {
+      assert (n < isSpent.size ());
+      return isSpent[n];
+    }
+
+    inline void
+    SetSpent (unsigned n, bool spent)
+    {
+      assert (n < isSpent.size ());
+      assert (isSpent[n] != spent);
+      isSpent[n] = spent;
+    }
+
     friend bool operator==(const CTxIndex& a, const CTxIndex& b)
     {
         return (a.pos    == b.pos &&
-                a.vSpent == b.vSpent);
+                a.isSpent == b.isSpent);
     }
 
     friend bool operator!=(const CTxIndex& a, const CTxIndex& b)
@@ -1052,10 +1116,10 @@ public:
     }
 
 
-    bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    bool DisconnectBlock (DatabaseSet& dbset, CBlockIndex* pindex);
+    bool ConnectBlock (DatabaseSet& dbset, CBlockIndex* pindex);
+    bool ReadFromDisk(const CBlockIndex* pindex);
+    bool SetBestChain (DatabaseSet& dbset, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos);
     bool CheckBlock(int nHeight) const;
     bool AcceptBlock();
@@ -1092,9 +1156,7 @@ public:
     unsigned int nBits;
     unsigned int nNonce;
 
-    // if this is an aux work block
-    boost::shared_ptr<CAuxPow> auxpow;
-
+public:
 
     CBlockIndex()
     {
@@ -1111,7 +1173,6 @@ public:
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
-        auxpow.reset();
     }
 
     CBlockIndex(unsigned int nFileIn, unsigned int nBlockPosIn, CBlock& block)
@@ -1129,12 +1190,28 @@ public:
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
-        auxpow         = block.auxpow;
     }
 
+    /* GetBlockHeader is never actually used in the code, thus disable
+       it since it can't reliably be tested.  It can be re-enabled
+       when necessary later.  */
+#if 0
     CBlock GetBlockHeader() const
     {
         CBlock block;
+
+        /* If this block has auxpow but it is not yet loaded, do this
+           now and keep it in memory.  */
+        if (hasAuxpow && !auxpow)
+          {
+            printf ("GetBlockHeader(): reading auxpow from disk");
+            if (!block.ReadFromDisk (nFile, nBlockPos, false))
+              throw std::runtime_error ("CBlock::ReadFromDisk failed while"
+                                        " retrieving auxpow");
+            auxpow = block.auxpow;
+            return block;
+          }
+
         block.nVersion       = nVersion;
         if (pprev)
             block.hashPrevBlock = pprev->GetBlockHash();
@@ -1143,8 +1220,11 @@ public:
         block.nBits          = nBits;
         block.nNonce         = nNonce;
         block.auxpow         = auxpow;
+        assert ((hasAuxpow && block.auxpow) || (!hasAuxpow && !block.auxpow));
+
         return block;
     }
+#endif
 
     uint256 GetBlockHash() const
     {
@@ -1169,8 +1249,6 @@ public:
     {
         return (pnext || this == pindexBest);
     }
-
-    bool CheckIndex() const;
 
     bool EraseBlockFromDisk()
     {
@@ -1250,8 +1328,23 @@ public:
 
     IMPLEMENT_SERIALIZE
     (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
+        /* This is only written to disk.  */
+        assert (nType & SER_DISK);
+        /* If the version is not up-to-date (with the latest format change
+           for this class), then it means we're upgrading and thus reading
+           and old-format entry.  */
+        assert (nVersion >= 37500 || fRead);
+
+        /* Previously, the version was stored in each entry.  This is
+           now replaced with having serialisation version set.  In the old
+           format, read and ignore the version.  */
+        if (nVersion < 37500)
+          {
+            assert (fRead);
+            int nDummyVersion;
+            READWRITE(nDummyVersion);
+            assert (nDummyVersion < 37500);
+          }
 
         READWRITE(hashNext);
         READWRITE(nFile);
@@ -1266,7 +1359,13 @@ public:
         READWRITE(nBits);
         READWRITE(nNonce);
 
-        ReadWriteAuxPow(s, auxpow, nType, this->nVersion, ser_action);
+        /* In the old format, the auxpow is stored.  Load it and ignore.  */
+        if (nVersion < 37400)
+          {
+            assert (fRead);
+            boost::shared_ptr<CAuxPow> auxpow;
+            ReadWriteAuxPow (s, auxpow, nType, this->nVersion, ser_action);
+          }
     )
 
     uint256 GetBlockHash() const

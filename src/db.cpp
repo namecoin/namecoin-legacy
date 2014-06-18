@@ -45,7 +45,8 @@ public:
 instance_of_cdbinit;
 
 
-CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
+CDB::CDB(const char* pszFile, const char* pszMode)
+  : pdb(NULL), nVersion(VERSION)
 {
     int ret;
     if (pszFile == NULL)
@@ -79,7 +80,7 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
             dbenv.set_errfile(fopen(strErrorFile.c_str(), "a")); /// debug
             dbenv.set_flags(DB_AUTO_COMMIT, 1);
             dbenv.set_flags(DB_TXN_WRITE_NOSYNC, 1);
-            dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);            
+            dbenv.log_set_config(DB_LOG_AUTO_REMOVE, 1);
             ret = dbenv.open(strDataDir.c_str(),
                              DB_CREATE     |
                              DB_INIT_LOCK  |
@@ -132,29 +133,36 @@ CDB::CDB(const char* pszFile, const char* pszMode) : pdb(NULL)
     }
 }
 
-void CDB::Close()
+void
+CDB::Close ()
 {
-    if (!pdb)
-        return;
-    if (!vTxn.empty())
-        vTxn.front()->abort();
-    vTxn.clear();
-    pdb = NULL;
+  if (!pdb)
+    return;
+  if (!vTxn.empty () && ownTxn.front ())
+    vTxn.front ()->abort ();
+  vTxn.clear ();
+  ownTxn.clear ();
+  pdb = NULL;
 
-    // Flush database activity from memory pool to disk log
-    // wallet.dat is always flushed, the other files only every couple of minutes
-	// note Namecoin has more .dat files than Bitcoin
-    unsigned int nMinutes = 2;
-    if (fReadOnly)
-        nMinutes = 1;
-    if (strFile == "wallet.dat")
+  if (!fReadOnly)
+    {
+      /* Flush database activity from memory pool to disk log.
+         wallet.dat is always flushed, the other files only every couple
+         of minutes.
+         Note: Namecoin has more .dat files than Bitcoin.  */
+
+      unsigned int nMinutes = 2;
+      if (strFile == "wallet.dat")
         nMinutes = 0;
-    if (strFile == "blkindex.dat" && IsInitialBlockDownload() && nBestHeight % 5000 != 0)
-            nMinutes = 5;
-    dbenv.txn_checkpoint(0, nMinutes, 0);
+      else if ((strFile == "blkindex.dat" || strFile == "nameindex.dat")
+               && IsInitialBlockDownload ())
+        nMinutes = 5;
 
-    CRITICAL_BLOCK(cs_db)
-        --mapFileUseCount[strFile];
+      dbenv.txn_checkpoint (0, nMinutes, 0);
+    }
+
+  CRITICAL_BLOCK(cs_db)
+    --mapFileUseCount[strFile];
 }
 
 static void CloseDb(const string& strFile)
@@ -180,7 +188,7 @@ void static CheckpointLSN(const std::string &strFile)
     dbenv.lsn_reset(strFile.c_str(), 0);
 }
 
-bool CDB::Rewrite(const string& strFile, const char* pszSkip)
+bool CDB::Rewrite(const string& strFile)
 {
     while (!fShutdown)
     {
@@ -230,15 +238,6 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
                                 fSuccess = false;
                                 break;
                             }
-                            if (pszSkip &&
-                                strncmp(&ssKey[0], pszSkip, std::min(ssKey.size(), strlen(pszSkip))) == 0)
-                                continue;
-                            if (strncmp(&ssKey[0], "\x07version", 8) == 0)
-                            {
-                                // Update version:
-                                ssValue.clear();
-                                ssValue << VERSION;
-                            }
                             Dbt datKey(&ssKey[0], ssKey.size());
                             Dbt datValue(&ssValue[0], ssValue.size());
                             int ret2 = pdbCopy->put(NULL, &datKey, &datValue, DB_NOOVERWRITE);
@@ -268,9 +267,101 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
                 return fSuccess;
             }
         }
-        Sleep(100);
+        MilliSleep(100);
     }
     return false;
+}
+
+/* Internal struct to accumulate db stats.  */
+struct DbstatsPerKeyData
+{
+  unsigned count;
+  size_t totalKeySize, totalValueSize;
+  size_t minKeySize, minValueSize;
+  size_t maxKeySize, maxValueSize;
+};
+
+void
+CDB::PrintStorageStats (const std::string& file)
+{
+  CCriticalBlock lock(cs_db);
+  CDB db(file.c_str (), "r");
+
+  /* Iterate over all entries in the database and keep track of how many
+     there are per different "key" (first string of the key) and how
+     large they are.  */
+  typedef std::map<std::string, DbstatsPerKeyData> DataMap;
+  DataMap data;
+
+  Dbc* pcursor = db.GetCursor ();
+  if (!pcursor)
+    {
+      printf ("Error creating cursor.\n");
+      return;
+    }
+
+  while (true)
+    {
+      CDataStream ssKey(SER_DISK, VERSION);
+      CDataStream ssValue(SER_DISK, VERSION);
+      const int ret = db.ReadAtCursor (pcursor, ssKey, ssValue, DB_NEXT);
+      if (ret == DB_NOTFOUND)
+        {
+          pcursor->close ();
+          break;
+        }
+      if (ret != 0)
+        {
+          pcursor->close ();
+          printf ("Error reading at cursor.\n");
+          return;
+        }
+
+      std::string key;
+      ssKey >> key;
+
+      /* Note that size reported will be the size *without* the already
+         read key string.  Should not matter much, as this information
+         is, of course, known anyway.  */
+      const size_t sizeKey = ssKey.size ();
+      const size_t sizeValue = ssValue.size ();
+
+      DataMap::iterator i = data.find (key);
+      if (i == data.end ())
+        {
+          DbstatsPerKeyData dat;
+          dat.count = 1;
+          dat.totalKeySize = dat.minKeySize = dat.maxKeySize = sizeKey;
+          dat.totalValueSize = dat.minValueSize = dat.maxValueSize = sizeValue;
+          data.insert (std::make_pair (key, dat));
+        }
+      else
+        {
+          DbstatsPerKeyData& dat = i->second;
+          assert (dat.count >= 1);
+          ++dat.count;
+
+          dat.totalKeySize += sizeKey;
+          dat.totalValueSize += sizeValue;
+
+          dat.minKeySize = std::min (dat.minKeySize, sizeKey);
+          dat.minValueSize = std::min (dat.minValueSize, sizeValue);
+
+          dat.maxKeySize = std::max (dat.maxKeySize, sizeKey);
+          dat.maxValueSize = std::max (dat.maxValueSize, sizeValue);
+        }
+    }
+
+  printf ("Database stats for '%s' collected:\n", file.c_str ());
+  for (DataMap::const_iterator i = data.begin (); i != data.end (); ++i)
+    {
+      const DbstatsPerKeyData& dat = i->second;
+      printf ("  %s: %u entries\n", i->first.c_str (), dat.count);
+      printf ("    keys:   %u total, %u min, %u max\n",
+              dat.totalKeySize, dat.minKeySize, dat.maxKeySize);
+      printf ("    values: %u total, %u min, %u max\n",
+              dat.totalValueSize, dat.minValueSize, dat.maxValueSize);
+    }
 }
 
 void DBFlush(bool fShutdown)
@@ -362,60 +453,6 @@ bool CTxDB::ContainsTx(uint256 hash)
 {
     assert(!fClient);
     return Exists(make_pair(string("tx"), hash));
-}
-
-bool CTxDB::ReadOwnerTxes(uint160 hash160, int nMinHeight, vector<CTransaction>& vtx)
-{
-    assert(!fClient);
-    vtx.clear();
-
-    // Get cursor
-    Dbc* pcursor = GetCursor();
-    if (!pcursor)
-        return false;
-
-    unsigned int fFlags = DB_SET_RANGE;
-    loop
-    {
-        // Read next record
-        CDataStream ssKey;
-        if (fFlags == DB_SET_RANGE)
-            ssKey << string("owner") << hash160 << CDiskTxPos(0, 0, 0);
-        CDataStream ssValue;
-        int ret = ReadAtCursor(pcursor, ssKey, ssValue, fFlags);
-        fFlags = DB_NEXT;
-        if (ret == DB_NOTFOUND)
-            break;
-        else if (ret != 0)
-        {
-            pcursor->close();
-            return false;
-        }
-
-        // Unserialize
-        string strType;
-        uint160 hashItem;
-        CDiskTxPos pos;
-        ssKey >> strType >> hashItem >> pos;
-        int nItemHeight;
-        ssValue >> nItemHeight;
-
-        // Read transaction
-        if (strType != "owner" || hashItem != hash160)
-            break;
-        if (nItemHeight >= nMinHeight)
-        {
-            vtx.resize(vtx.size()+1);
-            if (!vtx.back().ReadFromDisk(pos))
-            {
-                pcursor->close();
-                return false;
-            }
-        }
-    }
-
-    pcursor->close();
-    return true;
 }
 
 bool CTxDB::ReadDiskTx(uint256 hash, CTransaction& tx, CTxIndex& txindex)
@@ -523,6 +560,7 @@ bool CTxDB::LoadBlockIndex()
         if (strType == "blockindex")
         {
             CDiskBlockIndex diskindex;
+            SetStreamVersion (ssValue);
             ssValue >> diskindex;
 
             // Construct block index object
@@ -537,14 +575,10 @@ bool CTxDB::LoadBlockIndex()
             pindexNew->nTime          = diskindex.nTime;
             pindexNew->nBits          = diskindex.nBits;
             pindexNew->nNonce         = diskindex.nNonce;
-            pindexNew->auxpow         = diskindex.auxpow;
 
             // Watch for genesis block
             if (pindexGenesisBlock == NULL && diskindex.GetBlockHash() == hashGenesisBlock)
                 pindexGenesisBlock = pindexNew;
-
-            if (!pindexNew->CheckIndex())
-                return error("LoadBlockIndex() : CheckIndex failed at %d", pindexNew->nHeight);
         }
         else
         {
@@ -607,11 +641,70 @@ bool CTxDB::LoadBlockIndex()
         CBlock block;
         if (!block.ReadFromDisk(pindexFork))
             return error("LoadBlockIndex() : block.ReadFromDisk failed");
-        CTxDB txdb;
-        block.SetBestChain(txdb, pindexFork);
+
+        DatabaseSet dbset;
+        block.SetBestChain (dbset, pindexFork);
     }
 
     return true;
+}
+
+/* Rewrite all txindex objects in the DB to update the data format.  */
+bool
+CTxDB::RewriteTxIndex (int oldVersion)
+{
+  /* Load everything in memory first.  This avoids conflicts between reading
+     from the cursor and writing to the DB.  */
+  std::map<uint256, CTxIndex> txindex;
+
+  /* Get database cursor.  */
+  Dbc* pcursor = GetCursor ();
+  if (!pcursor)
+    return error ("RewriteTxIndex: could not get DB cursor");
+
+  /* Load to memory.  */
+  unsigned int fFlags = DB_SET_RANGE;
+  loop
+    {
+      /* Read next record.  */
+      CDataStream ssKey(SER_DISK, oldVersion);
+      if (fFlags == DB_SET_RANGE)
+        ssKey << std::make_pair (std::string ("tx"), uint256 (0));
+      CDataStream ssValue(SER_DISK, oldVersion);
+      int ret = ReadAtCursor (pcursor, ssKey, ssValue, fFlags);
+      fFlags = DB_NEXT;
+      if (ret == DB_NOTFOUND)
+        break;
+      if (ret != 0)
+        return error ("RewriteTxIndex: ReadAtCursor failed, ret = %d", ret);
+
+      /* Unserialize.  */
+
+      std::string strType;
+      ssKey >> strType;
+      if (strType != "tx")
+        break;
+      uint256 hash;
+      ssKey >> hash;
+
+      CTxIndex obj;
+      ssValue >> obj;
+
+      /* Store in map.  */
+      assert (txindex.find (hash) == txindex.end ());
+      txindex.insert (std::make_pair (hash, obj));
+    }
+  pcursor->close ();
+
+  /* Now write everything back.  */
+  SetSerialisationVersion (VERSION);
+  BOOST_FOREACH(const PAIRTYPE(uint256, CTxIndex)& item, txindex)
+    {
+      if (!UpdateTxIndex (item.first, item.second))
+        return error ("RewriteTxIndex: UpdateTxIndex failed");
+    }
+
+  return true;
 }
 
 
@@ -721,7 +814,7 @@ void ThreadFlushWalletDB(void* parg)
     int64 nLastWalletUpdate = GetTime();
     while (!fShutdown)
     {
-        Sleep(500);
+        MilliSleep(500);
 
         if (nLastSeen != nWalletDBUpdated)
         {
@@ -787,7 +880,7 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
                 filesystem::path pathDest(strDest);
                 if (filesystem::is_directory(pathDest))
                     pathDest = pathDest / wallet.strWalletFile;
-                    
+
                 try {
 #if BOOST_VERSION >= 104000
                     filesystem::copy_file(pathSrc, pathDest, filesystem::copy_option::overwrite_if_exists);
@@ -803,7 +896,7 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
                 }
             }
         }
-        Sleep(100);
+        MilliSleep(100);
     }
     return false;
 }

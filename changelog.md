@@ -1,0 +1,34 @@
+v0.3.75
+=======
+* Add difficulty to RPC block output JSON (Domob)
+* Bitcoin port: skip signature verification on blocks before last checkpoint (phelix)
+* New checkpoint at 182000
+* Update to OpenSSL1.0.1h (security fix for SSL http RPC)
+* Czech localization (digital-dreamer)
+* Windows installer script for Innsetup (phelix)
+* Enforce value length of 520 characters in RPC and Qt (Domob)
+* New command line argument -dbstats runs a DB file storage statistics analysis and prints it to the debug log. (Domob)
+* Atomic handling of TxDB/NameDB operations, DB code cleanup and optimization. (Domob)
+* Even smaller blkindex.dat. Not backward compatible. It will take a while for the rewrite on the first start. (Domob)
+
+v0.3.74-rc1 (never officially released)
+=======================================
+* allow for atomic name transactions via rpc commands (Domob)
+* new rpc commands: name_pending, getchains (Domob)
+* Simplified blkindex.dat for smaller file size and faster startup - not backward compatible ("remove auxpow", Domob) - IT WILL TAKE A WHILE FOR THE REWRITE ON THE FIRST START
+* Implement name_update in createrawtransaction (Domob)
+* More detailed JSON outputs for decoderawtransaction and getrawtransaction (Domob)
+* Async RPC calls (Domob: ported from Huntercoin)
+* Add toaddress argument to name_firstupdate (Domob)
+* fixed memory leaks (Domob)
+* listsinceblock (Olgasanko)
+* Several performance optimizations (Domob)
+* valgrind script (Domob)
+* Small updates and fixes, code cleanup
+
+v0.3.73-rc1 (never officially released)
+=======================================
+* Modified testnet difficulty calculation (Khal)
+* GUI: ID-tab (Domob)
+* improve name_filter speed (Khal)
+* Small updates and fixes

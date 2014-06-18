@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
-VERSION = 0.3.72
+VERSION = 0.3.75
 INCLUDEPATH += src src/json src/qt
 QT += network
 DEFINES += GUI QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
@@ -113,14 +113,14 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     }
 }
 
-QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector
+QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector -Wno-sign-compare -Wno-return-type -Wno-char-subscripts -Wno-switch
 
 # Input
 DEPENDPATH += src src/json src/cryptopp src/qt
 
 NAMECOIN_HEADERS = headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h 
-    
+    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
+
 NAMECOIN_SOURCES = \
     auxpow.cpp \
     util.cpp \
