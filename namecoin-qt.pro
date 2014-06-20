@@ -3,7 +3,8 @@ TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
 VERSION = 0.3.75
 INCLUDEPATH += src src/json src/qt
-QT += network
+QT += core gui network
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 DEFINES += GUI QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
@@ -118,30 +119,27 @@ QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wform
 # Input
 DEPENDPATH += src src/json src/cryptopp src/qt
 
-NAMECOIN_HEADERS = headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
+HEADERS += src/headers.h src/strlcpy.h src/serialize.h src/uint256.h src/util.h src/key.h src/bignum.h src/base58.h \
+    src/script.h src/allocators.h src/db.h src/walletdb.h src/crypter.h src/net.h src/irc.h src/keystore.h src/main.h src/wallet.h src/bitcoinrpc.h src/uibase.h src/ui.h src/noui.h src/init.h src/auxpow.h
 
-NAMECOIN_SOURCES = \
-    auxpow.cpp \
-    util.cpp \
-    key.cpp \
-    script.cpp \
-    db.cpp \
-    walletdb.cpp \
-    crypter.cpp \
-    net.cpp \
-    irc.cpp \
-    keystore.cpp \
-    main.cpp \
-    wallet.cpp \
-    bitcoinrpc.cpp \
-    init.cpp \
-    cryptopp/sha.cpp \
-    cryptopp/cpu.cpp \
-    namecoin.cpp
-
-HEADERS += $$join(NAMECOIN_HEADERS, " src/", " src/",)
-SOURCES += $$join(NAMECOIN_SOURCES, " src/", " src/",)
+SOURCES += \
+    src/auxpow.cpp \
+    src/util.cpp \
+    src/key.cpp \
+    src/script.cpp \
+    src/db.cpp \
+    src/walletdb.cpp \
+    src/crypter.cpp \
+    src/net.cpp \
+    src/irc.cpp \
+    src/keystore.cpp \
+    src/main.cpp \
+    src/wallet.cpp \
+    src/bitcoinrpc.cpp \
+    src/init.cpp \
+    src/cryptopp/sha.cpp \
+    src/cryptopp/cpu.cpp \
+    src/namecoin.cpp
 
 HEADERS += \
     src/qt/netbase.h \
