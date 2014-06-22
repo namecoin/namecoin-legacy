@@ -17,7 +17,7 @@ using namespace boost;
 void rescanfornames();
 
 CWallet* pwalletMain;
-char *walletPath = "";
+string walletPath;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -409,18 +409,12 @@ bool AppInit2(int argc, char* argv[])
     bool fFirstRun;
     string argWalletPath = GetArg("-walletpath", "wallet.dat");
     boost::filesystem::path pathWalletFile(argWalletPath);
-    if (!pathWalletFile.is_complete())pathWalletFile = boost::filesystem::path(GetDataDir()) / pathWalletFile;
-    walletPath = new char[pathWalletFile.string().size() + 1];
-    strcpy(walletPath, pathWalletFile.string().c_str());
+    walletPath = pathWalletFile.string();
     
     pwalletMain = new CWallet(walletPath);
     if (!pwalletMain->LoadWallet(fFirstRun))
-    {
-        if(argWalletPath=="wallet.dat")
-            strErrors += _("Error loading wallet.dat      \n");
-        else
-            strErrors += "Error loading " + argWalletPath + "      \n";
-    }
+      strErrors += "Error loading " + argWalletPath + "      \n";
+    
     printf(" wallet      %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);

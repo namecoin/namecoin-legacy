@@ -185,7 +185,7 @@ bool CWalletDB::LoadWallet(CWallet* pwallet)
                 wtx.pwallet = pwallet;
 
                 if (wtx.GetHash() != hash)
-                    printf("Error in %s, hash mismatch\n", walletPath);
+                    printf("Error in %s, hash mismatch\n", walletPath.c_str());
 
                 // Undo serialize changes in 31600
                 if (31404 <= wtx.fTimeReceivedIsTxTime && wtx.fTimeReceivedIsTxTime <= 31703)

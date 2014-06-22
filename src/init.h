@@ -5,7 +5,7 @@
 #define BITCOIN_INIT_H
 
 extern CWallet* pwalletMain;
-extern char *walletPath;
+extern std::string walletPath;
 
 void StartShutdown();
 void Shutdown(void* parg);

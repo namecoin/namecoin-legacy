@@ -842,7 +842,7 @@ void ThreadFlushWalletDB(void* parg)
                     if (mi != mapFileUseCount.end())
                     {
                         printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-                        printf("Flushing %s\n", walletPath);
+                        printf("Flushing %s\n", walletPath.c_str());
                         nLastFlushed = nWalletDBUpdated;
                         int64 nStart = GetTimeMillis();
 
@@ -852,7 +852,7 @@ void ThreadFlushWalletDB(void* parg)
                         dbenv.lsn_reset(strFile.c_str(), 0);
 
                         mapFileUseCount.erase(mi++);
-                        printf("Flushed %s %"PRI64d"ms\n", walletPath, GetTimeMillis() - nStart);
+                        printf("Flushed %s %"PRI64d"ms\n", walletPath.c_str(), GetTimeMillis() - nStart);
                     }
                 }
             }
@@ -888,11 +888,11 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
 #else
                     filesystem::copy_file(pathSrc, pathDest);
 #endif
-                    printf("copied %s to %s\n", walletPath, pathDest.string().c_str());
+                    printf("copied %s to %s\n", walletPath.c_str(), pathDest.string().c_str());
 
                     return true;
                 } catch(const filesystem::filesystem_error &e) {
-                    printf("error copying %s to %s - %s\n", walletPath, pathDest.string().c_str(), e.what());
+                    printf("error copying %s to %s - %s\n", walletPath.c_str(), pathDest.string().c_str(), e.what());
                     return false;
                 }
             }
