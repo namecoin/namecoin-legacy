@@ -19,10 +19,10 @@
 #endif
 
 #ifdef USE_UPNP
-#include <miniupnpc/miniwget.h>
-#include <miniupnpc/miniupnpc.h>
-#include <miniupnpc/upnpcommands.h>
-#include <miniupnpc/upnperrors.h>
+#include <miniwget.h>
+#include <miniupnpc.h>
+#include <upnpcommands.h>
+#include <upnperrors.h>
 #endif
 
 using namespace std;
@@ -1692,7 +1692,7 @@ void StartNode(void* parg)
         printf("Error: CreateThread(ThreadIRCSeed) failed\n");
 
     // Send and receive from sockets, accept connections
-    pthread_t hThreadSocketHandler = CreateThread(ThreadSocketHandler, NULL, true);
+    CreateThread(ThreadSocketHandler, NULL);
 
     // Initiate outbound connections
     if (!CreateThread(ThreadOpenConnections, NULL))

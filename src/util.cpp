@@ -915,7 +915,7 @@ void ReadConfigFile(map<string, string>& mapSettingsRet,
 
     set<string> setOptions;
     setOptions.insert("*");
-    
+
     for (pod::config_file_iterator it(streamConfig, setOptions), end; it != end; ++it)
     {
         // Don't overwrite existing settings so command line settings override bitcoin.conf
@@ -1100,4 +1100,16 @@ bool SoftSetBoolArg(const std::string& strArg, bool fValue)
         return SoftSetArg(strArg, std::string("1"));
     else
         return SoftSetArg(strArg, std::string("0"));
+}
+
+bool CreateThread(void(*pfn)(void*), void* parg)
+{
+    try
+    {
+        boost::thread(pfn, parg); // thread detaches when out of scope
+    } catch(boost::thread_resource_error &e) {
+        printf("Error creating thread: %s\n", e.what());
+        return false;
+    }
+    return true;
 }
