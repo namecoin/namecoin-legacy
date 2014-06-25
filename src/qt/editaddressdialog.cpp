@@ -3,12 +3,13 @@
 
 #include "addresstablemodel.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 
 #include <QDataWidgetMapper>
 #include <QMessageBox>
 
 EditAddressDialog::EditAddressDialog(Mode mode, QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::EditAddressDialog), mapper(0), mode(mode), model(0)
 {
     ui->setupUi(this);

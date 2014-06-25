@@ -491,4 +491,4 @@ boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate)
     printf("SHGetSpecialFolderPathA() failed, could not obtain requested path.\n");
     return fs::path("");
 }
-#endif  
+#endif

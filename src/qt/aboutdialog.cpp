@@ -1,6 +1,6 @@
 #include "aboutdialog.h"
 #include "ui_aboutdialog.h"
-
+#include "guiconstants.h"
 #include "clientmodel.h"
 
 // Copyright year (2009-this)
@@ -8,7 +8,7 @@
 const int ABOUTDIALOG_COPYRIGHT_YEAR = 2013;
 
 AboutDialog::AboutDialog(QWidget *parent) :
-    QDialog(parent),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::AboutDialog)
 {
     ui->setupUi(this);

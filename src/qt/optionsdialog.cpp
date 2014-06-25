@@ -5,6 +5,7 @@
 #include "monitoreddatamapper.h"
 #include "netbase.h"
 #include "optionsmodel.h"
+#include "guiconstants.h"
 
 #include <QDir>
 #include <QIntValidator>
@@ -12,7 +13,7 @@
 #include <QMessageBox>
 
 OptionsDialog::OptionsDialog(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::OptionsDialog),
     model(0),
     mapper(0),

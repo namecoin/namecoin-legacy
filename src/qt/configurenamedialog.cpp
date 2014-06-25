@@ -20,7 +20,7 @@
 #include <QClipboard>
 
 ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &data, const QString &address_, bool firstUpdate_, QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     name(name_),
     address(address_),
     firstUpdate(firstUpdate_),
@@ -48,7 +48,7 @@ ConfigureNameDialog::ConfigureNameDialog(const QString &name_, const QString &da
         ui->labelDomain->setText(GUIUtil::HtmlEscape(name.mid(2) + ".bit"));
     else
         ui->labelDomain->setText(tr("(not a domain name)"));
-        
+
     // Try to select the most appropriate wizard
     json_spirit::Value val;
     if (data.trimmed().isEmpty())
@@ -252,7 +252,7 @@ void ConfigureNameDialog::accept()
             return;
         }
     }
-    
+
     WalletModel::UnlockContext ctx(walletModel->requestUnlock());
     if (!ctx.isValid())
         return;
@@ -267,7 +267,7 @@ void ConfigureNameDialog::accept()
         else
             err_msg = walletModel->nameUpdate(name, returnData, addr);
     }
-    catch (std::exception& e) 
+    catch (std::exception& e)
     {
         err_msg = e.what();
     }

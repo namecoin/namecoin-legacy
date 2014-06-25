@@ -7,6 +7,7 @@
 #include "optionsmodel.h"
 #include "sendcoinsentry.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 #include "askpassphrasedialog.h"
 #include "../base58.h"
 #include "ui_interface.h"
@@ -16,7 +17,7 @@
 #include <QScrollBar>
 
 SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::SendCoinsDialog),
     model(0)
 {
