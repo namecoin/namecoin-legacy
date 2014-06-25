@@ -40,7 +40,7 @@ endif
 
 
 # todo: change -D__WXMSW__  to WINDOWS
-DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
+DEFS += -D__WXMSW__
 LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 
 CFLAGS=${ADDITIONALCCFLAGS} -mthreads -O2 -w -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
