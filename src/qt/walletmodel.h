@@ -10,6 +10,7 @@ class OptionsModel;
 class AddressTableModel;
 class NameTableModel;
 class TransactionTableModel;
+class WalletModel;
 class CWallet;
 class CWalletTx;
 
@@ -20,9 +21,14 @@ QT_END_NAMESPACE
 class SendCoinsRecipient
 {
 public:
-    QString address;
+    QString recipient;
     QString label;
     qint64 amount;
+
+    /* Get the recipient address.  This translates a recipient name if
+       applicable.  Returns "" if the value is not a valid address and also
+       not resolvable as name.  */
+    QString getAddress (const WalletModel& model) const;
 };
 
 /** Interface to Bitcoin wallet from Qt view code. */
@@ -66,7 +72,11 @@ public:
     EncryptionStatus getEncryptionStatus() const;
 
     // Check address for validity
-    bool validateAddress(const QString &address);
+    bool validateAddress (const QString& address) const;
+
+    /* Check if a given name can be used as a "sendtoname" recipient and
+       if yes, set the address to the use that should be used.  */
+    bool checkRecipientName (const QString& name, QString& address) const;
 
     // Return status record for SendCoins, contains error id + information
     struct SendCoinsReturn

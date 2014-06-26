@@ -24,12 +24,10 @@ SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
 #if QT_VERSION >= 0x040700
     /* Do not move this to the XML file, Qt before 4.7 will choke on it */
     ui->addAsLabel->setPlaceholderText(tr("Enter a label for this address to add it to your address book"));
-    ui->payTo->setPlaceholderText(tr("Enter a Namecoin address (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)"));
+    ui->payTo->setPlaceholderText(tr("Enter a Namecoin address or name (e.g. N1KHAL5C1CRzy58NdJwp1tbLze3XrkFxx9)"));
 #endif
     setFocusPolicy(Qt::TabFocus);
     setFocusProxy(ui->payTo);
-
-    GUIUtil::setupAddressWidget(ui->payTo, this);
 }
 
 SendCoinsEntry::~SendCoinsEntry()
@@ -56,10 +54,18 @@ void SendCoinsEntry::on_addressBookButton_clicked()
     }
 }
 
-void SendCoinsEntry::on_payTo_textChanged(const QString &address)
+void
+SendCoinsEntry::on_payTo_textChanged(const QString& value)
 {
     if(!model)
         return;
+
+    /* Resolve recipient.  */
+    const SendCoinsRecipient rv = getValue ();
+    const QString address = rv.getAddress (*model);
+    if (address == "")
+      return;
+
     // Fill in label from address book, if address has an associated label
     QString associatedLabel = model->getAddressTableModel()->labelForAddress(address);
     if(!associatedLabel.isEmpty())
@@ -115,12 +121,12 @@ bool SendCoinsEntry::validate()
         }
     }
 
-    if(!ui->payTo->hasAcceptableInput() ||
-       (model && !model->validateAddress(ui->payTo->text())))
-    {
+    const SendCoinsRecipient rv = getValue ();
+    if (rv.getAddress (*model) == "")
+      {
         ui->payTo->setValid(false);
         retval = false;
-    }
+      }
 
     return retval;
 }
@@ -129,7 +135,7 @@ SendCoinsRecipient SendCoinsEntry::getValue()
 {
     SendCoinsRecipient rv;
 
-    rv.address = ui->payTo->text();
+    rv.recipient = ui->payTo->text();
     rv.label = ui->addAsLabel->text();
     rv.amount = ui->payAmount->value();
 
@@ -148,7 +154,7 @@ QWidget *SendCoinsEntry::setupTabChain(QWidget *prev)
 
 void SendCoinsEntry::setValue(const SendCoinsRecipient &value)
 {
-    ui->payTo->setText(value.address);
+    ui->payTo->setText(value.recipient);
     ui->addAsLabel->setText(value.label);
     ui->payAmount->setValue(value.amount);
 }
