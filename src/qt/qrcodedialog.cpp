@@ -12,7 +12,7 @@
 #include <qrencode.h>
 
 QRCodeDialog::QRCodeDialog(const QString &addr, const QString &label, bool enableReq, QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::QRCodeDialog),
     model(0),
     address(addr)

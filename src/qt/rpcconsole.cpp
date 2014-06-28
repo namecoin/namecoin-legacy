@@ -7,6 +7,7 @@
 #include "clientmodel.h"
 #include "../bitcoinrpc.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 
 #include <QTime>
 #include <QThread>
@@ -186,7 +187,7 @@ void RPCExecutor::request(const QString &command)
 }
 
 RPCConsole::RPCConsole(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::RPCConsole),
     historyPtr(0)
 {

@@ -7,6 +7,7 @@
 #include "optionsmodel.h"
 #include "sendcoinsentry.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 #include "askpassphrasedialog.h"
 #include "../base58.h"
 #include "ui_interface.h"
@@ -16,7 +17,7 @@
 #include <QScrollBar>
 
 SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::SendCoinsDialog),
     model(0)
 {
@@ -94,7 +95,11 @@ void SendCoinsDialog::on_sendButton_clicked()
     QStringList formatted;
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
+#if QT_VERSION < 0x050000
         formatted.append(tr("<b>%1</b> to %2 (%3)").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, rcp.amount), Qt::escape(rcp.label), rcp.address));
+#else
+        formatted.append(tr("<b>%1</b> to %2 (%3)").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, rcp.amount), rcp.label.toHtmlEscaped(), rcp.address));
+#endif
     }
 
     fNewRecipientAllowed = false;
