@@ -1,3 +1,5 @@
+* contrib/easywinbuilder: Qt5/MinGW4.8.2/cleanup (phelix)
+* Qt5 compatibility (Canercandan/phelix)
 * New RPC block info: height, confirmations, chainwork, nextblockhash. Change: No previousblockhash for block 0 (RyanC)
 
 v0.3.75
