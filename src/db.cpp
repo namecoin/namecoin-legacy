@@ -5,6 +5,7 @@
 #include "headers.h"
 #include "db.h"
 #include "net.h"
+#include "init.h"
 #include "auxpow.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -147,12 +148,12 @@ CDB::Close ()
   if (!fReadOnly)
     {
       /* Flush database activity from memory pool to disk log.
-         wallet.dat is always flushed, the other files only every couple
+         wallet file is always flushed, the other files only every couple
          of minutes.
          Note: Namecoin has more .dat files than Bitcoin.  */
 
       unsigned int nMinutes = 2;
-      if (strFile == "wallet.dat")
+      if (strFile == walletPath)
         nMinutes = 0;
       else if ((strFile == "blkindex.dat" || strFile == "nameindex.dat")
                && IsInitialBlockDownload ())
@@ -841,17 +842,17 @@ void ThreadFlushWalletDB(void* parg)
                     if (mi != mapFileUseCount.end())
                     {
                         printf("%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-                        printf("Flushing wallet.dat\n");
+                        printf("Flushing %s\n", walletPath.c_str());
                         nLastFlushed = nWalletDBUpdated;
                         int64 nStart = GetTimeMillis();
 
-                        // Flush wallet.dat so it's self contained
+                        // Flush wallet file so it's self contained
                         CloseDb(strFile);
                         dbenv.txn_checkpoint(0, 0, 0);
                         dbenv.lsn_reset(strFile.c_str(), 0);
 
                         mapFileUseCount.erase(mi++);
-                        printf("Flushed wallet.dat %"PRI64d"ms\n", GetTimeMillis() - nStart);
+                        printf("Flushed %s %"PRI64d"ms\n", walletPath.c_str(), GetTimeMillis() - nStart);
                     }
                 }
             }
@@ -875,8 +876,10 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
                 dbenv.lsn_reset(wallet.strWalletFile.c_str(), 0);
                 mapFileUseCount.erase(wallet.strWalletFile);
 
-                // Copy wallet.dat
-                filesystem::path pathSrc(GetDataDir() + "/" + wallet.strWalletFile);
+                // Copy wallet file
+                filesystem::path pathSrc(wallet.strWalletFile);
+                if(!pathSrc.is_complete())
+                    pathSrc = filesystem::path(GetDataDir()) / pathSrc;
                 filesystem::path pathDest(strDest);
                 if (filesystem::is_directory(pathDest))
                     pathDest = pathDest / wallet.strWalletFile;
@@ -887,11 +890,11 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
 #else
                     filesystem::copy_file(pathSrc, pathDest);
 #endif
-                    printf("copied wallet.dat to %s\n", pathDest.string().c_str());
+                    printf("copied %s to %s\n", walletPath.c_str(), pathDest.string().c_str());
 
                     return true;
                 } catch(const filesystem::filesystem_error &e) {
-                    printf("error copying wallet.dat to %s - %s\n", pathDest.string().c_str(), e.what());
+                    printf("error copying %s to %s - %s\n", walletPath.c_str(), pathDest.string().c_str(), e.what());
                     return false;
                 }
             }
