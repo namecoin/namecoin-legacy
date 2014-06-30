@@ -877,7 +877,9 @@ bool BackupWallet(const CWallet& wallet, const string& strDest)
                 mapFileUseCount.erase(wallet.strWalletFile);
 
                 // Copy wallet file
-                filesystem::path pathSrc(GetDataDir() + "/" + wallet.strWalletFile);
+                filesystem::path pathSrc(wallet.strWalletFile);
+                if(!pathSrc.is_complete())
+                    pathSrc = filesystem::path(GetDataDir()) / pathSrc;
                 filesystem::path pathDest(strDest);
                 if (filesystem::is_directory(pathDest))
                     pathDest = pathDest / wallet.strWalletFile;
