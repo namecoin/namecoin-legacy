@@ -1,3 +1,4 @@
+* New command line / .conf file option: -walletpath=customwalletfilename.dat (digital-dreamer)
 * New RPC block info: height, confirmations, chainwork, nextblockhash. Change: No previousblockhash for block 0 (RyanC)
 
 v0.3.75
