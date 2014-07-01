@@ -51,6 +51,9 @@ typedef std::vector<unsigned char, secure_allocator<unsigned char> > CPrivKey;
 // when encrypting the wallet.
 typedef std::vector<unsigned char, secure_allocator<unsigned char> > CSecret;
 
+/// Forward declaration - wrapper around OpenSSL that implements the 
+/// secp256k1 EC if not available in OpenSSL - primarily for Fedora/CentOS
+EC_KEY *EC_KEY_new_by_curve_name_NID_secp256k1(void);
 
 class CKey
 {
@@ -62,7 +65,8 @@ protected:
 public:
     CKey()
     {
-        pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+      //        pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+        pkey = EC_KEY_new_by_curve_name_NID_secp256k1();
         if (pkey == NULL)
             throw key_error("CKey::CKey() : EC_KEY_new_by_curve_name failed");
         fSet = false;
