@@ -15,6 +15,8 @@
 #include <QTimer>
 #include <QDateTime>
 
+#include <boost/xpressive/xpressive_dynamic.hpp>
+
 std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFirstUpdate;
 std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
 
@@ -365,10 +367,22 @@ WalletModel::validateAddress(const QString& address) const
 bool
 WalletModel::checkRecipientName (const QString& name, QString& address) const
 {
-  /* To prevent "typo-squatting" for addresses, only allow names
-     up to a certain length (shorter than NMC addresses).  */
-  if (name.length () < 1 || name.length () > 25)
+  /* Check that the name contains a namespace and consists only of
+     basic characters (a-z, 0-9, - and space).  This is to prevent
+     tricking people into sending to other names than they intend, and
+     to prevent squatting of the "no namespace" names.
+
+     This check also distinguishes names from addresses, which do not
+     have a namespace and contain upper case characters (most probably).  */
+
+  using namespace boost::xpressive;
+  static const char* regexStr = "^[a-z]+/[a-z0-9-]?([ ]?[a-z0-9-])*$";
+  static const sregex regex = sregex::compile (regexStr);
+  smatch match;
+  if (!regex_search (name.toStdString (), match, regex))
     return false;
+
+  /* Query information about the name and try to find its address.  */
 
   const vchType vchName = vchFromString (name.toStdString ());
   CNameDB dbName("r");
