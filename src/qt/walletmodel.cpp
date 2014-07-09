@@ -368,7 +368,7 @@ bool
 WalletModel::checkRecipientName (const QString& name, QString& address) const
 {
   /* Check that the name contains a namespace and consists only of
-     basic characters (a-z, 0-9, - and space).  This is to prevent
+     basic characters (a-z, 0-9 and dash).  This is to prevent
      tricking people into sending to other names than they intend, and
      to prevent squatting of the "no namespace" names.
 
@@ -376,7 +376,7 @@ WalletModel::checkRecipientName (const QString& name, QString& address) const
      have a namespace and contain upper case characters (most probably).  */
 
   using namespace boost::xpressive;
-  static const char* regexStr = "^[a-z]+/[a-z0-9-]?([ ]?[a-z0-9-])*$";
+  static const char* regexStr = "^[a-z]+/[a-z0-9]+([-]?[a-z0-9])*$";
   static const sregex regex = sregex::compile (regexStr);
   smatch match;
   if (!regex_search (name.toStdString (), match, regex))
