@@ -1477,6 +1477,38 @@ int GetOurChainID()
     return hooks->GetOurChainID();
 }
 
+bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
+{
+    unsigned nSize;
+    unsigned nTotalSize = ::GetSerializeSize (*this, SER_DISK);
+    nTotalSize += sizeof (pchMessageStart) + sizeof (nSize);
+
+    // Open history file to append
+    CAutoFile fileout = AppendBlockFile (nFileRet, nTotalSize);
+    if (!fileout)
+        return error("CBlock::WriteToDisk() : AppendBlockFile failed");
+    const unsigned startPos = ftell (fileout);
+
+    // Write index header
+    nSize = fileout.GetSerializeSize(*this);
+    fileout << FLATDATA(pchMessageStart) << nSize;
+
+    // Write block
+    nBlockPosRet = ftell(fileout);
+    if (nBlockPosRet == -1)
+        return error("CBlock::WriteToDisk() : ftell failed");
+    fileout << *this;
+
+    // Check that the total size estimate was correct.
+    if (ftell (fileout) - startPos != nTotalSize)
+      return error ("CBlock::WriteToDisk: nTotalSize was wrong");
+
+    // Flush stdio buffers and commit to disk before returning
+    FlushBlockFile(fileout);
+
+    return true;
+}
+
 bool CBlock::CheckProofOfWork(int nHeight) const
 {
     if (nHeight >= GetAuxPowStartBlock())
@@ -1599,8 +1631,6 @@ bool CBlock::AcceptBlock()
         return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
     // Write block to history file
-    if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK)))
-        return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
     if (!WriteToDisk(nFile, nBlockPos))
@@ -1722,7 +1752,8 @@ bool static ScanMessageStart(Stream& s)
     }
 }
 
-bool CheckDiskSpace(uint64 nAdditionalBytes)
+static bool
+CheckDiskSpace (uint64 nAdditionalBytes)
 {
     uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
 
@@ -1765,8 +1796,20 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 
 static unsigned int nCurrentBlockFile = 1;
 
-FILE* AppendBlockFile(unsigned int& nFileRet)
+/* Append to a splitting block history file.  The given size is the number of
+   bytes that will be written.  This is used to check for disk space as well
+   as extend the file in preallocated chunks to combat fragmentation.  */
+FILE*
+AppendBlockFile (unsigned int& nFileRet, unsigned size)
 {
+    if (!CheckDiskSpace (size))
+      {
+        printf ("ERROR: AppendBlockFile: out of disk space");
+        return NULL;
+      }
+    if (fDebug)
+      printf ("AppendBlockFile: adding %u bytes\n", size);
+
     nFileRet = 0;
     loop
     {
@@ -1776,13 +1819,26 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
         if (fseek(file, 0, SEEK_END) != 0)
             return NULL;
         // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < 0x7F000000 - MAX_SIZE)
+        if (ftell(file) < 0x7F000000 - size)
         {
             nFileRet = nCurrentBlockFile;
             return file;
         }
         fclose(file);
         nCurrentBlockFile++;
+    }
+}
+
+void FlushBlockFile(FILE *f)
+{
+    fflush(f);
+    if (!IsInitialBlockDownload() || (nBestHeight + 1) % 500 == 0)
+    {
+#ifdef __WXMSW__
+        _commit(_fileno(f));
+#else
+        fsync(fileno(f));
+#endif
     }
 }
 
