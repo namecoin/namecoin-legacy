@@ -114,7 +114,10 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     }
 }
 
-QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector -Wno-sign-compare -Wno-return-type -Wno-char-subscripts -Wno-switch
+QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra \
+  -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector \
+  -Wno-sign-compare -Wno-return-type -Wno-char-subscripts -Wno-switch \
+  -Wno-unused-value -Wno-unknown-pragmas -Wno-unused-variable
 
 # Input
 DEPENDPATH += src src/json src/cryptopp src/qt

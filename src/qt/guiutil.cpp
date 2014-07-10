@@ -89,7 +89,7 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
         return false;
 
     SendCoinsRecipient rv;
-    rv.address = uri.path();
+    rv.recipient = uri.path();
     rv.amount = 0;
 #if QT_VERSION < 0x050000
     QList<QPair<QString, QString> > items = uri.queryItems();
