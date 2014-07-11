@@ -58,6 +58,17 @@ AS_IF([test x"$with_miniupnpc" != x"no"], [
 	])
 ])
 
+case "$host_os" in
+	mingw*)
+		;;
+	*)
+		ACX_PTHREAD([
+			CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
+			LIBS="$LIBS $PTHREAD_LIBS"
+		])
+		;;
+esac
+
 AC_ARG_WITH(qt,
 	AS_HELP_STRING([--without-qt], [build without Qt]))
 AS_IF([test x"$with_qt" != x"no"], [

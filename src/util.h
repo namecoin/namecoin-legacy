@@ -7,9 +7,10 @@
 #include "uint256.h"
 
 #ifndef _WIN32
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+# include <sys/types.h>
+# include <sys/time.h>
+# include <sys/resource.h>
+# include <sys/socket.h>
 #endif
 #include <map>
 #include <vector>
