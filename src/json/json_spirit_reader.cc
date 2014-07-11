@@ -3,6 +3,8 @@
 
 // json spirit version 4.03
 
+#include "config.h"
+
 #include "json_spirit_reader.h"
 #include "json_spirit_reader_template.h"
 

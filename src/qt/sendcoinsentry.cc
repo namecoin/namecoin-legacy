@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "sendcoinsentry.h"
 #include "ui_sendcoinsentry.h"
 

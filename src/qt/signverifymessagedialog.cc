@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "signverifymessagedialog.h"
 #include "ui_signverifymessagedialog.h"
 

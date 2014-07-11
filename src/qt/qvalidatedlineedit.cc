@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "qvalidatedlineedit.h"
 
 #include "guiconstants.h"

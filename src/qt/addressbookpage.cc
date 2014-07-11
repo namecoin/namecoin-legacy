@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "addressbookpage.h"
 #include "ui_addressbookpage.h"
 

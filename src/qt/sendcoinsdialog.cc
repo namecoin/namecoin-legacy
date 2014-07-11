@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "sendcoinsdialog.h"
 #include "ui_sendcoinsdialog.h"
 

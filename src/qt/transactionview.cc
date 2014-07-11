@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "transactionview.h"
 
 #include "transactionfilterproxy.h"

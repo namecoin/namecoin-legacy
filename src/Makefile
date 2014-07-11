@@ -19,4 +19,5 @@ SRCS = auxpow.cc	\
 
 include ../buildsys.mk
 
+CPPFLAGS += -I..
 LD = ${CXX}

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "transactiondesc.h"
 
 #include "guiutil.h"

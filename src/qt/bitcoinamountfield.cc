@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "bitcoinamountfield.h"
 
 #include "qvaluecombobox.h"

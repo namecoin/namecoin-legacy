@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "notificator.h"
 
 #include <QMetaType>

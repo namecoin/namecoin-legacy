@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "managenamespage.h"
 #include "ui_managenamespage.h"
 

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "qvaluecombobox.h"
 
 QValueComboBox::QValueComboBox(QWidget *parent) :

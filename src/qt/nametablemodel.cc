@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "nametablemodel.h"
 
 #include "guiutil.h"

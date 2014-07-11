@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "editaddressdialog.h"
 #include "ui_editaddressdialog.h"
 

@@ -5,6 +5,8 @@
  * The Bitcoin Developers 2011-2012
  */
 
+#include "config.h"
+
 #include <QApplication>
 
 #include "bitcoingui.h"

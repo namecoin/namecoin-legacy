@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "walletmodel.h"
 #include "guiconstants.h"
 #include "optionsmodel.h"

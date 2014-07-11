@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "addresstablemodel.h"
 
 #include "guiutil.h"

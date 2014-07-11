@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "transactionrecord.h"
 
 #include "../headers.h"

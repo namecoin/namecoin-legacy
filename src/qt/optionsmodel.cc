@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "optionsmodel.h"
 
 #include "bitcoinunits.h"

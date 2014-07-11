@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "qrcodedialog.h"
 #include "ui_qrcodedialog.h"
 

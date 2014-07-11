@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "monitoreddatamapper.h"
 
 #include <QWidget>

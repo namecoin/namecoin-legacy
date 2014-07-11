@@ -5,6 +5,8 @@
 
 // use "cl /EP /P /DCRYPTOPP_GENERATE_X64_MASM sha.cpp" to generate MASM code
 
+#include "config.h"
+
 #include "pch.h"
 
 #ifndef CRYPTOPP_IMPORTS

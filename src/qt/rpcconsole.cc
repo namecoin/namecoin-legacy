@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "../json/json_spirit.h"
 #include "../json/json_spirit_writer_template.h"
 

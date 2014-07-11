@@ -1,5 +1,7 @@
 // cpu.cpp - written and placed in the public domain by Wei Dai
 
+#include "config.h"
+
 #include "pch.h"
 
 #ifndef CRYPTOPP_IMPORTS

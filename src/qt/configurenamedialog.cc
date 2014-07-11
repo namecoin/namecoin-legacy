@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "configurenamedialog.h"
 #include "ui_configurenamedialog.h"
 

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "overviewpage.h"
 #include "ui_overviewpage.h"
 

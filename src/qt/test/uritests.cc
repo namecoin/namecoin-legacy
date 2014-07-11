@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "uritests.h"
 #include "../guiutil.h"
 #include "../walletmodel.h"

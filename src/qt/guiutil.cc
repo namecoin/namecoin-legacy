@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <QApplication>
 
 #include "guiutil.h"

@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "askpassphrasedialog.h"
 #include "ui_askpassphrasedialog.h"
 

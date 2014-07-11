@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include "clientmodel.h"
 
 #include "guiconstants.h"
