@@ -28,8 +28,24 @@ AC_CHECK_LIB(crypto, main, [
 
 AC_CHECK_LIB(ssl, main, [
 	LIBS="$LIBS -lssl"
+	AC_DEFINE(USE_SSL, 1, [Whether SSL should be used])
 ], [
 	AC_MSG_ERROR([libssl (from OpenSSL) not found!])
+])
+
+AC_ARG_WITH(miniupnpc,
+	AS_HELP_STRING([--without-miniupnpc], [build without miniupnpc]))
+AS_IF([test x"$with_miniupnpc" != x"no"], [
+	AC_CHECK_HEADER([miniupnpc/miniupnpc.h], [
+		AC_CHECK_LIB(miniupnpc, main, [
+			LIBS="$LIBS -lminiupnpc"
+			AC_DEFINE(USE_UPNP, 1, [Whether UPnP should be used])
+		], [
+			AC_MSG_ERROR([miniupnpc libraries not found!])
+		])
+	], [
+		AC_MSG_ERROR([miniupnpc headers not found!])
+	])
 ])
 
 AC_CONFIG_FILES(buildsys.mk)
