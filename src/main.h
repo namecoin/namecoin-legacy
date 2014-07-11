@@ -14,10 +14,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread/thread.hpp>
 
-#ifdef __WXMSW__
-#include <io.h> /* for _commit */
-#elif !defined(MAC_OSX)
-#include <sys/prctl.h>
+#if defined(_WIN32)
+# include <io.h> /* for _commit */
+#elif !defined(__APPLE__)
+# include <sys/prctl.h>
 #endif
 
 class CBlock;
@@ -1059,7 +1059,7 @@ public:
         fflush(fileout);
         if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0)
         {
-#ifdef __WXMSW__
+#ifdef _WIN32
             _commit(_fileno(fileout));
 #else
             fsync(fileno(fileout));

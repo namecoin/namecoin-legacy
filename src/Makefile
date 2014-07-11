@@ -1,121 +1,184 @@
-CXX=g++
+include ../extra.mk
 
-DEFS=-D_MT -DNOPCH -DFOURWAYSSE2 -DUSE_SSL
+PROG = ${NAMECOIN}${PROG_SUFFIX}
 
-# Detect MinGW
-MINGW=$(shell uname -s|grep -i mingw32)
+SRCS = auxpow.cc	\
+       bitcoinrpc.cc	\
+       crypter.cc	\
+       cryptopp/cpu.cc	\
+       cryptopp/sha.cc	\
+       db.cc		\
+       init.cc		\
+       irc.cc		\
+       key.cc		\
+       keystore.cc	\
+       main.cc		\
+       namecoin.cc	\
+       net.cc		\
+       script.cc	\
+       util.cc		\
+       wallet.cc	\
+       walletdb.cc
 
-# Link boost statically
-DEFS += -DBOOST_THREAD_USE_LIB
+SRCS_QT = qt/aboutdialog.cc		\
+	  qt/addressbookpage.cc		\
+	  qt/addresstablemodel.cc	\
+	  qt/askpassphrasedialog.cc	\
+	  qt/bitcoin.cc			\
+	  qt/bitcoinaddressvalidator.cc	\
+	  qt/bitcoinamountfield.cc	\
+	  qt/bitcoingui.cc		\
+	  qt/bitcoinstrings.cc		\
+	  qt/bitcoinunits.cc		\
+	  qt/clientmodel.cc		\
+	  qt/configurenamedialog.cc	\
+	  qt/csvmodelwriter.cc		\
+	  qt/editaddressdialog.cc	\
+	  qt/guiutil.cc			\
+	  ${QT_MACDOCKICONHANDLER_MM}	\
+	  qt/managenamespage.cc		\
+	  qt/monitoreddatamapper.cc	\
+	  qt/nametablemodel.cc		\
+	  qt/netbase.cc			\
+	  qt/notificator.cc		\
+	  qt/optionsdialog.cc		\
+	  qt/optionsmodel.cc		\
+	  qt/overviewpage.cc		\
+	  qt/paymentserver.cc		\
+	  qt/qvalidatedlineedit.cc	\
+	  qt/qvaluecombobox.cc		\
+	  qt/rpcconsole.cc		\
+	  qt/sendcoinsdialog.cc		\
+	  qt/sendcoinsentry.cc		\
+	  qt/signverifymessagedialog.cc	\
+	  qt/transactiondesc.cc		\
+	  qt/transactiondescdialog.cc	\
+	  qt/transactionfilterproxy.cc	\
+	  qt/transactionrecord.cc	\
+	  qt/transactiontablemodel.cc	\
+	  qt/transactionview.cc		\
+	  qt/walletmodel.cc		\
+	  ${SRCS_QT_MOC}		\
+	  qt/bitcoin.qrc.cc
+SRCS_QT_MOC = qt/aboutdialog.moc.cc		\
+	      qt/addressbookpage.moc.cc		\
+	      qt/addresstablemodel.moc.cc	\
+	      qt/askpassphrasedialog.moc.cc	\
+	      qt/bitcoinaddressvalidator.moc.cc	\
+	      qt/bitcoinamountfield.moc.cc	\
+	      qt/bitcoingui.moc.cc		\
+	      qt/bitcoinunits.moc.cc		\
+	      qt/clientmodel.moc.cc		\
+	      qt/configurenamedialog.moc.cc	\
+	      qt/csvmodelwriter.moc.cc		\
+	      qt/editaddressdialog.moc.cc	\
+	      qt/guiutil.moc.cc			\
+	      ${QT_MACDOCKICONHANDLER_MOC_CC}	\
+	      qt/managenamespage.moc.cc		\
+	      qt/monitoreddatamapper.moc.cc	\
+	      qt/nametablemodel.moc.cc		\
+	      qt/notificator.moc.cc		\
+	      qt/optionsdialog.moc.cc		\
+	      qt/optionsmodel.moc.cc		\
+	      qt/overviewpage.moc.cc		\
+	      qt/paymentserver.moc.cc		\
+	      qt/qvalidatedlineedit.moc.cc	\
+	      qt/qvaluecombobox.moc.cc		\
+	      qt/rpcconsole.moc.cc		\
+	      qt/sendcoinsdialog.moc.cc		\
+	      qt/sendcoinsentry.moc.cc		\
+	      qt/signverifymessagedialog.moc.cc	\
+	      qt/transactiondesc.moc.cc		\
+	      qt/transactiondescdialog.moc.cc	\
+	      qt/transactionfilterproxy.moc.cc	\
+	      qt/transactiontablemodel.moc.cc	\
+	      qt/transactionview.moc.cc		\
+	      qt/walletmodel.moc.cc
+MOC_FILES = qt/overviewpage.moc	\
+	    qt/rpcconsole.moc
+FORMS_HEADERS = qt/forms/aboutdialog.ui.h		\
+		qt/forms/addressbookpage.ui.h		\
+		qt/forms/askpassphrasedialog.ui.h	\
+		qt/forms/configurenamedialog.ui.h	\
+		qt/forms/editaddressdialog.ui.h		\
+		qt/forms/managenamespage.ui.h		\
+		qt/forms/optionsdialog.ui.h		\
+		qt/forms/overviewpage.ui.h		\
+		qt/forms/rpcconsole.ui.h		\
+		qt/forms/sendcoinsdialog.ui.h		\
+		qt/forms/sendcoinsentry.ui.h		\
+		qt/forms/signverifymessagedialog.ui.h	\
+		qt/forms/transactiondescdialog.ui.h
+QM_FILES = qt/locale/bitcoin_af_ZA.qm	\
+	   qt/locale/bitcoin_ar.qm	\
+	   qt/locale/bitcoin_bg.qm	\
+	   qt/locale/bitcoin_ca_ES.qm	\
+	   qt/locale/bitcoin_cs.qm	\
+	   qt/locale/bitcoin_da.qm	\
+	   qt/locale/bitcoin_de.qm	\
+	   qt/locale/bitcoin_el_GR.qm	\
+	   qt/locale/bitcoin_en.qm	\
+	   qt/locale/bitcoin_es.qm	\
+	   qt/locale/bitcoin_es_CL.qm	\
+	   qt/locale/bitcoin_et.qm	\
+	   qt/locale/bitcoin_eu_ES.qm	\
+	   qt/locale/bitcoin_fa.qm	\
+	   qt/locale/bitcoin_fa_IR.qm	\
+	   qt/locale/bitcoin_fi.qm	\
+	   qt/locale/bitcoin_fr.qm	\
+	   qt/locale/bitcoin_fr_CA.qm	\
+	   qt/locale/bitcoin_gu_IN.qm	\
+	   qt/locale/bitcoin_he.qm	\
+	   qt/locale/bitcoin_hi_IN.qm	\
+	   qt/locale/bitcoin_hr.qm	\
+	   qt/locale/bitcoin_hu.qm	\
+	   qt/locale/bitcoin_it.qm	\
+	   qt/locale/bitcoin_ja.qm	\
+	   qt/locale/bitcoin_lt.qm	\
+	   qt/locale/bitcoin_nb.qm	\
+	   qt/locale/bitcoin_nl.qm	\
+	   qt/locale/bitcoin_pl.qm	\
+	   qt/locale/bitcoin_pt_BR.qm	\
+	   qt/locale/bitcoin_pt_PT.qm	\
+	   qt/locale/bitcoin_ro_RO.qm	\
+	   qt/locale/bitcoin_ru.qm	\
+	   qt/locale/bitcoin_sk.qm	\
+	   qt/locale/bitcoin_sr.qm	\
+	   qt/locale/bitcoin_sv.qm	\
+	   qt/locale/bitcoin_th_TH.qm	\
+	   qt/locale/bitcoin_tr.qm	\
+	   qt/locale/bitcoin_uk.qm	\
+	   qt/locale/bitcoin_zh_CN.qm	\
+	   qt/locale/bitcoin_zh_TW.qm
 
-INCLUDEPATHS= \
-	-I../libs/openssl-1.0.1h/include \
-	-I../libs/db-4.7.25.NC/build_unix \
-	-I../libs/boost_1_50_0
+SRCS += ${USE_SRCS_QT}
 
-LIBPATHS= \
-	-L../libs/openssl-1.0.1h \
-	-L../libs/db-4.7.25.NC/build_unix \
-	-L../libs/boost_1_50_0/stage/lib
+CLEAN = ${SRCS_QT_MOC}		\
+	${MOC_FILES}		\
+	${FORMS_HEADERS}	\
+	${QM_FILES}		\
+	qt/bitcoin.qrc.cc
 
-LIBBOOST_SUFFIX=
+include ../buildsys.mk
 
-LIBS= \
- -Wl,-Bstatic \
-   -l boost_system$(LIBBOOST_SUFFIX) \
-   -l boost_filesystem$(LIBBOOST_SUFFIX) \
-   -l boost_program_options$(LIBBOOST_SUFFIX) \
-   -l boost_thread$(LIBBOOST_SUFFIX) \
-   -l boost_chrono$(LIBBOOST_SUFFIX) \
-   -l db_cxx \
-   -l ssl \
-   -l crypto
+.SUFFIXES: .cc .h .moc .moc.cc .qm .qrc .qrc.cc .ts .ui .ui.h
 
-namecoin: USE_UPNP:=1
-	ifdef USE_UPNP
-		LIBS += -l miniupnpc
-		DEFS += -DUSE_UPNP=$(USE_UPNP)
-	endif
-	ifneq "$(MINGW)" ""
-		# MinGW-specific
-		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
-		LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-		LIBBOOST_SUFFIX=-mgw46-mt-1_50
-	else
-		# Linux-specific
-		LIBS+= \
-			-Wl,-Bdynamic \
-			-l gthread-2.0 \
-			-l z \
-			-l dl \
-			-l pthread
-	endif
+pre-depend: ${USE_MOC_FILES} ${USE_FORMS_HEADERS} ${USE_QM_FILES}
 
-namecoind: USE_UPNP:=0
-	ifdef USE_UPNP
-		LIBS += -l miniupnpc
-		DEFS += -DUSE_UPNP=$(USE_UPNP)
-	endif
-	ifneq "$(MINGW)" ""
-		# MinGW-specific
-		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
-		LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-	else
-		# Linux-specific
-		LIBS+= \
-			-Wl,-Bdynamic \
-			-l gthread-2.0 \
-			-l z \
-			-l dl \
-			-l pthread
-	endif
+.h.moc.cc:
+	${MOC} ${MOC_CPPFLAGS} $< -o $@
 
-CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEFS) $(INCLUDEPATHS)
-HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
-    script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
+.ui.ui.h:
+	${UIC} -p $< -o $@
 
-OBJS= \
-    obj/auxpow.o \
-    obj/util.o \
-    obj/key.o \
-    obj/script.o \
-    obj/db.o \
-    obj/walletdb.o \
-    obj/crypter.o \
-    obj/net.o \
-    obj/irc.o \
-    obj/keystore.o \
-    obj/main.o \
-    obj/wallet.o \
-    obj/bitcoinrpc.o \
-    obj/init.o \
-    cryptopp/obj/sha.o \
-    cryptopp/obj/cpu.o
+.cc.moc:
+	${MOC} ${MOC_CPPFLAGS} $< -o $@
 
-all: namecoind
+.ts.qm:
+	${LRELEASE} $< -qm $@
 
+.qrc.qrc.cc:
+	${RCC} -name bitcoin $< -o $@
 
-obj/%.o: %.cpp $(HEADERS)
-	$(CXX) -c $(CXXFLAGS) -DGUI -o $@ $<
-
-cryptopp/obj/%.o: cryptopp/%.cpp
-	$(CXX) -c $(CXXFLAGS) -O3 -o $@ $<
-
-obj/nogui/%.o: %.cpp $(HEADERS)
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
-
-obj/test/%.o: test/%.cpp $(HEADERS)
-	$(CXX) -c $(CFLAGS) -o $@ $<
-
-obj/nogui/namecoin.o: namecoin.h
-
-namecoind: $(OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
-	$(CXX) $(CXXFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
-
-clean:
-	-rm -f namecoin namecoind
-	-rm -f obj/*.o
-	-rm -f obj/nogui/*.o
-	-rm -f obj/test/*.o
-	-rm -f cryptopp/obj/*.o
-	-rm -f headers.h.gch
+CPPFLAGS += -I.. -Iqt -Iqt/forms
+LD = ${CXX}
