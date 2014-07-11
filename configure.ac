@@ -8,6 +8,10 @@ AC_PROG_CXX
 AC_PROG_CPP
 AC_PROG_INSTALL
 
+AC_CHECK_HEADER([boost/foreach.hpp], [], [
+	AC_MSG_ERROR([Boost headers not found!])
+])
+
 CHECK_BOOST_LIB(system)
 CHECK_BOOST_LIB(filesystem)
 CHECK_BOOST_LIB(program_options)
