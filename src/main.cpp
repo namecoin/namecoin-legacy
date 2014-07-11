@@ -1481,12 +1481,14 @@ int GetOurChainID()
 
 bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
 {
+    DatabaseSet dbset("r+");
+
     unsigned nSize;
     unsigned nTotalSize = ::GetSerializeSize (*this, SER_DISK);
     nTotalSize += sizeof (pchMessageStart) + sizeof (nSize);
 
     // Open history file to append
-    CAutoFile fileout = AppendBlockFile (nFileRet, nTotalSize);
+    CAutoFile fileout = AppendBlockFile (dbset, nFileRet, nTotalSize);
     if (!fileout)
         return error("CBlock::WriteToDisk() : AppendBlockFile failed");
     const unsigned startPos = ftell (fileout);
@@ -1804,9 +1806,9 @@ static unsigned int nCurrentBlockFile = 1;
    bytes that will be written.  This is used to check for disk space as well
    as extend the file in preallocated chunks to combat fragmentation.  */
 FILE*
-AppendBlockFile (unsigned int& nFileRet, unsigned size)
+AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet, unsigned size)
 {
-    CTxDB txdb("r+");
+    CTxDB& txdb = dbset.tx ();
 
     if (!CheckDiskSpace (size))
       {

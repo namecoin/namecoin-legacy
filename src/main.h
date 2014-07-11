@@ -108,7 +108,8 @@ void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool f
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace (uint64 nAdditionalBytes = 0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
-FILE* AppendBlockFile (unsigned int& nFileRet, unsigned size);
+FILE* AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet,
+                       unsigned size);
 void FlushBlockFile(FILE *f);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
