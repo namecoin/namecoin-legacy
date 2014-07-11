@@ -6,7 +6,7 @@
 
 #include "uint256.h"
 
-#ifndef __WXMSW__
+#ifndef _WIN32
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -109,12 +109,11 @@ T* alignup(T* p)
     return u.ptr;
 }
 
-#ifdef __WXMSW__
+#ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
 #include <mswsock.h>
 
-#define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
 #ifndef UINT64_MAX
 #define UINT64_MAX          _UI64_MAX
@@ -147,6 +146,10 @@ typedef u_int SOCKET;
 #define Beep(n1,n2)         (0)
 #endif
 
+#ifndef MSG_NOSIGNAL
+# define MSG_NOSIGNAL        0
+#endif
+
 inline void MilliSleep(int64 n)
 {
 // Boost's sleep_for was uninterruptable when backed by nanosleep from 1.50
@@ -160,13 +163,11 @@ inline void MilliSleep(int64 n)
 #endif
 }
 
-
-
 inline int myclosesocket(SOCKET& hSocket)
 {
     if (hSocket == INVALID_SOCKET)
         return WSAENOTSOCK;
-#ifdef __WXMSW__
+#ifdef _WIN32
     int ret = closesocket(hSocket);
 #else
     int ret = close(hSocket);
@@ -243,7 +244,7 @@ std::string GetConfigFile();
 std::string GetPidFile();
 void CreatePidFile(std::string pidFile, pid_t pid);
 void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map<std::string, std::vector<std::string> >& mapMultiSettingsRet);
-#ifdef __WXMSW__
+#ifdef _WIN32
 std::string MyGetSpecialFolderPath(int nFolder, bool fCreate);
 #endif
 std::string GetDefaultDataDir();
@@ -272,7 +273,7 @@ std::string FormatFullVersion();
 // Wrapper to automatically initialize critical sections
 class CCriticalSection
 {
-#ifdef __WXMSW__
+#ifdef _WIN32
 protected:
     CRITICAL_SECTION cs;
 public:
@@ -437,7 +438,7 @@ inline void PrintHex(const std::vector<unsigned char>& vch, const char* pszForma
 inline int64 GetPerformanceCounter()
 {
     int64 nCounter = 0;
-#ifdef __WXMSW__
+#ifdef _WIN32
     QueryPerformanceCounter((LARGE_INTEGER*)&nCounter);
 #else
     timeval t;
@@ -471,7 +472,7 @@ void skipspaces(T& it)
 
 inline bool IsSwitchChar(char c)
 {
-#ifdef __WXMSW__
+#ifdef _WIN32
     return c == '-' || c == '/';
 #else
     return c == '-';
@@ -674,10 +675,9 @@ inline uint160 Hash160(const std::vector<unsigned char>& vch)
 std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid = NULL);
 std::string EncodeBase64(const unsigned char* pch, size_t len);
 
-
 bool CreateThread(void(*pfn)(void*), void* parg);
 
-#ifdef __WXMSW__
+#ifdef _WIN32
 inline void SetThreadPriority(int nPriority)
 {
     SetThreadPriority(GetCurrentThread(), nPriority);
@@ -717,7 +717,7 @@ inline void ExitThread(size_t nExitCode)
 
 inline bool AffinityBugWorkaround(void(*pfn)(void*))
 {
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Sometimes after a few hours affinity gets stuck on one processor
     DWORD dwProcessAffinityMask = -1;
     DWORD dwSystemAffinityMask = -1;

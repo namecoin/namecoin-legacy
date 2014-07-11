@@ -63,7 +63,7 @@ public:
             ppmutexOpenSSL[i] = new boost::interprocess::interprocess_mutex();
         CRYPTO_set_locking_callback(locking_callback);
 
-#ifdef __WXMSW__
+#ifdef _WIN32
         // Seed random number generator with screen scrape and other hardware sources
         RAND_screen();
 #endif
@@ -107,7 +107,7 @@ void RandAddSeedPerfmon()
         return;
     nLastPerfmon = GetTime();
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
     // Seed with the entire set of perfmon data
     unsigned char pdata[250000];
@@ -326,7 +326,7 @@ inline int OutputDebugStringF(const char* pszFormat, ...)
         }
     }
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     if (fPrintToDebugger)
     {
         static CCriticalSection cs_OutputDebugStringF;
@@ -617,7 +617,7 @@ void ParseParameters(int argc, char* argv[])
             pszValue = strchr(psz, '=');
             *pszValue++ = '\0';
         }
-        #ifdef __WXMSW__
+        #ifdef _WIN32
         _strlwr(psz);
         if (psz[0] == '/')
             psz[0] = '-';
@@ -704,7 +704,7 @@ bool WildcardMatch(const string& str, const string& mask)
 
 void FormatException(char* pszMessage, std::exception* pex, const char* pszThread)
 {
-#ifdef __WXMSW__
+#ifdef _WIN32
     char pszModule[MAX_PATH];
     pszModule[0] = '\0';
     GetModuleFileNameA(NULL, pszModule, sizeof(pszModule));
@@ -775,7 +775,7 @@ void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 
 
 
-#ifdef __WXMSW__
+#ifdef _WIN32
 typedef WINSHELLAPI BOOL (WINAPI *PSHGETSPECIALFOLDERPATHA)(HWND hwndOwner, LPSTR lpszPath, int nFolder, BOOL fCreate);
 
 string MyGetSpecialFolderPath(int nFolder, bool fCreate)
@@ -818,7 +818,7 @@ string GetDefaultDataDir()
     // Windows: C:\Documents and Settings\username\Application Data\Namecoin
     // Mac: ~/Library/Application Support/Namecoin
     // Unix: ~/.namecoin
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Windows
     return MyGetSpecialFolderPath(CSIDL_APPDATA, true) + "\\" + strSuffix;
 #else
@@ -828,7 +828,7 @@ string GetDefaultDataDir()
     string strHome = pszHome;
     if (strHome[strHome.size()-1] != '/')
         strHome += '/';
-#ifdef MAC_OSX
+#ifdef __APPLE__
     // Mac
     strHome += "Library/Application Support/";
     filesystem::create_directory(strHome.c_str());

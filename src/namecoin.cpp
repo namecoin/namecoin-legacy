@@ -2665,15 +2665,13 @@ unsigned int pnSeed[] = { 0x58cea445, 0x2b562f4e, 0x291f20b2, 0 };
 const char *strDNSSeed[] = { NULL };
 
 string GetDefaultDataDirSuffix() {
-#ifdef __WXMSW__
+#if defined(_WIN32)
     // Windows
     return string("Namecoin");
-#else
-#ifdef MAC_OSX
+#elif defined(__APPLE__)
     return string("Namecoin");
 #else
     return string(".namecoin");
-#endif
 #endif
 }
 
