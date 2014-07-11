@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "managenamespage.h"
-#include "ui_managenamespage.h"
+#include "managenamespage.ui.h"
 
 #include "walletmodel.h"
 #include "nametablemodel.h"

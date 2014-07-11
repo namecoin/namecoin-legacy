@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "addressbookpage.h"
-#include "ui_addressbookpage.h"
+#include "addressbookpage.ui.h"
 
 #include "addresstablemodel.h"
 #include "optionsmodel.h"

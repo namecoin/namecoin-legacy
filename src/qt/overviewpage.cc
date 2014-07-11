@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "overviewpage.h"
-#include "ui_overviewpage.h"
+#include "overviewpage.ui.h"
 
 #include "clientmodel.h"
 #include "walletmodel.h"

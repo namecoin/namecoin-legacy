@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "optionsdialog.h"
-#include "ui_optionsdialog.h"
+#include "optionsdialog.ui.h"
 
 #include "bitcoinunits.h"
 #include "monitoreddatamapper.h"

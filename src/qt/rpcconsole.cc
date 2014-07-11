@@ -4,7 +4,7 @@
 #include "../json/json_spirit_writer_template.h"
 
 #include "rpcconsole.h"
-#include "ui_rpcconsole.h"
+#include "rpcconsole.ui.h"
 
 #include "clientmodel.h"
 #include "../bitcoinrpc.h"

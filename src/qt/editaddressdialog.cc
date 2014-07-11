@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "editaddressdialog.h"
-#include "ui_editaddressdialog.h"
+#include "editaddressdialog.ui.h"
 
 #include "addresstablemodel.h"
 #include "guiutil.h"

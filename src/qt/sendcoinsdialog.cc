@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "sendcoinsdialog.h"
-#include "ui_sendcoinsdialog.h"
+#include "sendcoinsdialog.ui.h"
 
 #include "walletmodel.h"
 #include "bitcoinunits.h"

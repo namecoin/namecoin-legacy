@@ -1,5 +1,9 @@
 *~
+*.moc
+*.moc.cc
 *.o
+*.qrc.cc
+*.ui.h
 .deps
 aclocal.m4
 autom4te.cache
@@ -9,5 +13,8 @@ config.h.in
 config.log
 config.status
 configure
+extra.mk
 src/namecoind
 src/namecoind.exe
+src/namecoin-qt
+src/namecoin-qt.exe

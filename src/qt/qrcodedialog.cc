@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "qrcodedialog.h"
-#include "ui_qrcodedialog.h"
+#include "qrcodedialog.ui.h"
 
 #include "bitcoinunits.h"
 #include "guiconstants.h"

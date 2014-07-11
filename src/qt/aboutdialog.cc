@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "aboutdialog.h"
-#include "ui_aboutdialog.h"
+#include "aboutdialog.ui.h"
 #include "guiconstants.h"
 #include "clientmodel.h"
 

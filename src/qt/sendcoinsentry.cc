@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "sendcoinsentry.h"
-#include "ui_sendcoinsentry.h"
+#include "sendcoinsentry.ui.h"
 
 #include "guiutil.h"
 #include "bitcoinunits.h"

@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "transactiondescdialog.h"
-#include "ui_transactiondescdialog.h"
+#include "transactiondescdialog.ui.h"
 #include "transactiontablemodel.h"
 #include "guiconstants.h"
 

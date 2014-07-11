@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "signverifymessagedialog.h"
-#include "ui_signverifymessagedialog.h"
+#include "signverifymessagedialog.ui.h"
 
 #include "addressbookpage.h"
 #include "../headers.h"
