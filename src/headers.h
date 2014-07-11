@@ -62,7 +62,7 @@
 
 #include <boost/foreach.hpp>
 
-#ifdef __WXMSW__
+#ifdef _WIN32
 #include <windows.h>
 #include <winsock2.h>
 #include <mswsock.h>

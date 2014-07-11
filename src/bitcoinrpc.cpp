@@ -312,19 +312,17 @@ GetDifficulty ()
   return GetDifficulty (pindexBest->nBits);
 }
 
-Value BlockToValue(CBlock &block)
+Value BlockToValue(const CBlock &block, const CBlockIndex* blockindex)
 {
     Object obj;
+    CMerkleTx txGen(block.vtx[0]);
+    txGen.SetMerkleBranch(&block);
     obj.push_back(Pair("hash", block.GetHash().ToString().c_str()));
-    obj.push_back(Pair("version", block.nVersion));
-    obj.push_back(Pair("previousblockhash", block.hashPrevBlock.ToString().c_str()));
-    obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
-    obj.push_back(Pair("time", (uint64_t)block.nTime));
-    obj.push_back(Pair("bits", (uint64_t)block.nBits));
-    obj.push_back(Pair("difficulty", GetDifficulty (block.nBits)));
-    obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
-    obj.push_back(Pair("n_tx", (int)block.vtx.size()));
+    obj.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain()));
     obj.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK)));
+    obj.push_back(Pair("height", blockindex->nHeight));
+    obj.push_back(Pair("version", block.nVersion));
+    obj.push_back(Pair("merkleroot", block.hashMerkleRoot.ToString().c_str()));
 
     Array tx;
     for (int i = 0; i < block.vtx.size(); i++) {
@@ -332,6 +330,18 @@ Value BlockToValue(CBlock &block)
     }
 
     obj.push_back(Pair("tx", tx));
+    obj.push_back(Pair("n_tx", (int)block.vtx.size()));
+    obj.push_back(Pair("time", (uint64_t)block.nTime));
+    obj.push_back(Pair("nonce", (uint64_t)block.nNonce));
+    obj.push_back(Pair("bits", (uint64_t)block.nBits));
+    obj.push_back(Pair("difficulty", GetDifficulty (block.nBits)));
+    obj.push_back(Pair("chainwork", blockindex->bnChainWork.GetHex()));
+
+    if (blockindex->pprev)
+        obj.push_back(Pair("previousblockhash", block.hashPrevBlock.ToString().c_str()));
+    const CBlockIndex *pnext = blockindex->pnext;
+    if (pnext)
+        obj.push_back(Pair("nextblockhash", pnext->GetBlockHash().GetHex()));
 
     Array mrkl;
     for (int i = 0; i < block.vMerkleTree.size(); i++)
@@ -379,7 +389,7 @@ Value getblockbycount(const Array& params, bool fHelp)
     block.ReadFromDisk(pindex);
     block.BuildMerkleTree();
 
-    return BlockToValue(block);
+    return BlockToValue(block, pindex);
 }
 
 
@@ -403,7 +413,7 @@ Value getblock(const Array& params, bool fHelp)
     block.ReadFromDisk(pindex);
     block.BuildMerkleTree();
 
-    return BlockToValue(block);
+    return BlockToValue(block, pindex);
 }
 
 /* Comparison function for sorting the getchains heads.  */

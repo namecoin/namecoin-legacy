@@ -9,7 +9,7 @@
 #include <QKeyEvent>
 
 AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::AskPassphraseDialog),
     mode(mode),
     model(0),

@@ -9,7 +9,7 @@
 #include "init.h"
 #include "strlcpy.h"
 
-#ifdef __WXMSW__
+#ifdef _WIN32
 #include <string.h>
 // This file can be downloaded as a part of the Windows Platform SDK
 // and is required for Bitcoin binaries to work properly on versions
@@ -51,7 +51,7 @@ uint64 nLocalServices = (fClient ? 0 : NODE_NETWORK);
 CAddress addrLocalHost("0.0.0.0", 0, false, nLocalServices);
 CNode* pnodeLocalHost = NULL;
 uint64 nLocalHostNonce = 0;
-array<int, 10> vnThreadsRunning;
+boost::array<int, 10> vnThreadsRunning;
 SOCKET hListenSocket = INVALID_SOCKET;
 
 CNodeList vNodes(true);
@@ -129,7 +129,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
     bool fProxy = (fUseProxy && addrConnect.IsRoutable());
     struct sockaddr_in sockaddr = (fProxy ? addrProxy.GetSockAddr() : addrConnect.GetSockAddr());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     u_long fNonblock = 1;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -168,7 +168,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
                 return false;
             }
             socklen_t nRetSize = sizeof(nRet);
-#ifdef __WXMSW__
+#ifdef _WIN32
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, (char*)(&nRet), &nRetSize) == SOCKET_ERROR)
 #else
             if (getsockopt(hSocket, SOL_SOCKET, SO_ERROR, &nRet, &nRetSize) == SOCKET_ERROR)
@@ -185,7 +185,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
                 return false;
             }
         }
-#ifdef __WXMSW__
+#ifdef _WIN32
         else if (WSAGetLastError() != WSAEISCONN)
 #else
         else
@@ -202,7 +202,7 @@ bool ConnectSocket(const CAddress& addrConnect, SOCKET& hSocketRet, int nTimeout
     CNode::ConnectNode immediately turns the socket back to non-blocking
     but we'll turn it back to blocking just in case
     */
-#ifdef __WXMSW__
+#ifdef _WIN32
     fNonblock = 0;
     if (ioctlsocket(hSocket, FIONBIO, &fNonblock) == SOCKET_ERROR)
 #else
@@ -687,7 +687,7 @@ CNode* ConnectNode(CAddress addrConnect, int64 nTimeout)
         printf("connected %s\n", addrConnect.ToString().c_str());
 
         // Set to nonblocking
-#ifdef __WXMSW__
+#ifdef _WIN32
         u_long nOne = 1;
         if (ioctlsocket(hSocket, FIONBIO, &nOne) == SOCKET_ERROR)
             printf("ConnectSocket() : ioctlsocket nonblocking setting failed, error %d\n", WSAGetLastError());
@@ -1088,8 +1088,7 @@ void ThreadMapPort2(void* parg)
 {
     printf("ThreadMapPort started\n");
 
-    char port[6];
-    sprintf(port, "%d", GetListenPort());
+    std::string port = strprintf("%u", GetListenPort());
 
     const char * rootdescurl = 0;
     const char * multicastif = 0;
@@ -1113,25 +1112,26 @@ void ThreadMapPort2(void* parg)
     r = UPNP_GetValidIGD(devlist, &urls, &data, lanaddr, sizeof(lanaddr));
     if (r == 1)
     {
-        char intClient[16];
-        char intPort[6];
+	string strDesc = "Namecoin " + FormatFullVersion();
 
-#if !defined(__WXMSW__) && !defined(MAC_OSX)
+#ifndef UPNPDISCOVER_SUCCESS
+                /* miniupnpc 1.5 */
         r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-	                        port, port, lanaddr, 0, "TCP", 0);
+	                        port.c_str(), port.c_str(), lanaddr, strDesc.c_str(), "TCP", 0);
 #else
+                /* miniupnpc 1.6 */
         r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-	                        port, port, lanaddr, 0, "TCP", 0, "0");
+	                        port.c_str(), port.c_str(), lanaddr, strDesc.c_str(), "TCP", 0, "0");
 #endif
         if(r!=UPNPCOMMAND_SUCCESS)
             printf("AddPortMapping(%s, %s, %s) failed with code %d (%s)\n",
-                port, port, lanaddr, r, strupnperror(r));
+                port.c_str(), port.c_str(), lanaddr, r, strupnperror(r));
         else
             printf("UPnP Port Mapping successful.\n");
         loop {
             if (fShutdown || !fUseUPnP)
             {
-                r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port, "TCP", 0);
+                r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype, port.c_str(), "TCP", 0);
                 printf("UPNP_DeletePortMapping() returned : %d\n", r);
                 freeUPNPDevlist(devlist); devlist = 0;
                 FreeUPNPUrls(&urls);
@@ -1535,7 +1535,7 @@ bool BindListenPort(string& strError)
     int nOne = 1;
     addrLocalHost.port = htons(GetListenPort());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Initialize Windows Sockets
     WSADATA wsadata;
     int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
@@ -1561,13 +1561,13 @@ bool BindListenPort(string& strError)
     setsockopt(hListenSocket, SOL_SOCKET, SO_NOSIGPIPE, (void*)&nOne, sizeof(int));
 #endif
 
-#ifndef __WXMSW__
+#ifndef _WIN32
     // Allow binding if the port is still in TIME_WAIT state after
     // the program was closed and restarted.  Not an issue on windows.
     setsockopt(hListenSocket, SOL_SOCKET, SO_REUSEADDR, (void*)&nOne, sizeof(int));
 #endif
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Set to nonblocking, incoming connections will also inherit this
     if (ioctlsocket(hListenSocket, FIONBIO, (u_long*)&nOne) == SOCKET_ERROR)
 #else
@@ -1614,7 +1614,7 @@ void StartNode(void* parg)
     if (pnodeLocalHost == NULL)
         pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress("127.0.0.1", 0, false, nLocalServices));
 
-#ifdef __WXMSW__
+#ifdef _WIN32
     // Get local host ip
     char pszHostName[1000] = "";
     if (gethostname(pszHostName, sizeof(pszHostName)) != SOCKET_ERROR)
@@ -1692,7 +1692,7 @@ void StartNode(void* parg)
         printf("Error: CreateThread(ThreadIRCSeed) failed\n");
 
     // Send and receive from sockets, accept connections
-    pthread_t hThreadSocketHandler = CreateThread(ThreadSocketHandler, NULL, true);
+    CreateThread(ThreadSocketHandler, NULL);
 
     // Initiate outbound connections
     if (!CreateThread(ThreadOpenConnections, NULL))
@@ -1747,7 +1747,7 @@ public:
             if (closesocket(hListenSocket) == SOCKET_ERROR)
                 printf("closesocket(hListenSocket) failed with error %d\n", WSAGetLastError());
 
-#ifdef __WXMSW__
+#ifdef _WIN32
         // Shutdown Windows Sockets
         WSACleanup();
 #endif

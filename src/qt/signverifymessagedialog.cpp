@@ -4,6 +4,7 @@
 #include "addressbookpage.h"
 #include "../headers.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 #include "../init.h"
 #include "../wallet.h"
 #include "optionsmodel.h"
@@ -15,7 +16,7 @@
 #include <vector>
 
 SignVerifyMessageDialog::SignVerifyMessageDialog(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::SignVerifyMessageDialog),
     model(0)
 {

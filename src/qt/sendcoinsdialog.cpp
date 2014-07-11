@@ -7,6 +7,7 @@
 #include "optionsmodel.h"
 #include "sendcoinsentry.h"
 #include "guiutil.h"
+#include "guiconstants.h"
 #include "askpassphrasedialog.h"
 #include "../base58.h"
 #include "ui_interface.h"
@@ -16,7 +17,7 @@
 #include <QScrollBar>
 
 SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
-    QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint),
+    QDialog(parent, DIALOGWINDOWHINTS),
     ui(new Ui::SendCoinsDialog),
     model(0)
 {
@@ -94,7 +95,22 @@ void SendCoinsDialog::on_sendButton_clicked()
     QStringList formatted;
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
-        formatted.append(tr("<b>%1</b> to %2 (%3)").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, rcp.amount), Qt::escape(rcp.label), rcp.address));
+        QString addrOrName;
+        if (model->validateAddress (rcp.recipient))
+          addrOrName = rcp.recipient;
+        else
+          {
+            QString address;
+            if (!model->checkRecipientName (rcp.recipient, address))
+              return;
+            addrOrName = QString("%1: %2").arg (rcp.recipient, address);
+          }
+
+#if QT_VERSION < 0x050000
+        formatted.append(tr("<b>%1</b> to %2 (%3)").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, rcp.amount), Qt::escape(rcp.label), addrOrName));
+#else
+        formatted.append(tr("<b>%1</b> to %2 (%3)").arg(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, rcp.amount), rcp.label.toHtmlEscaped(), addrOrName));
+#endif
     }
 
     fNewRecipientAllowed = false;
@@ -295,7 +311,7 @@ bool SendCoinsDialog::handleURI(const QString &uri)
     // URI has to be valid
     if (GUIUtil::parseBitcoinURI(uri, &rv))
     {
-        CBitcoinAddress address(rv.address.toStdString());
+        CBitcoinAddress address(rv.recipient.toStdString());
         if (!address.IsValid())
             return false;
         pasteEntry(rv);

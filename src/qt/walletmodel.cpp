@@ -15,8 +15,22 @@
 #include <QTimer>
 #include <QDateTime>
 
+#include <boost/xpressive/xpressive_dynamic.hpp>
+
 std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFirstUpdate;
 std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
+
+QString
+SendCoinsRecipient::getAddress (const WalletModel& model) const
+{
+  if (model.validateAddress (recipient))
+    return recipient;
+
+  QString address;
+  if (!model.checkRecipientName (recipient, address))
+    address = "";
+  return address;
+}
 
 WalletModel::WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *parent) :
     QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
@@ -343,10 +357,48 @@ void WalletModel::updateAddressBook(const QString &address, const QString &label
         addressTableModel->updateEntry(address, label, isMine, status);
 }
 
-bool WalletModel::validateAddress(const QString &address)
+bool
+WalletModel::validateAddress(const QString& address) const
 {
     CBitcoinAddress addressParsed(address.toStdString());
     return addressParsed.IsValid();
+}
+
+bool
+WalletModel::checkRecipientName (const QString& name, QString& address) const
+{
+  /* Check that the name contains a namespace and consists only of
+     basic characters (a-z, 0-9 and dash).  This is to prevent
+     tricking people into sending to other names than they intend, and
+     to prevent squatting of the "no namespace" names.
+
+     This check also distinguishes names from addresses, which do not
+     have a namespace and contain upper case characters (most probably).  */
+
+  using namespace boost::xpressive;
+  static const char* regexStr = "^[a-z]+/[a-z0-9]+([-]?[a-z0-9])*$";
+  static const sregex regex = sregex::compile (regexStr);
+  smatch match;
+  if (!regex_search (name.toStdString (), match, regex))
+    return false;
+
+  /* Query information about the name and try to find its address.  */
+
+  const vchType vchName = vchFromString (name.toStdString ());
+  CNameDB dbName("r");
+  if (!dbName.ExistsName (vchName))
+    return false;
+
+  CTransaction tx;
+  if (!GetTxOfName (dbName, vchName, tx))
+    return false;
+
+  std::string addr;
+  if (!GetNameAddress (tx, addr))
+    return false;
+
+  address = QString::fromStdString (addr);
+  return true;
 }
 
 WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipient> &recipients)
@@ -363,11 +415,10 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
     // Pre-check input data for validity
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
-        if(!validateAddress(rcp.address))
-        {
-            return InvalidAddress;
-        }
-        setAddress.insert(rcp.address);
+        const QString address = rcp.getAddress (*this);
+        if (address == "")
+          return InvalidAddress;
+        setAddress.insert (address);
 
         if(rcp.amount <= 0)
         {
@@ -398,8 +449,12 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
         std::vector<std::pair<CScript, int64> > vecSend;
         foreach(const SendCoinsRecipient &rcp, recipients)
         {
+            const std::string addr = rcp.getAddress (*this).toStdString ();
+            const CBitcoinAddress parsedAddr(addr);
+
             CScript scriptPubKey;
-            scriptPubKey.SetDestination(CBitcoinAddress(rcp.address.toStdString()).Get());
+            scriptPubKey.SetDestination (parsedAddr.Get ());
+
             vecSend.push_back(std::make_pair(scriptPubKey, rcp.amount));
         }
 
@@ -430,7 +485,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
     // Add addresses / update labels that we've sent to to the address book
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
-        std::string strAddress = rcp.address.toStdString();
+        const std::string strAddress = rcp.getAddress (*this).toStdString ();
         CTxDestination dest = CBitcoinAddress(strAddress).Get();
         std::string strLabel = rcp.label.toStdString();
         {

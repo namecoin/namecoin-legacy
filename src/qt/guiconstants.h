@@ -31,4 +31,12 @@ static const int MAX_URI_LENGTH = 255;
 /* QRCodeDialog -- size of exported QR Code image */
 #define EXPORT_IMAGE_SIZE 256
 
+// Dialog Window Flags
+#if QT_VERSION < 0x050000
+    static const Qt::WindowFlags DIALOGWINDOWHINTS = Qt::WindowSystemMenuHint | Qt::WindowTitleHint;
+#else
+    static const Qt::WindowFlags DIALOGWINDOWHINTS = Qt::WindowCloseButtonHint | Qt::WindowTitleHint;
+#endif
+
+
 #endif // GUICONSTANTS_H

@@ -1,3 +1,7 @@
+* New command line / .conf file option: -walletpath=customwalletfilename.dat (digital-dreamer)
+* "Pay To" in the Qt can be used to send coins also to a name, like "sendtoname" (Domob)
+* New RPC block info: height, confirmations, chainwork, nextblockhash. Change: No previousblockhash for block 0 (RyanC)
+
 v0.3.75
 =======
 * Add difficulty to RPC block output JSON (Domob)
