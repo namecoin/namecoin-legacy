@@ -68,16 +68,16 @@ AS_IF([test x"$with_qt" != x"no"], [
 		AC_MSG_ERROR([Qt{Core,Gui,Network} >= 4.8 not found!])
 	])
 
-	AC_CHECK_TOOL(MOC, moc)
+	AC_CHECK_TOOLS(MOC, [moc-qt4 moc])
 	AS_IF([test -z "$MOC"], [AC_MSG_ERROR([moc not found!])])
 
-	AC_CHECK_TOOL(UIC, uic)
+	AC_CHECK_TOOLS(UIC, [uic-qt4 uic])
 	AS_IF([test -z "$UIC"], [AC_MSG_ERROR([uic not found!])])
 
-	AC_CHECK_TOOL(RCC, rcc)
+	AC_CHECK_TOOLS(RCC, [rcc-qt4 rcc])
 	AS_IF([test -z "$RCC"], [AC_MSG_ERROR([rcc not found!])])
 
-	AC_CHECK_TOOL(LRELEASE, lrelease)
+	AC_CHECK_TOOLS(LRELEASE, [lrelease-qt4 lrelease])
 	AS_IF([test -z "$LRELEASE"], [AC_MSG_ERROR([lrelease not found!])])
 
 	AC_DEFINE(GUI, 1, [Whether we build the GUI version])
