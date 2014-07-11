@@ -109,12 +109,13 @@ T* alignup(T* p)
     return u.ptr;
 }
 
+#define MSG_NOSIGNAL        0
+
 #ifdef __WXMSW__
 #include <windows.h>
 #include <winsock2.h>
 #include <mswsock.h>
 
-#define MSG_NOSIGNAL        0
 #define MSG_DONTWAIT        0
 #ifndef UINT64_MAX
 #define UINT64_MAX          _UI64_MAX
