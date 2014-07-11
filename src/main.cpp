@@ -51,6 +51,8 @@ map<uint256, CDataStream*> mapOrphanTransactions;
 multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
 
 const std::string strMessageMagic = "Bitcoin Signed Message:\n";
+static const unsigned BLOCKFILE_MAX_SIZE = 0x7F000000;
+static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
 
 double dHashesPerSec;
 int64 nHPSTimerStart;
@@ -1500,8 +1502,10 @@ bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     fileout << *this;
 
     // Check that the total size estimate was correct.
-    if (ftell (fileout) - startPos != nTotalSize)
-      return error ("CBlock::WriteToDisk: nTotalSize was wrong");
+    const unsigned writtenSize = ftell (fileout) - startPos;
+    if (writtenSize != nTotalSize)
+      return error ("CBlock::WriteToDisk: nTotalSize was wrong: %d / %d",
+                    nTotalSize, writtenSize);
 
     // Flush stdio buffers and commit to disk before returning
     FlushBlockFile(fileout);
@@ -1802,6 +1806,8 @@ static unsigned int nCurrentBlockFile = 1;
 FILE*
 AppendBlockFile (unsigned int& nFileRet, unsigned size)
 {
+    CTxDB txdb("r+");
+
     if (!CheckDiskSpace (size))
       {
         printf ("ERROR: AppendBlockFile: out of disk space");
@@ -1810,23 +1816,72 @@ AppendBlockFile (unsigned int& nFileRet, unsigned size)
     if (fDebug)
       printf ("AppendBlockFile: adding %u bytes\n", size);
 
+    FILE* file = NULL;
     nFileRet = 0;
     loop
     {
-        FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+        /* We want to open the file in "r+" mode, so that we can write
+           not only at the end (so that overwriting reserved bytes is possible).
+           Make sure the file exists first.  */
+        file = OpenBlockFile (nCurrentBlockFile, 0, "ab");
+        fclose (file);
+        file = OpenBlockFile (nCurrentBlockFile, 0, "rb+");
         if (!file)
-            return NULL;
-        if (fseek(file, 0, SEEK_END) != 0)
-            return NULL;
-        // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < 0x7F000000 - size)
-        {
-            nFileRet = nCurrentBlockFile;
-            return file;
-        }
+          goto error;
+
+        /* reserved should be an int, since otherwise -reserved below
+           fails and the fseek has a wrong effect.  */
+        int reserved = txdb.ReadBlockFileReserved (nCurrentBlockFile);
+        if (size <= reserved)
+          {
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
+        if (fseek (file, 0, SEEK_END) != 0)
+          goto error;
+        const unsigned fileSize = ftell (file);
+        assert (fileSize >= reserved);
+        const unsigned addedChunk = std::max (BLOCKFILE_CHUNK_SIZE,
+                                              size - reserved);
+
+        if (fileSize + addedChunk <= BLOCKFILE_MAX_SIZE)
+          {
+            std::vector<char> buf(addedChunk, '\0');
+            const unsigned written = fwrite (&buf[0], 1, addedChunk, file);
+            if (written != addedChunk)
+              {
+                printf ("ERROR: AppendBlockFile: write to extend"
+                        " by %u bytes failed, only %u written\n",
+                        addedChunk, written);
+                goto error;
+              }
+            printf ("Block file extended by %u bytes.\n", written);
+              
+            reserved += addedChunk;
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
         fclose(file);
         nCurrentBlockFile++;
     }
+
+    nFileRet = nCurrentBlockFile;
+    return file;
+
+error:
+    if (file)
+      fclose (file);
+    return NULL;
 }
 
 void FlushBlockFile(FILE *f)

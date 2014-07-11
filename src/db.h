@@ -355,6 +355,12 @@ public:
     bool WriteHashBestChain(uint256 hashBestChain);
     bool ReadBestInvalidWork(CBigNum& bnBestInvalidWork);
     bool WriteBestInvalidWork(CBigNum bnBestInvalidWork);
+
+    /* Read/write number of "reserved" (but not yet used) bytes in the
+       block files.  */
+    unsigned ReadBlockFileReserved (unsigned num);
+    bool WriteBlockFileReserved (unsigned num, unsigned size);
+
     bool LoadBlockIndex();
 
     /* Update txindex to new data format.  */
