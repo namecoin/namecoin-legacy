@@ -5,8 +5,11 @@ AC_CONFIG_SRCDIR(src)
 
 AC_LANG([C++])
 AC_PROG_CXX
-AC_PROG_CPP
+AC_PROG_CXXCPP
 AC_PROG_INSTALL
+
+CPP="$CXXCPP"
+CPPFLAGS="$CPPFLAGS $CXXCPPFLAGS"
 
 AC_CHECK_HEADER([boost/foreach.hpp], [], [
 	AC_MSG_ERROR([Boost headers not found!])
@@ -51,6 +54,11 @@ AS_IF([test x"$with_miniupnpc" != x"no"], [
 		AC_MSG_ERROR([miniupnpc headers not found!])
 	])
 ])
+
+dnl We don't call AC_PROG_CPP, but only AC_PROG_CXXCPP and set CPP to CXXCPP
+dnl and add CXXCPPFLAGS to CPPFLAGS, thus we need to AC_SUBST these ourself.
+AC_SUBST(CPP)
+AC_SUBST(CPPFLAGS)
 
 AC_CONFIG_FILES(buildsys.mk)
 AC_CONFIG_HEADERS(config.h)
