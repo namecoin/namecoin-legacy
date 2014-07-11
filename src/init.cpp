@@ -367,6 +367,14 @@ bool AppInit2(int argc, char* argv[])
     strErrors = "";
     int64 nStart;
 
+    /* Start the RPC server already here.  This is to make it available
+       "immediately" upon starting the daemon process.  Until everything
+       is initialised, it will always just return a "status error" and
+       not try to access the uninitialised stuff.  */
+    if (fServer)
+        CreateThread(ThreadRPCServer, NULL);
+
+    rpcWarmupStatus = "loading addresses";
     printf("Loading addresses...\n");
     nStart = GetTimeMillis();
     if (!LoadAddresses())
@@ -398,12 +406,14 @@ bool AppInit2(int argc, char* argv[])
       CNameDB dbName("cr+");
     }
 
+    rpcWarmupStatus = "loading block index";
     printf("Loading block index...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
         strErrors += _("Error loading blkindex.dat      \n");
     printf(" block index %15"PRI64d"ms\n", GetTimeMillis() - nStart);
 
+    rpcWarmupStatus = "loading wallet";
     printf("Loading wallet...\n");
     nStart = GetTimeMillis();
     bool fFirstRun;
@@ -421,8 +431,11 @@ bool AppInit2(int argc, char* argv[])
 
     /* Rescan for name index now if we need to do it.  */
     if (needNameRescan)
-      rescanfornames ();
-
+      {
+        rpcWarmupStatus = "rescanning for names";
+        rescanfornames ();
+      }
+    
     // Read -mininput before -rescan, otherwise rescan will skip transactions
     // lower than the default mininput
     if (mapArgs.count("-mininput"))
@@ -434,6 +447,7 @@ bool AppInit2(int argc, char* argv[])
         }
     }
 
+    rpcWarmupStatus = "rescanning blockchain";
     CBlockIndex *pindexRescan = pindexBest;
     if (GetBoolArg("-rescan"))
         pindexRescan = pindexGenesisBlock;
@@ -470,6 +484,7 @@ bool AppInit2(int argc, char* argv[])
     }
 
     // Add wallet transactions that aren't already in a block to mapTransactions
+    rpcWarmupStatus = "reaccept wallet transactions";
     pwalletMain->ReacceptWalletTransactions();
 
     //
@@ -578,8 +593,9 @@ bool AppInit2(int argc, char* argv[])
     if (!CreateThread(StartNode, NULL))
         wxMessageBox("Error: CreateThread(StartNode) failed", "Namecoin");
 
-    if (fServer)
-        CreateThread(ThreadRPCServer, NULL);
+    /* We're done initialising, from now on, the RPC daemon
+       can work as usual.  */
+    rpcWarmupStatus = NULL;
 
 #if defined(__WXMSW__) && defined(GUI)
     if (fFirstRun)

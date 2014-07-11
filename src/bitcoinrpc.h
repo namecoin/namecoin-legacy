@@ -78,6 +78,13 @@ enum RPCErrorCode
 
     // Async method call interrupted.
     RPC_ASYNC_INTERRUPT             = -100,
+    // Daemon in warm-up phase.
+    RPC_IN_WARMUP                   = -101,
 };
+
+/* Keep track of current "warmup status".  This is set to a descriptive
+   string while initialising everything, and NULL if the RPC process
+   can function as normal.  */
+extern const char* rpcWarmupStatus;
 
 #endif
