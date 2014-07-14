@@ -22,4 +22,7 @@ copy %QTPATHF%\icuin52.dll %ROOTPATH%\release\
 copy %QTPATHF%\icuuc52.dll %ROOTPATH%\release\
 copy %QTPATHF%\icudt52.dll %ROOTPATH%\release\
 
+mkdir %ROOTPATH%\release\platforms
+copy %QTPATHF%\..\plugins\platforms\qwindows.dll %ROOTPATH%\release\platforms
+
 @if not "%RUNALL%"=="1" pause
