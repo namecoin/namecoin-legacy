@@ -642,7 +642,7 @@ CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 
     // Read block header
     CBlock block;
-    if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
+    if (!block.ReadFromDisk (pos.nFile, pos.nBlockPos, false))
         return NULL;
 
     // Find the block in the index
