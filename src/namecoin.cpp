@@ -28,6 +28,9 @@ template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 static const int BUG_WORKAROUND_BLOCK_START = 139750;   // Bug was not exploited before block 139872, so skip checking earlier blocks
 static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
 
+/* Softfork point where the dustspam block was introduced.  */
+static const int FORK_HEIGHT_DUSTSPAM = 300000;
+
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
 
@@ -1931,6 +1934,44 @@ int64 GetNameNetFee(const CTransaction& tx)
     }
 
     return nFee;
+}
+
+bool
+IsUnspendable (const CTxOut& txo, int nPrevHeight, int nHeight)
+{
+  assert (nPrevHeight <= nHeight);
+
+  /* An OP_RETURN script as per network fee payments is always
+     unspendable.  Check this.  */
+  const CScript& script = txo.scriptPubKey;
+  if (script.size () == 1 && script[0] == OP_RETURN)
+    return true;
+
+  /* Block dust spam outputs, so that they can be removed from the UTXO
+     set.  We block all 1-Swartz outputs created between blocks 39k and 41k.
+     Blocking takes effect at the softfork height.  */
+  if (txo.nValue == 1 && nPrevHeight >= 39000 && nPrevHeight <= 41000
+      && nHeight >= FORK_HEIGHT_DUSTSPAM)
+    return true;
+
+  /* A name_update or name_firstupdate is unspendable if expired.  */
+  if (nHeight >= nPrevHeight + GetExpirationDepth (nHeight))
+    {
+      int op;
+      std::vector<vchType> vvch;
+      if (DecodeNameScript (script, op, vvch))
+        switch (op)
+          {
+          case OP_NAME_FIRSTUPDATE:
+          case OP_NAME_UPDATE:
+            return true;
+
+          default:
+            break;
+          }
+    }
+
+  return false;
 }
 
 bool GetValueOfNameTx(const CTransaction& tx, vector<unsigned char>& value)
