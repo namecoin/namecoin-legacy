@@ -1,6 +1,9 @@
 * contrib/easywinbuilder: Qt5/MinGW4.8.2/cleanup (phelix)
 * Qt5 compatibility (Canercandan/phelix)
+* New command line / .conf file option: -walletpath=customwalletfilename.dat (digital-dreamer)
+* "Pay To" in the Qt can be used to send coins also to a name, like "sendtoname" (Domob)
 * New RPC block info: height, confirmations, chainwork, nextblockhash. Change: No previousblockhash for block 0 (RyanC)
+* The RPC interface now returns an error while initialising, instead of not accepting connections at all (Domob)
 
 v0.3.75
 =======
