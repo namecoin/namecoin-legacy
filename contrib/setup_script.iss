@@ -24,7 +24,7 @@ OutputBaseFilename={#progname}_v{#version}_setup
 [Files]
 Source: "{#sourceFolder}\namecoin-qt.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#sourceFolder}\..\src\namecoind.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#sourceFolder}\*.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#sourceFolder}\*.dll"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Tasks]
 Name: desktopicon; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"

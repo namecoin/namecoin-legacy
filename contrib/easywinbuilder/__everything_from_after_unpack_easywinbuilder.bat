@@ -1,4 +1,10 @@
 @set RUNALL=1
+
+@if not "%WAITQT%" == "1" goto continue
+@echo Ensure Qt installer has finished.
+@pause
+:continue
+
 @call 3a_build_boost.bat
 @if errorlevel 1 goto error
 @call 3b_run_build_dep.bat

@@ -1,8 +1,4 @@
 @call set_vars.bat
-@if not "%WAITQT%" == "1" goto continue
-@echo Ensure Qt installer has finished.
-@pause
-:continue
 
 @bash patch_files.sh
 

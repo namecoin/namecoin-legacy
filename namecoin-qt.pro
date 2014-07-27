@@ -318,7 +318,7 @@ isEmpty(BOOST_INCLUDE_PATH) {
     macx:BOOST_INCLUDE_PATH = /opt/local/include
 }
 
-win32:DEFINES += WIN32 __WXMSW__ __NO_SYSTEM_INCLUDES
+win32:DEFINES += WIN32 __WXMSW__
 win32:RC_FILE = src/qt/res/bitcoin-qt.rc
 
 win32:!contains(MINGW_THREAD_BUGFIX, 0) {
