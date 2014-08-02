@@ -1438,7 +1438,7 @@ a po ní zařadí do fronty transakci name_firstupdate.</translation>
     <message>
         <location line="+71"/>
         <source>&amp;OK</source>
-        <translation>&amp;Budiž</translation>
+        <translation>&amp;OK</translation>
     </message>
     <message>
         <location line="+7"/>
@@ -1448,7 +1448,7 @@ a po ní zařadí do fronty transakci name_firstupdate.</translation>
     <message>
         <location line="+10"/>
         <source>&amp;Apply</source>
-        <translation>&amp;Uložit</translation>
+        <translation>&amp;Použít</translation>
     </message>
     <message>
         <location filename="../optionsdialog.cpp" line="+53"/>
