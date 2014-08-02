@@ -26,6 +26,7 @@ bool static ApplyProxySettings()
     if (!settings.value("fUseProxy", false).toBool()) {
         addrProxy = CService();
         nSocksVersion = 0;
+        SetProxy(NET_IPV4, addrProxy, nSocksVersion);
         return false;
     }
     if (nSocksVersion && !addrProxy.IsValid())
@@ -70,6 +71,7 @@ void OptionsModel::Init()
         SoftSetArg("-socks", settings.value("nSocksVersion").toString().toStdString());
     if (!language.isEmpty())
         SoftSetArg("-lang", language.toStdString());
+    ApplyProxySettings();
 }
 
 void OptionsModel::Reset()
