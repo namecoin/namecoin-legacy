@@ -82,6 +82,7 @@ ManageNamesPage::ManageNamesPage(QWidget *parent) :
     QAction *copyValueAction = new QAction(tr("Copy &Value"), this);
     QAction *copyAddressAction = new QAction(tr("Copy &Address"), this);
     QAction *configureNameAction = new QAction(tr("&Configure Name..."), this);
+    QAction *renewNameAction = new QAction(tr("&Renew Name"), this);
     
     // Build context menu
     contextMenu = new QMenu();
@@ -89,12 +90,15 @@ ManageNamesPage::ManageNamesPage(QWidget *parent) :
     contextMenu->addAction(copyValueAction);
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(configureNameAction);
+    contextMenu->addAction(renewNameAction);
     
     // Connect signals for context menu actions
     connect(copyNameAction, SIGNAL(triggered()), this, SLOT(onCopyNameAction()));
     connect(copyValueAction, SIGNAL(triggered()), this, SLOT(onCopyValueAction()));
     connect(copyAddressAction, SIGNAL(triggered()), this, SLOT(onCopyAddressAction()));
     connect(configureNameAction, SIGNAL(triggered()), this, SLOT(on_configureNameButton_clicked()));
+    connect (renewNameAction, SIGNAL(triggered()), this,
+             SLOT(on_renewNameButton_clicked()));
 
     connect(ui->tableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
     connect(ui->tableView, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(on_configureNameButton_clicked()));
@@ -337,10 +341,12 @@ void ManageNamesPage::selectionChanged()
     if(table->selectionModel()->hasSelection())
     {
         ui->configureNameButton->setEnabled(true);
+        ui->renewNameButton->setEnabled(true);
     }
     else
     {
         ui->configureNameButton->setEnabled(false);
+        ui->renewNameButton->setEnabled(false);
     }
 }
 
@@ -392,6 +398,36 @@ void ManageNamesPage::on_configureNameButton_clicked()
         if (mapMyNameFirstUpdate.count(vchName) != 0)
             model->updateEntry(name, dlg.getReturnData(), address, NameTableEntry::NAME_NEW, CT_UPDATED);
     }
+}
+
+void
+ManageNamesPage::on_renewNameButton_clicked ()
+{
+  const QItemSelectionModel* m = ui->tableView->selectionModel ();
+  if(!m)
+    return;
+  const QModelIndexList indexes = m->selectedRows(NameTableModel::Name);
+  if(indexes.isEmpty ())
+    return;
+
+  const QModelIndex index = indexes.at (0);
+  const QString name = index.data (Qt::EditRole).toString ();
+
+  const vchType vchName = vchFromString (name.toStdString ());
+
+  /* TODO: Warn if the "expires in" value is still high.  */
+
+  const QString msg = tr ("Are you sure you want to renew the name %1?")
+                      .arg (GUIUtil::HtmlEscape (name));
+  const QString title = tr ("Confirm name renewal");
+  QMessageBox::StandardButton res;
+  res = QMessageBox::question (this, title, msg,
+                               QMessageBox::Yes | QMessageBox::Cancel,
+                               QMessageBox::Cancel);
+  if (res != QMessageBox::Yes)
+    return;
+
+  /* TODO: Actually implement the renewal transaction.  */
 }
 
 void ManageNamesPage::exportClicked()
