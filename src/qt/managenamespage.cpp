@@ -17,6 +17,8 @@
 #include <QMenu>
 #include <QScrollBar>
 
+#include <stdexcept>
+
 extern std::map<std::vector<unsigned char>, PreparedNameFirstUpdate> mapMyNameFirstUpdate;
 
 //
@@ -413,21 +415,42 @@ ManageNamesPage::on_renewNameButton_clicked ()
   const QModelIndex index = indexes.at (0);
   const QString name = index.data (Qt::EditRole).toString ();
 
-  const vchType vchName = vchFromString (name.toStdString ());
+  try
+    {
+      const vchType vchName = vchFromString (name.toStdString ());
+      if (mapMyNameFirstUpdate.count (vchName) > 0)
+        throw tr ("This name is not yet registered");
 
-  /* TODO: Warn if the "expires in" value is still high.  */
+      /* TODO: Warn if the "expires in" value is still high.  */
 
-  const QString msg = tr ("Are you sure you want to renew the name %1?")
-                      .arg (GUIUtil::HtmlEscape (name));
-  const QString title = tr ("Confirm name renewal");
-  QMessageBox::StandardButton res;
-  res = QMessageBox::question (this, title, msg,
-                               QMessageBox::Yes | QMessageBox::Cancel,
-                               QMessageBox::Cancel);
-  if (res != QMessageBox::Yes)
-    return;
+      const QString msg
+        = tr ("Are you sure you want to renew the name <b>%1</b>?")
+          .arg (GUIUtil::HtmlEscape (name));
+      const QString title = tr ("Confirm name renewal");
 
-  /* TODO: Actually implement the renewal transaction.  */
+      QMessageBox::StandardButton res;
+      res = QMessageBox::question (this, title, msg,
+                                   QMessageBox::Yes | QMessageBox::Cancel,
+                                   QMessageBox::Cancel);
+      if (res != QMessageBox::Yes)
+        return;
+
+      WalletModel::UnlockContext ctx(walletModel->requestUnlock ());
+      if (!ctx.isValid ())
+        return;
+
+      const QString errStr = walletModel->nameRenew (name);
+      if (errStr != "" && errStr != "ABORTED")
+        throw errStr;
+    }
+  catch (const QString& str)
+    {
+      QMessageBox::critical (this, tr ("Name renewal error"), str);
+    }
+  catch (const std::exception& exc)
+    {
+      QMessageBox::critical (this, tr ("Name renewal error"), exc.what ());
+    }
 }
 
 void ManageNamesPage::exportClicked()

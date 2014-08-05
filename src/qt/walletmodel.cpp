@@ -738,6 +738,28 @@ QString WalletModel::nameUpdate(const QString &name, const QString &data, const 
     }
 }
 
+QString
+WalletModel::nameRenew (const QString& name)
+{
+  const vchType vchName = vchFromString (name.toStdString ());
+
+  vchType vchValue;
+  CRITICAL_BLOCK(cs_main)
+    {
+      CNameDB dbName("r");
+      std::vector<CNameIndex> vNameIndex;
+      if (!dbName.ReadName (vchName, vNameIndex))
+        return tr ("Failed to read from the name DB");
+      if (vNameIndex.empty ())
+        return tr ("No result returned");
+
+      vchValue = vNameIndex.back ().vValue;
+    }
+
+  const std::string strValue = stringFromVch (vchValue);
+  return nameUpdate (name, QString::fromStdString (strValue), "");
+}
+
 OptionsModel *WalletModel::getOptionsModel()
 {
     return optionsModel;
