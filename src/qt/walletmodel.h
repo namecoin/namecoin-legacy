@@ -121,6 +121,10 @@ public:
     // Requires unlocked wallet; can throw exception instead of returning error
     QString nameUpdate(const QString &name, const QString &data, const QString &transferToAddress);
 
+    /* Renew a name:  Calls nameUpdate internally, but uses the
+       name's current value.  */
+    QString nameRenew (const QString& name);
+
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
     // Passphrase only needed when unlocking
