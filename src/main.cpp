@@ -51,6 +51,8 @@ map<uint256, CDataStream*> mapOrphanTransactions;
 multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
 
 const std::string strMessageMagic = "Bitcoin Signed Message:\n";
+static const unsigned BLOCKFILE_MAX_SIZE = 0x7F000000;
+static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
 
 double dHashesPerSec;
 int64 nHPSTimerStart;
@@ -1477,6 +1479,42 @@ int GetOurChainID()
     return hooks->GetOurChainID();
 }
 
+bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
+{
+    DatabaseSet dbset("r+");
+
+    unsigned nSize;
+    unsigned nTotalSize = ::GetSerializeSize (*this, SER_DISK);
+    nTotalSize += sizeof (pchMessageStart) + sizeof (nSize);
+
+    // Open history file to append
+    CAutoFile fileout = AppendBlockFile (dbset, nFileRet, nTotalSize);
+    if (!fileout)
+        return error("CBlock::WriteToDisk() : AppendBlockFile failed");
+    const unsigned startPos = ftell (fileout);
+
+    // Write index header
+    nSize = fileout.GetSerializeSize(*this);
+    fileout << FLATDATA(pchMessageStart) << nSize;
+
+    // Write block
+    nBlockPosRet = ftell(fileout);
+    if (nBlockPosRet == -1)
+        return error("CBlock::WriteToDisk() : ftell failed");
+    fileout << *this;
+
+    // Check that the total size estimate was correct.
+    const unsigned writtenSize = ftell (fileout) - startPos;
+    if (writtenSize != nTotalSize)
+      return error ("CBlock::WriteToDisk: nTotalSize was wrong: %d / %d",
+                    nTotalSize, writtenSize);
+
+    // Flush stdio buffers and commit to disk before returning
+    FlushBlockFile(fileout);
+
+    return true;
+}
+
 bool CBlock::CheckProofOfWork(int nHeight) const
 {
     if (nHeight >= GetAuxPowStartBlock())
@@ -1599,8 +1637,6 @@ bool CBlock::AcceptBlock()
         return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
     // Write block to history file
-    if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK)))
-        return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
     if (!WriteToDisk(nFile, nBlockPos))
@@ -1722,7 +1758,8 @@ bool static ScanMessageStart(Stream& s)
     }
 }
 
-bool CheckDiskSpace(uint64 nAdditionalBytes)
+bool
+CheckDiskSpace (uint64 nAdditionalBytes)
 {
     uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
 
@@ -1765,24 +1802,100 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 
 static unsigned int nCurrentBlockFile = 1;
 
-FILE* AppendBlockFile(unsigned int& nFileRet)
+/* Append to a splitting block history file.  The given size is the number of
+   bytes that will be written.  This is used to check for disk space as well
+   as extend the file in preallocated chunks to combat fragmentation.  */
+FILE*
+AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet, unsigned size)
 {
+    CTxDB& txdb = dbset.tx ();
+
+    if (!CheckDiskSpace (size))
+      {
+        printf ("ERROR: AppendBlockFile: out of disk space");
+        return NULL;
+      }
+    if (fDebug)
+      printf ("AppendBlockFile: adding %u bytes\n", size);
+
+    FILE* file = NULL;
     nFileRet = 0;
     loop
     {
-        FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+        /* We want to open the file in "r+" mode, so that we can write
+           not only at the end (so that overwriting reserved bytes is possible).
+           Make sure the file exists first.  */
+        file = OpenBlockFile (nCurrentBlockFile, 0, "ab");
+        fclose (file);
+        file = OpenBlockFile (nCurrentBlockFile, 0, "rb+");
         if (!file)
-            return NULL;
-        if (fseek(file, 0, SEEK_END) != 0)
-            return NULL;
-        // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < 0x7F000000 - MAX_SIZE)
-        {
-            nFileRet = nCurrentBlockFile;
-            return file;
-        }
+          goto error;
+
+        /* reserved should be an int, since otherwise -reserved below
+           fails and the fseek has a wrong effect.  */
+        int reserved = txdb.ReadBlockFileReserved (nCurrentBlockFile);
+        if (size <= reserved)
+          {
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
+        if (fseek (file, 0, SEEK_END) != 0)
+          goto error;
+        const unsigned fileSize = ftell (file);
+        assert (fileSize >= reserved);
+        const unsigned addedChunk = std::max (BLOCKFILE_CHUNK_SIZE,
+                                              size - reserved);
+
+        if (fileSize + addedChunk <= BLOCKFILE_MAX_SIZE)
+          {
+            std::vector<char> buf(addedChunk, '\0');
+            const unsigned written = fwrite (&buf[0], 1, addedChunk, file);
+            if (written != addedChunk)
+              {
+                printf ("ERROR: AppendBlockFile: write to extend"
+                        " by %u bytes failed, only %u written\n",
+                        addedChunk, written);
+                goto error;
+              }
+            printf ("Block file extended by %u bytes.\n", written);
+              
+            reserved += addedChunk;
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
         fclose(file);
         nCurrentBlockFile++;
+    }
+
+    nFileRet = nCurrentBlockFile;
+    return file;
+
+error:
+    if (file)
+      fclose (file);
+    return NULL;
+}
+
+void FlushBlockFile(FILE *f)
+{
+    fflush(f);
+    if (!IsInitialBlockDownload() || (nBestHeight + 1) % 500 == 0)
+    {
+#ifdef __WXMSW__
+        _commit(_fileno(f));
+#else
+        fsync(fileno(f));
+#endif
     }
 }
 

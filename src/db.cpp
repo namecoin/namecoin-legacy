@@ -512,6 +512,29 @@ bool CTxDB::WriteBestInvalidWork(CBigNum bnBestInvalidWork)
     return Write(string("bnBestInvalidWork"), bnBestInvalidWork);
 }
 
+unsigned
+CTxDB::ReadBlockFileReserved (unsigned num)
+{
+  const std::pair<std::string, unsigned> key("blkreserved", num);
+  if (!Exists (key))
+    return 0;
+
+  unsigned res;
+  if (!Read (key, res))
+    {
+      printf ("ERROR: ReadBlockFileReserved: reading the DB failed\n");
+      return 0;
+    }
+  return res;
+}
+
+bool
+CTxDB::WriteBlockFileReserved (unsigned num, unsigned size)
+{
+  const std::pair<std::string, unsigned> key("blkreserved", num);
+  return Write (key, size);
+}
+
 CBlockIndex static * InsertBlockIndex(uint256 hash)
 {
     if (hash == 0)
