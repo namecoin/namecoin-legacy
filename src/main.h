@@ -761,6 +761,17 @@ public:
     int GetDepthInMainChain() const { int nHeight; return GetDepthInMainChain(nHeight); }
     bool IsInMainChain() const { return GetDepthInMainChain() > 0; }
     int GetBlocksToMaturity() const;
+
+    inline int
+    GetHeightInMainChain() const
+    {
+      int nHeight;
+      if (GetDepthInMainChain (nHeight) == 0)
+        return -1;
+
+      return nHeight;
+    }
+
     bool AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs = true);
     bool AcceptToMemoryPool();
 };

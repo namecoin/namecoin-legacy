@@ -560,76 +560,55 @@ Value name_list(const Array& params, bool fHelp)
                 "list my own names"
                 );
 
-    vector<unsigned char> vchName;
-    vector<unsigned char> vchLastName;
-    int nMax = 10000000;
-
-    if (params.size() == 1)
-    {
-        vchName = vchFromValue(params[0]);
-        nMax = 1;
-    }
-
-    vector<unsigned char> vchNameUniq;
-    if (params.size() == 1)
-    {
-        vchNameUniq = vchFromValue(params[0]);
-    }
+    vchType vchNameUniq;
+    if (params.size () == 1)
+      vchNameUniq = vchFromValue (params[0]);
 
     Array oRes;
-    map< vector<unsigned char>, int > vNamesI;
-    map< vector<unsigned char>, Object > vNamesO;
+    std::map<vchType, int> vNamesI;
+    std::map<vchType, Object> vNamesO;
 
+    CRITICAL_BLOCK(cs_main)
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
-    {
-        CTxIndex txindex;
-        uint256 hash;
+      {
         CTxDB txdb("r");
-        CTransaction tx;
 
-        vector<unsigned char> vchName;
-        vector<unsigned char> vchValue;
-        int nHeight;
+        BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item,
+                      pwalletMain->mapWallet)
+          {
+            const CWalletTx& tx = item.second;
 
-        BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, pwalletMain->mapWallet)
-        {
-            hash = item.second.GetHash();
-            if(!txdb.ReadDiskTx(hash, tx, txindex))
-                continue;
+            vchType vchName, vchValue;
+            int nOut;
+            if (!tx.GetNameUpdate (nOut, vchName, vchValue))
+              continue;
 
-            if (tx.nVersion != NAMECOIN_TX_VERSION)
-                continue;
+            if(!vchNameUniq.empty () && vchNameUniq != vchName)
+              continue;
 
-            // name
-            if(!GetNameOfTx(tx, vchName))
-                continue;
-            if(vchNameUniq.size() > 0 && vchNameUniq != vchName)
-                continue;
+            const int nHeight = tx.GetHeightInMainChain ();
+            if (nHeight == -1)
+              continue;
+            assert (nHeight >= 0);
 
-            // value
-            if(!GetValueOfNameTx(tx, vchValue))
-                continue;
-
-            // height
-            nHeight = GetTxPosHeight(txindex.pos);
+            // get last active name only
+            if (vNamesI.find (vchName) != vNamesI.end ()
+                && vNamesI[vchName] > nHeight)
+              continue;
 
             Object oName;
             oName.push_back(Pair("name", stringFromVch(vchName)));
             oName.push_back(Pair("value", stringFromVch(vchValue)));
-            if (!hooks->IsMine(pwalletMain->mapWallet[tx.GetHash()]))
+            if (!hooks->IsMine (tx))
                 oName.push_back(Pair("transferred", 1));
             string strAddress = "";
             GetNameAddress(tx, strAddress);
             oName.push_back(Pair("address", strAddress));
-            oName.push_back(Pair("expires_in", nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight));
-            if(nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-            {
-                oName.push_back(Pair("expired", 1));
-            }
 
-            // get last active name only
-            if(vNamesI.find(vchName) != vNamesI.end() && vNamesI[vchName] > nHeight)
-                continue;
+            const int expiresIn = nHeight + GetDisplayExpirationDepth (nHeight) - pindexBest->nHeight;
+            oName.push_back (Pair("expires_in", expiresIn));
+            if (expiresIn <= 0)
+              oName.push_back (Pair("expired", 1));
 
             vNamesI[vchName] = nHeight;
             vNamesO[vchName] = oName;
