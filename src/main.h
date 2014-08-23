@@ -878,7 +878,10 @@ public:
     {
         return !(a == b);
     }
-    int GetDepthInMainChain() const;
+
+    const CBlockIndex* GetContainingBlock () const;
+    int GetHeight () const;
+    int GetDepthInMainChain () const;
 };
 
 

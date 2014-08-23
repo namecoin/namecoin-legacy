@@ -596,22 +596,41 @@ bool CWalletTx::AcceptWalletTransaction()
     return AcceptWalletTransaction (dbset);
 }
 
-int CTxIndex::GetDepthInMainChain() const
+const CBlockIndex*
+CTxIndex::GetContainingBlock () const
 {
     // Read block header
     CBlock block;
     if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
-        return 0;
+        return NULL;
+
     // Find the block in the index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
-    return 1 + nBestHeight - pindex->nHeight;
+        return NULL;
+
+    return mi->second;
 }
 
+int
+CTxIndex::GetHeight () const
+{
+  const CBlockIndex* pindex = GetContainingBlock ();
+  if (!pindex)
+    return -1;
+
+  return pindex->nHeight;
+}
+
+int
+CTxIndex::GetDepthInMainChain () const
+{
+  const CBlockIndex* pindex = GetContainingBlock ();
+  if (!pindex || !pindex->IsInMainChain ())
+    return 0;
+
+  return 1 + nBestHeight - pindex->nHeight;
+}
 
 // Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
 bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock /*, bool fAllowSlow*/)
