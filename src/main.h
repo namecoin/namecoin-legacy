@@ -304,9 +304,13 @@ public:
     unsigned int nSequence;
 
     /* In memory only:  Cache information about prevout and signature
-       verifications, so that we can avoid extra CPU load and disk accesses.  */
+       verifications, so that we can avoid extra CPU load and disk accesses.
+       We may also remember the previous tx's height (if it is deep enough
+       in the chain so that we assume no reorgs happen).  It is -1 if we
+       don't cache it.  */
     mutable const CTransaction* txPrev;
     mutable CDiskTxPos prevPos;
+    mutable int prevHeight;
     mutable bool fChecked;
 
     inline CTxIn ()

@@ -54,6 +54,11 @@ const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 static const unsigned BLOCKFILE_MAX_SIZE = 0x7F000000;
 static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
 
+/* Minimal confirmation depth for caching the height of prev tx outs
+   in the priority computation.  Should be large enough so that no reorgs
+   happen past it that may change the heights.  */
+static const unsigned MIN_PRIORITY_CACHE_CONF = 1000;
+
 double dHashesPerSec;
 int64 nHPSTimerStart;
 
@@ -224,6 +229,7 @@ CTxIn::ClearCache () const
   if (txPrev)
     delete txPrev;
   txPrev = NULL;
+  prevHeight = -1;
 }
 
 CTxIn&
@@ -3313,10 +3319,25 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
                       printf ("CreateNewBlock: using cached txPrev %s\n",
                               tx.GetHash ().ToString ().substr (0, 10).c_str ());
                     nValueIn = txin.txPrev->vout[txin.prevout.n].nValue;
-                    nConf = CTxIndex::GetDepthInMainChain (txin.prevPos);
 
-                    if (nConf == 0)
-                      dependency = true;
+                    int nHeight;
+                    if (txin.prevHeight != -1)
+                      {
+                        nHeight = txin.prevHeight;
+                        if (fDebug)
+                          printf ("  also using cached height %d\n", nHeight);
+                      }
+                    else
+                      {
+                        nHeight = CTxIndex::GetHeight (txin.prevPos);
+                        if (nHeight == -1)
+                          dependency = true;
+
+                        if (nHeight + MIN_PRIORITY_CACHE_CONF < nBestHeight)
+                          txin.prevHeight = nHeight;
+                      }
+
+                    nConf = 1 + nBestHeight - nHeight;
                   }
                 else
                   {
