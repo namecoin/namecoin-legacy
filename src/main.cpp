@@ -215,8 +215,15 @@ void static EraseOrphanTx(uint256 hash)
 
 CTxIn::~CTxIn ()
 {
+  ClearCache ();
+}
+
+void
+CTxIn::ClearCache () const
+{
   if (txPrev)
     delete txPrev;
+  txPrev = NULL;
 }
 
 CTxIn&
@@ -226,16 +233,14 @@ CTxIn::operator= (const CTxIn& in)
   scriptSig = in.scriptSig;
   nSequence = in.nSequence;
 
-  if (txPrev)
-    delete txPrev;
+  ClearCache ();
 
   if (in.txPrev)
     {
       txPrev = new CTransaction (*in.txPrev);
+      prevPos = in.prevPos;
       fChecked = in.fChecked;
     }
-  else
-    txPrev = NULL;
 
   return *this;
 }
@@ -624,8 +629,11 @@ bool CWalletTx::AcceptWalletTransaction()
 }
 
 const CBlockIndex*
-CTxIndex::GetContainingBlock () const
+CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 {
+    if (pos == CDiskTxPos(1, 1, 1))
+      return NULL;
+
     // Read block header
     CBlock block;
     if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
@@ -640,9 +648,9 @@ CTxIndex::GetContainingBlock () const
 }
 
 int
-CTxIndex::GetHeight () const
+CTxIndex::GetHeight (const CDiskTxPos& pos)
 {
-  const CBlockIndex* pindex = GetContainingBlock ();
+  const CBlockIndex* pindex = GetContainingBlock (pos);
   if (!pindex)
     return -1;
 
@@ -650,9 +658,9 @@ CTxIndex::GetHeight () const
 }
 
 int
-CTxIndex::GetDepthInMainChain () const
+CTxIndex::GetDepthInMainChain (const CDiskTxPos& pos)
 {
-  const CBlockIndex* pindex = GetContainingBlock ();
+  const CBlockIndex* pindex = GetContainingBlock (pos);
   if (!pindex || !pindex->IsInMainChain ())
     return 0;
 
@@ -1119,6 +1127,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                       return error ("ConnectInputs: %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
                     vin[i].txPrev = new CTransaction (loadedTx);
                   }
+                vin[i].prevPos = txindex.pos;
                 vin[i].fChecked = false;
               }
             else if (fDebug)
@@ -1153,7 +1162,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
-            const int64_t nValue = vin[i].txPrev->vout[prevout.n].nValue;
+            const int64 nValue = vin[i].txPrev->vout[prevout.n].nValue;
             nValueIn += nValue;
             if (!MoneyRange(nValue) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
@@ -3294,26 +3303,49 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
             double dPriority = 0;
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
             {
-                // Read prev transaction
-                CTransaction txPrev;
-                CTxIndex txindex;
-                if (!txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
-                {
-                    // Has to wait for dependencies
-                    if (!porphan)
-                    {
-                        // Use list for automatic deletion
-                        vOrphan.push_back(COrphan(&tx));
-                        porphan = &vOrphan.back();
-                    }
-                    mapDependers[txin.prevout.hash].push_back(porphan);
-                    porphan->setDependsOn.insert(txin.prevout.hash);
-                    continue;
-                }
-                int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
+                int64 nValueIn;
+                int nConf;
 
-                // Read block header
-                int nConf = txindex.GetDepthInMainChain();
+                bool dependency = false;
+                if (txin.txPrev)
+                  {
+                    if (fDebug)
+                      printf ("CreateNewBlock: using cached txPrev %s\n",
+                              tx.GetHash ().ToString ().substr (0, 10).c_str ());
+                    nValueIn = txin.txPrev->vout[txin.prevout.n].nValue;
+                    nConf = CTxIndex::GetDepthInMainChain (txin.prevPos);
+
+                    if (nConf == 0)
+                      dependency = true;
+                  }
+                else
+                  {
+                    CTransaction txPrev;
+                    CTxIndex txindex;
+                    if (txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
+                      {
+                        nValueIn = txPrev.vout[txin.prevout.n].nValue;
+                        nConf = txindex.GetDepthInMainChain ();
+                      }
+                    else
+                      dependency = true;
+                  }
+
+
+                if (dependency)
+                  {
+                    // Have to wait for dependency
+                    if (!porphan)
+                      {
+                        // Use list for automatic deletion
+                        vOrphan.push_back (COrphan(&tx));
+                        porphan = &vOrphan.back ();
+                      }
+                    mapDependers[txin.prevout.hash].push_back (porphan);
+                    porphan->setDependsOn.insert (txin.prevout.hash);
+                    continue;
+                  }
+                assert (nConf > 0);
 
                 dPriority += (double)nValueIn * nConf;
 

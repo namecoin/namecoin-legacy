@@ -306,6 +306,7 @@ public:
     /* In memory only:  Cache information about prevout and signature
        verifications, so that we can avoid extra CPU load and disk accesses.  */
     mutable const CTransaction* txPrev;
+    mutable CDiskTxPos prevPos;
     mutable bool fChecked;
 
     inline CTxIn ()
@@ -340,8 +341,10 @@ public:
         READWRITE(nSequence);
 
         if (fRead)
-          txPrev = NULL;
+          ClearCache ();
     )
+    
+    void ClearCache () const;
 
     bool IsFinal() const
     {
@@ -890,9 +893,14 @@ public:
         return !(a == b);
     }
 
-    const CBlockIndex* GetContainingBlock () const;
-    int GetHeight () const;
-    int GetDepthInMainChain () const;
+    static const CBlockIndex* GetContainingBlock (const CDiskTxPos& pos);
+    static int GetHeight (const CDiskTxPos& pos);
+    static int GetDepthInMainChain (const CDiskTxPos& pos);
+
+    inline int GetDepthInMainChain () const
+    {
+      return GetDepthInMainChain (pos);
+    }
 };
 
 
