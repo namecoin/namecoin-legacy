@@ -303,30 +303,35 @@ public:
     CScript scriptSig;
     unsigned int nSequence;
 
-    CTxIn()
-    {
-        nSequence = UINT_MAX;
-    }
+    /* Only in memory:  Remember when we have already (successfully) checked
+       this txin signature to avoid re-verification.  */
+    mutable bool fChecked;
 
-    explicit CTxIn(COutPoint prevoutIn, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = prevoutIn;
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
-    }
+    inline CTxIn ()
+      : nSequence(UINT_MAX), fChecked(false)
+    {}
 
-    CTxIn(uint256 hashPrevTx, unsigned int nOut, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = COutPoint(hashPrevTx, nOut);
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
-    }
+    explicit inline CTxIn (COutPoint prevoutIn, CScript scriptSigIn = CScript(),
+                           unsigned int nSequenceIn = UINT_MAX)
+      : prevout(prevoutIn), scriptSig(scriptSigIn), nSequence(nSequenceIn),
+        fChecked(false)
+    {}
+
+    inline CTxIn (uint256 hashPrevTx, unsigned int nOut,
+                  CScript scriptSigIn = CScript(),
+                  unsigned int nSequenceIn = UINT_MAX)
+      : prevout(hashPrevTx, nOut), scriptSig(scriptSigIn),
+        nSequence(nSequenceIn), fChecked(false)
+    {}
 
     IMPLEMENT_SERIALIZE
     (
         READWRITE(prevout);
         READWRITE(scriptSig);
         READWRITE(nSequence);
+
+        if (fRead)
+          fChecked = false;
     )
 
     bool IsFinal() const
