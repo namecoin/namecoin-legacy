@@ -303,26 +303,35 @@ public:
     CScript scriptSig;
     unsigned int nSequence;
 
-    /* Only in memory:  Remember when we have already (successfully) checked
-       this txin signature to avoid re-verification.  */
+    /* In memory only:  Cache information about prevout and signature
+       verifications, so that we can avoid extra CPU load and disk accesses.  */
+    mutable const CTransaction* txPrev;
     mutable bool fChecked;
 
     inline CTxIn ()
-      : nSequence(UINT_MAX), fChecked(false)
+      : nSequence(UINT_MAX), txPrev(NULL)
     {}
+
+    inline CTxIn (const CTxIn& in)
+      : txPrev(NULL)
+    {
+      operator= (in);
+    }
 
     explicit inline CTxIn (COutPoint prevoutIn, CScript scriptSigIn = CScript(),
                            unsigned int nSequenceIn = UINT_MAX)
       : prevout(prevoutIn), scriptSig(scriptSigIn), nSequence(nSequenceIn),
-        fChecked(false)
+        txPrev(NULL)
     {}
 
     inline CTxIn (uint256 hashPrevTx, unsigned int nOut,
                   CScript scriptSigIn = CScript(),
                   unsigned int nSequenceIn = UINT_MAX)
       : prevout(hashPrevTx, nOut), scriptSig(scriptSigIn),
-        nSequence(nSequenceIn), fChecked(false)
+        nSequence(nSequenceIn), txPrev(NULL)
     {}
+
+    ~CTxIn ();
 
     IMPLEMENT_SERIALIZE
     (
@@ -331,13 +340,15 @@ public:
         READWRITE(nSequence);
 
         if (fRead)
-          fChecked = false;
+          txPrev = NULL;
     )
 
     bool IsFinal() const
     {
         return (nSequence == UINT_MAX);
     }
+
+    CTxIn& operator= (const CTxIn& in);
 
     friend bool operator==(const CTxIn& a, const CTxIn& b)
     {

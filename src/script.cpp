@@ -1292,7 +1292,7 @@ bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsig
     if (txin.prevout.hash != txFrom.GetHash())
         return false;
 
-    if (txin.fChecked)
+    if (txin.txPrev && txin.fChecked)
       {
         if (fDebug)
           printf ("VerifySignature: skipped cached verification for %s/%u\n",
@@ -1303,7 +1303,13 @@ bool VerifySignature(const CTransaction& txFrom, const CTransaction& txTo, unsig
     if (!VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, nHashType))
         return false;
 
-    txin.fChecked = true;
+    /* If we are caching, remember the successful verification.  */
+    if (txin.txPrev)
+      {
+        assert (*txin.txPrev == txFrom);
+        txin.fChecked = true;
+      }
+
     return true;
 }
 
