@@ -348,7 +348,7 @@ public:
           ClearCache ();
     )
     
-    void ClearCache () const;
+    bool ClearCache () const;
 
     bool IsFinal() const
     {

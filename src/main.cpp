@@ -223,13 +223,20 @@ CTxIn::~CTxIn ()
   ClearCache ();
 }
 
-void
+bool
 CTxIn::ClearCache () const
 {
+  bool cleared = false;
   if (txPrev)
-    delete txPrev;
+    {
+      delete txPrev;
+      cleared = true;
+    }
+
   txPrev = NULL;
   prevHeight = -1;
+  
+  return cleared;
 }
 
 CTxIn&
