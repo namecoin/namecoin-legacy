@@ -241,7 +241,7 @@ CTxIn::operator= (const CTxIn& in)
 
   ClearCache ();
 
-  if (in.txPrev)
+  if (in.txPrev && fCacheTxPrev)
     {
       txPrev = new CTransaction (*in.txPrev);
       prevPos = in.prevPos;
@@ -1113,6 +1113,8 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                               prevout.n, txindex.GetOutputCount ());
 
             /* Ensure that we have all information about the prevout tx.  */
+            std::auto_ptr<CTransaction> newTxPrev;
+            const CTransaction* txPrev = NULL;
             if (!vin[i].txPrev)
               {
                 if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
@@ -1122,43 +1124,54 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                     {
                         if (!mapTransactions.count(prevout.hash))
                             return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-                        vin[i].txPrev = new CTransaction (mapTransactions[prevout.hash]);
+                        newTxPrev.reset (new CTransaction (mapTransactions[prevout.hash]));
                     }
                   }
                 else
                   {
                     // Get prev tx from disk
-                    CTransaction loadedTx;
-                    if (!loadedTx.ReadFromDisk (txindex.pos))
+                    newTxPrev.reset (new CTransaction ());
+                    if (!newTxPrev->ReadFromDisk (txindex.pos))
                       return error ("ConnectInputs: %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
-                    vin[i].txPrev = new CTransaction (loadedTx);
                   }
                 vin[i].prevPos = txindex.pos;
                 vin[i].fChecked = false;
-              }
-            else if (fDebug)
-              printf ("ConnectInputs: using cached txPrev for %s/%d\n",
-                      GetHash ().ToString ().substr (0, 10).c_str (), i);
-            assert (vin[i].txPrev);
 
-            if (prevout.n >= vin[i].txPrev->vout.size ())
+                if (fCacheTxPrev)
+                  {
+                    vin[i].txPrev = newTxPrev.release ();
+                    txPrev = vin[i].txPrev;
+                  }
+                else
+                  txPrev = newTxPrev.get ();
+              }
+            else
+              {
+                txPrev = vin[i].txPrev;
+                if (fDebug)
+                  printf ("ConnectInputs: using cached txPrev for %s/%d\n",
+                          GetHash ().ToString ().substr (0, 10).c_str (), i);
+              }
+            assert (txPrev);
+
+            if (prevout.n >= txPrev->vout.size ())
               return error ("ConnectInputs: %s prevout.n out of range"
                             " %d %d prev tx %s\n%s",
                             GetHash().ToString().substr(0,10).c_str(),
-                            prevout.n, vin[i].txPrev->vout.size(),
+                            prevout.n, txPrev->vout.size(),
                             prevout.hash.ToString().substr(0,10).c_str(),
-                            vin[i].txPrev->ToString().c_str());
+                            txPrev->ToString().c_str());
 
             /* We skip signature verification before the latest
                checkpoint.  The checkpoint ensures that everything
                is fine anyway.  */
             if (!(fBlock && nBestHeight < hooks->LockinHeight ())
-                && !VerifySignature (*vin[i].txPrev, *this, i))
+                && !VerifySignature (*txPrev, *this, i))
               return error ("ConnectInputs: %s VerifySignature failed",
                             GetHash ().ToString ().substr (0, 10).c_str ());
 
             // If prev is coinbase, check that it's matured
-            if (vin[i].txPrev->IsCoinBase ())
+            if (txPrev->IsCoinBase ())
                 for (CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
                     if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
@@ -1168,7 +1181,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
-            const int64 nValue = vin[i].txPrev->vout[prevout.n].nValue;
+            const int64 nValue = txPrev->vout[prevout.n].nValue;
             nValueIn += nValue;
             if (!MoneyRange(nValue) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
@@ -1187,7 +1200,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 mapTestPool[prevout.hash] = txindex;
             }
 
-            vTxPrev.push_back(*vin[i].txPrev);
+            vTxPrev.push_back(*txPrev);
             vTxindex.push_back(txindex);
         }
 
