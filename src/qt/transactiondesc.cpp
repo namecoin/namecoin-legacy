@@ -13,7 +13,7 @@
 
 QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {
-    if (!wtx.IsFinal())
+    if (!wtx.IsFinalTx())
     {
         if (wtx.nLockTime < LOCKTIME_THRESHOLD)
             return tr("Open for %n more block(s)", "", wtx.nLockTime - nBestHeight + 1);
@@ -306,7 +306,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx)
             strHTML += GUIUtil::HtmlEscape(wtx.ToString(), true);
 
             strHTML += "<br><b>" + tr("Inputs") + ":</b>";
-            
+
             strHTML += "<i>Not implemented...</i>";
             /*strHTML += "<ul>";
 

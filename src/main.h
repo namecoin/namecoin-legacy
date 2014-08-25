@@ -508,7 +508,7 @@ public:
         return SerializeHash(*this);
     }
 
-    bool IsFinal(int nBlockHeight=0, int64 nBlockTime=0) const
+    bool IsFinalTx(int nBlockHeight=0, int64 nBlockTime=0) const
     {
         // Time based nLockTime implemented in 0.1.6
         if (nLockTime == 0)
@@ -571,7 +571,7 @@ public:
 
     bool IsStandard() const
     {
-        if (!IsFinal())
+        if (!IsFinalTx())
             return false;
 
         BOOST_FOREACH(const CTxIn& txin, vin)

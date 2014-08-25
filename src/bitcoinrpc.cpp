@@ -933,7 +933,7 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
@@ -992,7 +992,7 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
@@ -1015,7 +1015,7 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (!wtx.IsFinal())
+            if (!wtx.IsFinalTx())
                 continue;
 
             int64 nGenerated, nReceived, nSent, nFee;
@@ -1063,7 +1063,7 @@ Value getbalance(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (!wtx.IsFinal())
+            if (!wtx.IsFinalTx())
                 continue;
 
             int64 allGeneratedImmature, allGeneratedMature, allFee;
@@ -1282,7 +1282,7 @@ Value ListReceived(const Array& params, bool fByAccounts)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             int nDepth = wtx.GetDepthInMainChain();
