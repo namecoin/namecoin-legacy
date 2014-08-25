@@ -309,16 +309,18 @@ public:
        in the chain so that we assume no reorgs happen).  It is -1 if we
        don't cache it.  */
     mutable const CTransaction* txPrev;
+    mutable bool fHasPrevInfo;
     mutable CDiskTxPos prevPos;
+    mutable int64 nValue;
     mutable int prevHeight;
     mutable bool fChecked;
 
     inline CTxIn ()
-      : nSequence(UINT_MAX), txPrev(NULL)
+      : nSequence(UINT_MAX), txPrev(NULL), fHasPrevInfo(false)
     {}
 
     inline CTxIn (const CTxIn& in)
-      : txPrev(NULL)
+      : txPrev(NULL), fHasPrevInfo(false)
     {
       operator= (in);
     }
@@ -326,14 +328,14 @@ public:
     explicit inline CTxIn (COutPoint prevoutIn, CScript scriptSigIn = CScript(),
                            unsigned int nSequenceIn = UINT_MAX)
       : prevout(prevoutIn), scriptSig(scriptSigIn), nSequence(nSequenceIn),
-        txPrev(NULL)
+        txPrev(NULL), fHasPrevInfo(false)
     {}
 
     inline CTxIn (uint256 hashPrevTx, unsigned int nOut,
                   CScript scriptSigIn = CScript(),
                   unsigned int nSequenceIn = UINT_MAX)
       : prevout(hashPrevTx, nOut), scriptSig(scriptSigIn),
-        nSequence(nSequenceIn), txPrev(NULL)
+        nSequence(nSequenceIn), txPrev(NULL), fHasPrevInfo(false)
     {}
 
     ~CTxIn ();
@@ -345,10 +347,11 @@ public:
         READWRITE(nSequence);
 
         if (fRead)
-          ClearCache ();
+          InvalidateCache ();
     )
 
     bool ClearCache () const;
+    void InvalidateCache () const;
 
     bool IsFinal() const
     {

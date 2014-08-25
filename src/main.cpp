@@ -231,12 +231,20 @@ CTxIn::ClearCache () const
     {
       delete txPrev;
       cleared = true;
+      txPrev = NULL;
     }
-
-  txPrev = NULL;
-  prevHeight = -1;
+  assert (!txPrev);
 
   return cleared;
+}
+
+void
+CTxIn::InvalidateCache () const
+{
+  ClearCache ();
+
+  fHasPrevInfo = false;
+  prevHeight = -1;
 }
 
 CTxIn&
@@ -246,14 +254,19 @@ CTxIn::operator= (const CTxIn& in)
   scriptSig = in.scriptSig;
   nSequence = in.nSequence;
 
-  ClearCache ();
+  InvalidateCache ();
 
-  if (in.txPrev && fCacheTxPrev)
+  if (in.fHasPrevInfo)
     {
-      txPrev = new CTransaction (*in.txPrev);
+      fHasPrevInfo = in.fHasPrevInfo;
       prevPos = in.prevPos;
+      nValue = in.nValue;
+      prevHeight = in.prevHeight;
       fChecked = in.fChecked;
     }
+
+  if (in.txPrev && fCacheTxPrev)
+    txPrev = new CTransaction (*in.txPrev);
 
   return *this;
 }
@@ -1114,8 +1127,6 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                     if (!newTxPrev->ReadFromDisk (txindex.pos))
                       return error ("ConnectInputs: %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
                   }
-                vin[i].prevPos = txindex.pos;
-                vin[i].fChecked = false;
 
                 if (fCacheTxPrev)
                   {
@@ -1124,6 +1135,15 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                   }
                 else
                   txPrev = newTxPrev.get ();
+
+                if (vin[i].fHasPrevInfo)
+                  assert (vin[i].prevPos == txindex.pos);
+                else
+                  {
+                    vin[i].fHasPrevInfo = true;
+                    vin[i].prevPos = txindex.pos;
+                    vin[i].fChecked = false;
+                  }
               }
             else
               {
@@ -1132,6 +1152,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                   printf ("ConnectInputs: using cached txPrev for %s/%d\n",
                           GetHash ().ToString ().substr (0, 10).c_str (), i);
               }
+            assert (vin[i].fHasPrevInfo);
             assert (txPrev);
 
             if (prevout.n >= txPrev->vout.size ())
@@ -1161,9 +1182,9 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
-            const int64 nValue = txPrev->vout[prevout.n].nValue;
-            nValueIn += nValue;
-            if (!MoneyRange(nValue) || !MoneyRange(nValueIn))
+            vin[i].nValue = txPrev->vout[prevout.n].nValue;
+            nValueIn += vin[i].nValue;
+            if (!MoneyRange(vin[i].nValue) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
@@ -3302,49 +3323,32 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
             double dPriority = 0;
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
             {
-                int64 nValueIn;
-                int nConf;
+                /* We should always have cached txprev info on the
+                   input, since this should have been added when accepting
+                   it to the mempool.  Be not too strict about it, though.  */
+                if (!txin.fHasPrevInfo)
+                  {
+                    printf ("WARNING: CreateNewBlock: ignoring tx without prev info\n");
+                    goto skipTransaction;
+                  }
 
                 bool dependency = false;
-                if (txin.txPrev)
+                int nHeight;
+                if (txin.prevHeight != -1)
                   {
+                    nHeight = txin.prevHeight;
                     if (fDebug)
-                      printf ("CreateNewBlock: using cached txPrev %s\n",
-                              tx.GetHash ().ToString ().substr (0, 10).c_str ());
-                    nValueIn = txin.txPrev->vout[txin.prevout.n].nValue;
-
-                    int nHeight;
-                    if (txin.prevHeight != -1)
-                      {
-                        nHeight = txin.prevHeight;
-                        if (fDebug)
-                          printf ("  also using cached height %d\n", nHeight);
-                      }
-                    else
-                      {
-                        nHeight = CTxIndex::GetHeight (txin.prevPos);
-                        if (nHeight == -1)
-                          dependency = true;
-
-                        if (nHeight + MIN_PRIORITY_CACHE_CONF < nBestHeight)
-                          txin.prevHeight = nHeight;
-                      }
-
-                    nConf = 1 + nBestHeight - nHeight;
+                      printf ("  also using cached height %d\n", nHeight);
                   }
                 else
                   {
-                    CTransaction txPrev;
-                    CTxIndex txindex;
-                    if (txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
-                      {
-                        nValueIn = txPrev.vout[txin.prevout.n].nValue;
-                        nConf = txindex.GetDepthInMainChain ();
-                      }
-                    else
+                    nHeight = CTxIndex::GetHeight (txin.prevPos);
+                    if (nHeight == -1)
                       dependency = true;
-                  }
 
+                    if (nHeight + MIN_PRIORITY_CACHE_CONF < nBestHeight)
+                      txin.prevHeight = nHeight;
+                  }
 
                 if (dependency)
                   {
@@ -3359,12 +3363,14 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
                     porphan->setDependsOn.insert (txin.prevout.hash);
                     continue;
                   }
+
+                const int nConf = 1 + nBestHeight - nHeight;
                 assert (nConf > 0);
 
-                dPriority += (double)nValueIn * nConf;
+                dPriority += static_cast<double> (txin.nValue) * nConf;
 
                 if (fDebug && GetBoolArg("-printpriority"))
-                    printf("priority     nValueIn=%-12I64d nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
+                    printf("priority     nValueIn=%-12I64d nConf=%-5d dPriority=%-20.1f\n", txin.nValue, nConf, dPriority);
             }
 
             // Priority is sum(valuein * age) / txsize
@@ -3382,6 +3388,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
                     porphan->print();
                 printf("\n");
             }
+
+skipTransaction:;
         }
 
         // Collect transactions into block

@@ -566,9 +566,11 @@ void CWallet::ReacceptWalletTransactions()
             }
             else
             {
-                // Reaccept any txes of ours that aren't already in a block
+                /* Reaccept any txes of ours that aren't already in a block.
+                   We have to check the inputs to make sure that the
+                   prev tx cache is filled properly.  */
                 if (!wtx.IsCoinBase())
-                  wtx.AcceptWalletTransaction (dbset, false);
+                  wtx.AcceptWalletTransaction (dbset);
             }
         }
         if (hasMissingTx)
