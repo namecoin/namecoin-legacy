@@ -54,6 +54,11 @@ const std::string strMessageMagic = "Bitcoin Signed Message:\n";
 static const unsigned BLOCKFILE_MAX_SIZE = 0x7F000000;
 static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
 
+/* Minimal confirmation depth for caching the height of prev tx outs
+   in the priority computation.  Should be large enough so that no reorgs
+   happen past it that may change the heights.  */
+static const unsigned MIN_PRIORITY_CACHE_CONF = 1000;
+
 double dHashesPerSec;
 int64 nHPSTimerStart;
 
@@ -212,6 +217,46 @@ void static EraseOrphanTx(uint256 hash)
 //
 // CTransaction and CTxIndex
 //
+
+CTxIn::~CTxIn ()
+{
+  ClearCache ();
+}
+
+bool
+CTxIn::ClearCache () const
+{
+  bool cleared = false;
+  if (txPrev)
+    {
+      delete txPrev;
+      cleared = true;
+    }
+
+  txPrev = NULL;
+  prevHeight = -1;
+  
+  return cleared;
+}
+
+CTxIn&
+CTxIn::operator= (const CTxIn& in)
+{
+  prevout = in.prevout;
+  scriptSig = in.scriptSig;
+  nSequence = in.nSequence;
+
+  ClearCache ();
+
+  if (in.txPrev && fCacheTxPrev)
+    {
+      txPrev = new CTransaction (*in.txPrev);
+      prevPos = in.prevPos;
+      fChecked = in.fChecked;
+    }
+
+  return *this;
+}
 
 bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet)
 {
@@ -596,22 +641,44 @@ bool CWalletTx::AcceptWalletTransaction()
     return AcceptWalletTransaction (dbset);
 }
 
-int CTxIndex::GetDepthInMainChain() const
+const CBlockIndex*
+CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 {
+    if (pos == CDiskTxPos(1, 1, 1))
+      return NULL;
+
     // Read block header
     CBlock block;
     if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
-        return 0;
+        return NULL;
+
     // Find the block in the index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
-    return 1 + nBestHeight - pindex->nHeight;
+        return NULL;
+
+    return mi->second;
 }
 
+int
+CTxIndex::GetHeight (const CDiskTxPos& pos)
+{
+  const CBlockIndex* pindex = GetContainingBlock (pos);
+  if (!pindex)
+    return -1;
+
+  return pindex->nHeight;
+}
+
+int
+CTxIndex::GetDepthInMainChain (const CDiskTxPos& pos)
+{
+  const CBlockIndex* pindex = GetContainingBlock (pos);
+  if (!pindex || !pindex->IsInMainChain ())
+    return 0;
+
+  return 1 + nBestHeight - pindex->nHeight;
+}
 
 // Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
 bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock /*, bool fAllowSlow*/)
@@ -1024,7 +1091,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
         int64 nValueIn = 0;
         for (int i = 0; i < vin.size(); i++)
         {
-            COutPoint prevout = vin[i].prevout;
+            const COutPoint prevout = vin[i].prevout;
 
             // Read txindex
             CTxIndex txindex;
@@ -1042,53 +1109,88 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
             if (!fFound && (fBlock || fMiner))
                 return fMiner ? false : error("ConnectInputs() : %s prev tx %s index entry not found", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
 
-            // Read txPrev
-            CTransaction txPrev;
-            if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
-            {
-                // Get prev tx from single transactions in memory
-                CRITICAL_BLOCK(cs_mapTransactions)
-                {
-                    if (!mapTransactions.count(prevout.hash))
-                        return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-                    txPrev = mapTransactions[prevout.hash];
-                }
-                if (!fFound)
-                  txindex.ResizeOutputs (txPrev.vout.size ());
-            }
-            else
-            {
-                // Get prev tx from disk
-                if (!txPrev.ReadFromDisk(txindex.pos))
-                    return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-            }
+            if (!fFound)
+              {
+                assert (txindex.GetOutputCount () == 0);
+                txindex.ResizeOutputs (prevout.n + 1);
+              }
+            if (prevout.n >= txindex.GetOutputCount ())
+                return error ("ConnectInputs: %s prevout.n out of range %d %d",
+                              GetHash().ToString().substr(0,10).c_str(),
+                              prevout.n, txindex.GetOutputCount ());
 
-            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.GetOutputCount ())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.GetOutputCount (), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+            /* Ensure that we have all information about the prevout tx.  */
+            std::auto_ptr<CTransaction> newTxPrev;
+            const CTransaction* txPrev = NULL;
+            if (!vin[i].txPrev)
+              {
+                if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
+                  {
+                    // Get prev tx from single transactions in memory
+                    CRITICAL_BLOCK(cs_mapTransactions)
+                    {
+                        if (!mapTransactions.count(prevout.hash))
+                            return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+                        newTxPrev.reset (new CTransaction (mapTransactions[prevout.hash]));
+                    }
+                  }
+                else
+                  {
+                    // Get prev tx from disk
+                    newTxPrev.reset (new CTransaction ());
+                    if (!newTxPrev->ReadFromDisk (txindex.pos))
+                      return error ("ConnectInputs: %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
+                  }
+                vin[i].prevPos = txindex.pos;
+                vin[i].fChecked = false;
+
+                if (fCacheTxPrev)
+                  {
+                    vin[i].txPrev = newTxPrev.release ();
+                    txPrev = vin[i].txPrev;
+                  }
+                else
+                  txPrev = newTxPrev.get ();
+              }
+            else
+              {
+                txPrev = vin[i].txPrev;
+                if (fDebug)
+                  printf ("ConnectInputs: using cached txPrev for %s/%d\n",
+                          GetHash ().ToString ().substr (0, 10).c_str (), i);
+              }
+            assert (txPrev);
+
+            if (prevout.n >= txPrev->vout.size ())
+              return error ("ConnectInputs: %s prevout.n out of range"
+                            " %d %d prev tx %s\n%s",
+                            GetHash().ToString().substr(0,10).c_str(),
+                            prevout.n, txPrev->vout.size(),
+                            prevout.hash.ToString().substr(0,10).c_str(),
+                            txPrev->ToString().c_str());
+
+            /* We skip signature verification before the latest
+               checkpoint.  The checkpoint ensures that everything
+               is fine anyway.  */
+            if (!(fBlock && nBestHeight < hooks->LockinHeight ())
+                && !VerifySignature (*txPrev, *this, i))
+              return error ("ConnectInputs: %s VerifySignature failed",
+                            GetHash ().ToString ().substr (0, 10).c_str ());
 
             // If prev is coinbase, check that it's matured
-            if (txPrev.IsCoinBase())
+            if (txPrev->IsCoinBase ())
                 for (CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
                     if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
-
-            // Skip ECDSA signature verification when connecting blocks (fBlock=true)
-            // before the last blockchain checkpoint. This is safe because block merkle hashes are
-             // still computed and checked, and any change will be caught at the next checkpoint.
-            if (!(fBlock && (nBestHeight < hooks->LockinHeight())))
-            {
-                // Verify signature
-                if (!VerifySignature(txPrev, *this, i))
-                    return error("ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str());
-            }
 
             // Check for conflicts
             if (txindex.IsSpent (prevout.n))
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
-            nValueIn += txPrev.vout[prevout.n].nValue;
-            if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
+            const int64 nValue = txPrev->vout[prevout.n].nValue;
+            nValueIn += nValue;
+            if (!MoneyRange(nValue) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
@@ -1105,7 +1207,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 mapTestPool[prevout.hash] = txindex;
             }
 
-            vTxPrev.push_back(txPrev);
+            vTxPrev.push_back(*txPrev);
             vTxindex.push_back(txindex);
         }
 
@@ -1155,7 +1257,7 @@ bool CTransaction::ClientConnectInputs()
             COutPoint prevout = vin[i].prevout;
             if (!mapTransactions.count(prevout.hash))
                 return false;
-            CTransaction& txPrev = mapTransactions[prevout.hash];
+            const CTransaction& txPrev = mapTransactions[prevout.hash];
 
             if (prevout.n >= txPrev.vout.size())
                 return false;
@@ -3227,26 +3329,64 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
             double dPriority = 0;
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
             {
-                // Read prev transaction
-                CTransaction txPrev;
-                CTxIndex txindex;
-                if (!txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
-                {
-                    // Has to wait for dependencies
-                    if (!porphan)
-                    {
-                        // Use list for automatic deletion
-                        vOrphan.push_back(COrphan(&tx));
-                        porphan = &vOrphan.back();
-                    }
-                    mapDependers[txin.prevout.hash].push_back(porphan);
-                    porphan->setDependsOn.insert(txin.prevout.hash);
-                    continue;
-                }
-                int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
+                int64 nValueIn;
+                int nConf;
 
-                // Read block header
-                int nConf = txindex.GetDepthInMainChain();
+                bool dependency = false;
+                if (txin.txPrev)
+                  {
+                    if (fDebug)
+                      printf ("CreateNewBlock: using cached txPrev %s\n",
+                              tx.GetHash ().ToString ().substr (0, 10).c_str ());
+                    nValueIn = txin.txPrev->vout[txin.prevout.n].nValue;
+
+                    int nHeight;
+                    if (txin.prevHeight != -1)
+                      {
+                        nHeight = txin.prevHeight;
+                        if (fDebug)
+                          printf ("  also using cached height %d\n", nHeight);
+                      }
+                    else
+                      {
+                        nHeight = CTxIndex::GetHeight (txin.prevPos);
+                        if (nHeight == -1)
+                          dependency = true;
+
+                        if (nHeight + MIN_PRIORITY_CACHE_CONF < nBestHeight)
+                          txin.prevHeight = nHeight;
+                      }
+
+                    nConf = 1 + nBestHeight - nHeight;
+                  }
+                else
+                  {
+                    CTransaction txPrev;
+                    CTxIndex txindex;
+                    if (txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
+                      {
+                        nValueIn = txPrev.vout[txin.prevout.n].nValue;
+                        nConf = txindex.GetDepthInMainChain ();
+                      }
+                    else
+                      dependency = true;
+                  }
+
+
+                if (dependency)
+                  {
+                    // Have to wait for dependency
+                    if (!porphan)
+                      {
+                        // Use list for automatic deletion
+                        vOrphan.push_back (COrphan(&tx));
+                        porphan = &vOrphan.back ();
+                      }
+                    mapDependers[txin.prevout.hash].push_back (porphan);
+                    porphan->setDependsOn.insert (txin.prevout.hash);
+                    continue;
+                  }
+                assert (nConf > 0);
 
                 dPriority += (double)nValueIn * nConf;
 

@@ -207,6 +207,7 @@ bool AppInit2(int argc, char* argv[])
 
     fDebug = GetBoolArg("-debug");
     fAllowDNS = GetBoolArg("-dns");
+    fCacheTxPrev = !GetBoolArg ("-notxprevcache");
 
 #if !defined(WIN32) && !defined(QT_GUI)
     fDaemon = GetBoolArg("-daemon");
@@ -644,6 +645,7 @@ std::string HelpMessage()
         "  -daemon          \t\t  " + _("Run in the background as a daemon and accept commands\n") +
 #endif
         "  -testnet         \t\t  " + _("Use the test network\n") +
+        "  -notxprevcache   \t\t  " + _("Cache previous transactions for performance\n") +
         "  -rpcuser=<user>  \t  "   + _("Username for JSON-RPC connections\n") +
         "  -rpcpassword=<pw>\t  "   + _("Password for JSON-RPC connections\n") +
         "  -rpcport=<port>  \t\t  " + _("Listen for JSON-RPC connections on <port> (default: 8336)\n") +

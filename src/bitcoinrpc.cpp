@@ -626,6 +626,7 @@ Value getinfo(const Array& params, bool fHelp)
     obj.push_back(Pair("mininput",      ValueFromAmount(nMinimumInputValue)));
     if (pwalletMain->IsCrypted())
         obj.push_back(Pair("unlocked_until", (boost::int64_t)nWalletUnlockTime / 1000));
+    obj.push_back(Pair("txprevcache",   fCacheTxPrev));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
     return obj;
 }
@@ -3320,6 +3321,37 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
+static json_spirit::Value
+settxprevcache (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 1)
+    throw std::runtime_error (
+      "settxprevcache <txprevcache>\n"
+      "<txprevcache> is true or false to turn caching of previous transactions\n"
+      "in the mempool on or off.  If it is switched off, the cache is cleared.\n\n"
+      "Returned is the number of cached entries.");
+
+  fCacheTxPrev = params[0].get_bool ();
+
+  unsigned cleared = 0;
+  unsigned total = 0;
+  CRITICAL_BLOCK(cs_mapTransactions)
+    for (std::map<uint256, CTransaction>::const_iterator mi = mapTransactions.begin ();
+         mi != mapTransactions.end (); ++mi)
+      for (std::vector<CTxIn>::const_iterator j = mi->second.vin.begin ();
+           j != mi->second.vin.end (); ++j)
+        {
+          if (!fCacheTxPrev && j->ClearCache ())
+            ++cleared;
+          if (j->txPrev)
+            ++total;
+        }
+  printf ("settxprevcache: Cleared %u cached txprev objects, %u remaining.\n",
+          cleared, total);
+
+  return static_cast<int> (total);
+}
+
 /* Block until a new block is found and return only then.  */
 static Value
 waitforblock (const Array& params, bool fHelp)
@@ -3430,6 +3462,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
     make_pair("getrawmempool",         &getrawmempool),
+    make_pair("settxprevcache",        &settxprevcache),
     make_pair("waitforblock",          &waitforblock),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
@@ -4278,6 +4311,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "settxprevcache"         && n > 0) ConvertTo<bool>(params[0]);
 }
 
 int CommandLineRPC(int argc, char *argv[])
