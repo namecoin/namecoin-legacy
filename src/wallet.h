@@ -338,6 +338,14 @@ public:
     mutable bool fImmatureCreditCached;
     mutable int64 nImmatureCreditCached;
 
+    /* For name transactions, cache the decoded info:  Name, value
+       and index out name output.  */
+    mutable bool nameTxDecoded;
+    mutable bool nameTxDecodeSuccess;
+    mutable int nNameOut;
+    mutable vchType vchName;
+    mutable vchType vchValue;
+
     // memory only UI hints
     mutable unsigned int nTimeDisplayed;
     mutable int nLinesDisplayed;
@@ -386,6 +394,11 @@ public:
         nAvailableCreditCached = 0;
         nImmatureCreditCached = 0;
         nChangeCached = 0;
+
+        nameTxDecoded = false;
+        vchName.clear ();
+        vchValue.clear ();
+
         nTimeDisplayed = 0;
         nLinesDisplayed = 0;
         fConfirmedDisplayed = false;
@@ -638,6 +651,11 @@ public:
 
     void RelayWalletTransaction(CTxDB& txdb);
     void RelayWalletTransaction();
+
+    /* Try to decode the tx as a name_(first)update and return true if
+       it works.  In this case, also the info is set in the output
+       arguments.  The result is cached to save CPU time.  */
+    bool GetNameUpdate (int& nOut, vchType& nm, vchType& val) const;
 };
 
 
