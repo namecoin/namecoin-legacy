@@ -422,7 +422,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
             return false;
 
     // Check for conflicts with in-memory transactions
-    CTransaction* ptxOld = NULL;
     for (int i = 0; i < vin.size(); i++)
     {
         COutPoint outpoint = vin[i].prevout;
@@ -430,22 +429,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
         {
             // Disable replacement feature for now
             return false;
-
-            // Allow replacing with a newer version of the same transaction
-            if (i != 0)
-                return false;
-            ptxOld = mapNextTx[outpoint].ptx;
-            if (ptxOld->IsFinalTx())
-                return false;
-            if (!IsNewerThan(*ptxOld))
-                return false;
-            for (int i = 0; i < vin.size(); i++)
-            {
-                COutPoint outpoint = vin[i].prevout;
-                if (!mapNextTx.count(outpoint) || mapNextTx[outpoint].ptx != ptxOld)
-                    return false;
-            }
-            break;
         }
     }
 
@@ -495,20 +478,10 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
     // Store transaction in memory
     CRITICAL_BLOCK(cs_mapTransactions)
     {
-        if (ptxOld)
-        {
-            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
-            ptxOld->RemoveFromMemoryPool();
-        }
         AddToMemoryPoolUnchecked();
     }
 
     hooks->AcceptToMemoryPool (dbset, *this);
-
-    ///// are we sure this is ok when loading transactions or restoring block txes
-    // If updated, erase old tx from wallet
-    if (ptxOld)
-        EraseFromWallets(ptxOld->GetHash());
 
     printf("AcceptToMemoryPool(): accepted %s\n", hash.ToString().substr(0,10).c_str());
     return true;
