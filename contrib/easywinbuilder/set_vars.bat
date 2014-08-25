@@ -12,7 +12,7 @@
 @set QTDOWNLOADPATH=http://download.qt-project.org/official_releases/qt/5.3/5.3.0/qt-opensource-windows-x86-mingw482_opengl-5.3.0.exe
 
 @rem Library Paths
-@set OPENSSL=openssl-1.0.1h
+@set OPENSSL=openssl-1.0.1i
 @set BERKELEYDB=db-4.8.30.NC
 @set BOOST=boost_1_54_0
 @set BOOSTVERSION=1.54.0

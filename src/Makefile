@@ -9,12 +9,12 @@ MINGW=$(shell uname -s|grep -i mingw32)
 DEFS += -DBOOST_THREAD_USE_LIB
 
 INCLUDEPATHS= \
-	-I../libs/openssl-1.0.1h/include \
+	-I../libs/openssl-1.0.1i/include \
 	-I../libs/db-4.7.25.NC/build_unix \
 	-I../libs/boost_1_50_0
 
 LIBPATHS= \
-	-L../libs/openssl-1.0.1h \
+	-L../libs/openssl-1.0.1i \
 	-L../libs/db-4.7.25.NC/build_unix \
 	-L../libs/boost_1_50_0/stage/lib
 
