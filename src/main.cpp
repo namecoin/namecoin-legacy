@@ -57,7 +57,7 @@ static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
 /* Minimal confirmation depth for caching the height of prev tx outs
    in the priority computation.  Should be large enough so that no reorgs
    happen past it that may change the heights.  */
-static const unsigned MIN_PRIORITY_CACHE_CONF = 1000;
+static const unsigned MIN_PRIORITY_CACHE_CONF = 120;
 
 double dHashesPerSec;
 int64 nHPSTimerStart;
