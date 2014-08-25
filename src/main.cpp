@@ -1136,14 +1136,16 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 else
                   txPrev = newTxPrev.get ();
 
-                if (vin[i].fHasPrevInfo)
-                  assert (vin[i].prevPos == txindex.pos);
-                else
+                /* If we didn't have any cache info, add it and
+                   set signature check to false.  We update the
+                   prevPos in any case, because it changes when a
+                   transaction gets confirmed out of the mempool.  */
+                if (!vin[i].fHasPrevInfo)
                   {
                     vin[i].fHasPrevInfo = true;
-                    vin[i].prevPos = txindex.pos;
                     vin[i].fChecked = false;
                   }
+                vin[i].prevPos = txindex.pos;
               }
             else
               {
