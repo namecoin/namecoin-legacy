@@ -235,7 +235,7 @@ CTxIn::ClearCache () const
 
   txPrev = NULL;
   prevHeight = -1;
-  
+
   return cleared;
 }
 
@@ -422,7 +422,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
             return false;
 
     // Check for conflicts with in-memory transactions
-    CTransaction* ptxOld = NULL;
     for (int i = 0; i < vin.size(); i++)
     {
         COutPoint outpoint = vin[i].prevout;
@@ -430,22 +429,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
         {
             // Disable replacement feature for now
             return false;
-
-            // Allow replacing with a newer version of the same transaction
-            if (i != 0)
-                return false;
-            ptxOld = mapNextTx[outpoint].ptx;
-            if (ptxOld->IsFinal())
-                return false;
-            if (!IsNewerThan(*ptxOld))
-                return false;
-            for (int i = 0; i < vin.size(); i++)
-            {
-                COutPoint outpoint = vin[i].prevout;
-                if (!mapNextTx.count(outpoint) || mapNextTx[outpoint].ptx != ptxOld)
-                    return false;
-            }
-            break;
         }
     }
 
@@ -495,20 +478,10 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
     // Store transaction in memory
     CRITICAL_BLOCK(cs_mapTransactions)
     {
-        if (ptxOld)
-        {
-            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
-            ptxOld->RemoveFromMemoryPool();
-        }
         AddToMemoryPoolUnchecked();
     }
 
     hooks->AcceptToMemoryPool (dbset, *this);
-
-    ///// are we sure this is ok when loading transactions or restoring block txes
-    // If updated, erase old tx from wallet
-    if (ptxOld)
-        EraseFromWallets(ptxOld->GetHash());
 
     printf("AcceptToMemoryPool(): accepted %s\n", hash.ToString().substr(0,10).c_str());
     return true;
@@ -1731,7 +1704,7 @@ bool CBlock::AcceptBlock()
 
     // Check that all transactions are finalized
     BOOST_FOREACH(const CTransaction& tx, vtx)
-        if (!tx.IsFinal(nHeight, GetBlockTime()))
+        if (!tx.IsFinalTx(nHeight, GetBlockTime()))
             return error("AcceptBlock() : contains a non-final transaction");
 
     // Check that the block chain matches the known block chain up to a checkpoint
@@ -1965,7 +1938,7 @@ AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet, unsigned size)
                 goto error;
               }
             printf ("Block file extended by %u bytes.\n", written);
-              
+
             reserved += addedChunk;
             if (fseek (file, -reserved, SEEK_END) != 0)
               goto error;
@@ -3322,7 +3295,7 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
         for (map<uint256, CTransaction>::iterator mi = mapTransactions.begin(); mi != mapTransactions.end(); ++mi)
         {
             CTransaction& tx = (*mi).second;
-            if (tx.IsCoinBase() || !tx.IsFinal())
+            if (tx.IsCoinBase() || !tx.IsFinalTx())
                 continue;
 
             COrphan* porphan = NULL;

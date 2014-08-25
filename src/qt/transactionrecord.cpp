@@ -96,7 +96,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 }
             }
         }
-        
+
         bool fAllToMe = true;
         BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             if (!wallet->IsMine(txout))
@@ -133,7 +133,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 }
 
                 int64 nValue = txout.nValue;
-                
+
                 std::string address;
                 if (ExtractDestination(txout.scriptPubKey, address))
                 {
@@ -145,7 +145,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 {
                     sub.type = TransactionRecord::NameOp;
                     sub.address = address;
-                    
+
                     // Add carried coin (from name_new)
                     if (nCarriedOverCoin > 0)
                     {
@@ -244,7 +244,7 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
     status.depth = wtx.GetDepthInMainChain();
     status.cur_num_blocks = nBestHeight;
 
-    if (!wtx.IsFinal())
+    if (!wtx.IsFinalTx())
     {
         if (wtx.nLockTime < LOCKTIME_THRESHOLD)
         {

@@ -379,7 +379,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout, true))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
-    
+
     // Carried over coin may be used to pay fee, if it was reserved during OP_NAME_NEW
     if (nCarriedOverCoin > 0)
     {
@@ -396,7 +396,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     }
 }
 
-void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, 
+void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived,
                                   int64& nSent, int64& nFee) const
 {
     nGenerated = nReceived = nSent = nFee = 0;
@@ -715,7 +715,7 @@ int64 CWallet::GetBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsFinalTx() || !pcoin->IsConfirmed())
                 continue;
             nTotal += pcoin->GetAvailableCredit();
         }
@@ -772,7 +772,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const
         {
             const CWalletTx* pcoin = &(*it).second;
 
-            if (!pcoin->IsFinal())
+            if (!pcoin->IsFinalTx())
                 continue;
 
             if (fOnlyConfirmed && !pcoin->IsConfirmed())
@@ -813,7 +813,7 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
 
        BOOST_FOREACH(const CWalletTx* pcoin, vCoins)
        {
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsFinalTx() || !pcoin->IsConfirmed())
                 continue;
 
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)

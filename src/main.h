@@ -347,7 +347,7 @@ public:
         if (fRead)
           ClearCache ();
     )
-    
+
     bool ClearCache () const;
 
     bool IsFinal() const
@@ -508,7 +508,7 @@ public:
         return SerializeHash(*this);
     }
 
-    bool IsFinal(int nBlockHeight=0, int64 nBlockTime=0) const
+    bool IsFinalTx(int nBlockHeight=0, int64 nBlockTime=0) const
     {
         // Time based nLockTime implemented in 0.1.6
         if (nLockTime == 0)
@@ -571,6 +571,9 @@ public:
 
     bool IsStandard() const
     {
+        if (!IsFinalTx())
+            return false;
+
         BOOST_FOREACH(const CTxIn& txin, vin)
             if (!txin.scriptSig.IsPushOnly())
                 return error("nonstandard txin: %s", txin.scriptSig.ToString().c_str());
@@ -704,7 +707,7 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
     bool DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex);
-    
+
     /** Fetch from memory and/or disk. inputsRet keys are transaction hashes.
 
      @param[in] txdb	Transaction database
@@ -846,7 +849,7 @@ public:
 
         if (nVersion < 37500)
           {
-            assert (fRead); 
+            assert (fRead);
             std::vector<CDiskTxPos> vSpent;
             READWRITE (vSpent);
 

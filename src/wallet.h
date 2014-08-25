@@ -34,7 +34,7 @@ public:
     std::string strWalletFile;
 
     std::set<int64> setKeyPool;
-    
+
     typedef std::map<unsigned int, CMasterKey> MasterKeyMap;
     MasterKeyMap mapMasterKeys;
     unsigned int nMasterKeyMaxID;
@@ -81,11 +81,11 @@ public:
 
     // Adds a key to the store, and saves it to disk.
     bool AddKey(const CKey& key);
-    // Adds a watching address to the store, saves it to disk. 
+    // Adds a watching address to the store, saves it to disk.
     bool AddAddress(const uint160& hash160);
     // Adds a key to the store, without saving it to disk (used by LoadWallet)
     bool LoadKey(const CKey& key) { return CKeyStore::AddKey(key); }
-    // Adds a watching address to the store, without saving it to disk (used by LoadWallet) 
+    // Adds a watching address to the store, without saving it to disk (used by LoadWallet)
     bool LoadAddress(const uint160& hash160) { return CKeyStore::AddAddress(hash160); }
     void MarkDirty();
     bool AddToWallet(const CWalletTx& wtxIn);
@@ -225,7 +225,7 @@ public:
 
     // requires cs_mapAddressBook lock
     bool DelAddressBookName(const std::string& strAddress);
-    
+
 #ifdef GUI
     bool WriteNameFirstUpdate(const std::vector<unsigned char>& vchName,
                               const uint256& hex,
@@ -264,17 +264,17 @@ public:
     }
 
     bool GetTransaction(const uint256 &hashTx, CWalletTx& wtx);
-    
+
     bool Unlock(const SecureString& strWalletPassphrase);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
-    
+
     // Adds an encrypted key to the store, and saves it to disk.
     bool AddCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
     // Adds an encrypted key to the store, without saving it to disk (used by LoadWallet)
     bool LoadCryptedKey(const std::vector<unsigned char> &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret) { /*SetMinVersion(FEATURE_WALLETCRYPT);*/ return CKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret); }
 
-#ifdef GUI    
+#ifdef GUI
     //boost::signals2::signal<void (CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
     boost::signals2::signal<void (CWallet *wallet, const std::string &address, const std::string &label, bool isMine, ChangeType status)> NotifyAddressBookChanged;
     boost::signals2::signal<void (CWallet *wallet, const uint256 &hashTx, ChangeType status)> NotifyTransactionChanged;
@@ -511,7 +511,7 @@ public:
         fDebitCached = true;
         return nDebitCached;
     }
-    
+
     int64 GetDebitInclName() const
     {
         if (vin.empty())
@@ -590,7 +590,7 @@ public:
     void GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, std::list<std::pair<std::string /* address */, int64> >& listReceived,
                     std::list<std::pair<std::string /* address */, int64> >& listSent, int64& nFee, std::string& strSentAccount, bool &fNameTx) const;
 
-    void GetAccountAmounts(const std::string& strAccount, int64& nGenerated, int64& nReceived, 
+    void GetAccountAmounts(const std::string& strAccount, int64& nGenerated, int64& nReceived,
                            int64& nSent, int64& nFee) const;
 
     bool IsFromMe() const
@@ -601,7 +601,7 @@ public:
     bool IsConfirmed() const
     {
         // Quick answer in most cases
-        if (!IsFinal())
+        if (!IsFinalTx())
             return false;
         if (GetDepthInMainChain() >= 1)
             return true;
@@ -618,7 +618,7 @@ public:
         {
             const CMerkleTx* ptx = vWorkQueue[i];
 
-            if (!ptx->IsFinal())
+            if (!ptx->IsFinalTx())
                 return false;
             if (ptx->GetDepthInMainChain() >= 1)
                 continue;
