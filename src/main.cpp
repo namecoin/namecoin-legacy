@@ -630,7 +630,7 @@ bool CWalletTx::AcceptWalletTransaction()
 const CBlockIndex*
 CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 {
-    if (pos == CDiskTxPos(1, 1, 1))
+    if (pos.IsNull () || pos == CDiskTxPos(1, 1, 1))
       return NULL;
 
     // Read block header
