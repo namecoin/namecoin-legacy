@@ -1,3 +1,12 @@
+
+* Several optimizations to improve handling of large/many network transactions (Domob)
+* Only accept finished transactions (phelix)
+* Relay transaction size limited to 20kb (consensus/phelix)
+* Increased network relay fee MIN_RELAY_TX_FEE to 100000 (RyanC/Indolering/phelix)
+* More restrictive filtering of transactions
+* Update to OpenSSL1.0.1i (phelix)
+* Better drive performance on disk based systems through less fragmentation (Domob)
+* "Renew" GUI Button (Domob)
 * contrib/easywinbuilder: Qt5/MinGW4.8.2/cleanup (phelix)
 * Qt5 compatibility (Canercandan/phelix)
 * New command line / .conf file option: -walletpath=customwalletfilename.dat (digital-dreamer)
