@@ -39,9 +39,15 @@ class CHooks;
 
 class CAuxPow;
 
+/** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
+/** The maximum size for a serialized block that we mine, in bytes */
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
+/** The maximum size for transactions we're willing to relay/mine */
+static const unsigned int MAX_STANDARD_TX_SIZE = 20000;
+/** The maximum allowed number of signature check operations in a block (network rule) */
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
+
 static const int64 COIN = 100000000;
 static const int64 CENT = 1000000;
 static const int64 MIN_TX_FEE = 500000;
