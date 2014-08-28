@@ -3424,6 +3424,10 @@ skipTransaction:;
             bool fAllowFree = (nBlockSize + nTxSize < 4000 || CTransaction::AllowFree(dPriority));
             int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, true);
 
+            // Bail early on low fee transactions to make CPU exhaustion more difficult
+            if (tx.GetValueIn() - tx.GetValueOut() < nMinFee)
+                continue;
+
             // Connecting shouldn't fail due to dependency on other memory pool transactions
             // because we're already processing them in order of dependency
             map<uint256, CTxIndex> mapTestPoolTmp(mapTestPool);
