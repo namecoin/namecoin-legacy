@@ -592,6 +592,20 @@ public:
         return true;
     }
 
+    int64 GetValueIn() const
+    {
+        int64 nValueIn = 0;
+        BOOST_FOREACH(const CTxIn& txin, vin)
+        {
+            if (!txin.fHasPrevInfo)  // must run ConnectInputs first
+                return -1;
+            nValueIn += txin.nValue;
+            if (!MoneyRange(txin.nValue) || !MoneyRange(nValueIn))
+                throw std::runtime_error("CTransaction::GetValueIn() : value out of range");
+        }
+        return nValueIn;
+    }
+
     int64 GetValueOut() const
     {
         int64 nValueOut = 0;
