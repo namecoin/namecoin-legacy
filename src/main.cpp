@@ -3425,7 +3425,13 @@ skipTransaction:;
             int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, true);
 
             // Bail early on low fee transactions to make CPU exhaustion more difficult
-            if (tx.GetValueIn() - tx.GetValueOut() < nMinFee)
+            int64 nValueIn = tx.GetValueIn();
+            if (nValueIn < 0)  // should never happen
+            {
+                printf ("WARNING: CreateNewBlock: GetValueIn failed - skipping tx\n");
+                continue;
+            }
+            if (nValueIn - tx.GetValueOut() < nMinFee)
                 continue;
 
             // Connecting shouldn't fail due to dependency on other memory pool transactions
