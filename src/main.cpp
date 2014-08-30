@@ -64,7 +64,7 @@ int64 nHPSTimerStart;
 
 // Settings
 int fGenerateBitcoins = false;
-int64 nTransactionFee = 0;
+int64 nTransactionFee = DEFAULT_TRANSACTION_FEE;
 int64 nMinimumInputValue = CENT / 100;
 int fLimitProcessors = false;
 int nLimitProcessors = 1;
