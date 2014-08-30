@@ -38,21 +38,6 @@ contains(RELEASE, 1) {
     }
 }
 
-# optimize
-win32 {
-    QMAKE_CFLAGS_RELEASE -= -O
-    QMAKE_CFLAGS_RELEASE -= -O0
-    QMAKE_CFLAGS_RELEASE -= -O1
-    QMAKE_CFLAGS_RELEASE -= -O2
-    QMAKE_CFLAGS_RELEASE *= -O3
-
-    QMAKE_CXXFLAGS_RELEASE -= -O
-    QMAKE_CXXFLAGS_RELEASE -= -O0
-    QMAKE_CXXFLAGS_RELEASE -= -O1
-    QMAKE_CXXFLAGS_RELEASE -= -O2
-    QMAKE_CXXFLAGS_RELEASE *= -O3
-}
-
 !win32 {
     # for extra security against potential buffer overflows: enable GCCs Stack Smashing Protection
     QMAKE_CXXFLAGS *= -fstack-protector-all
