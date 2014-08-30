@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = namecoin-qt
 macx:TARGET = "Namecoin-Qt"
-VERSION = 0.3.76
+VERSION = 0.3.76rc1
 INCLUDEPATH += src src/json src/qt
 QT += core gui network
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
