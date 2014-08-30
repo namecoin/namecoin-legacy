@@ -1,4 +1,6 @@
-
+v0.3.76rc1
+========
+* Set default fee per kb to 0.005NMC (phelix)
 * Several optimizations to improve handling of large/many network transactions (Domob)
 * Only accept finished transactions (phelix)
 * Relay transaction size limited to 20kb (consensus/phelix)
