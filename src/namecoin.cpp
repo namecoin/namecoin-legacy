@@ -2607,7 +2607,7 @@ int CNamecoinHooks::LockinHeight()
     if (fTestNet)
         return 0;
 
-    return 182000;
+    return 193000;
 }
 
 bool CNamecoinHooks::Lockin(int nHeight, uint256 hash)
@@ -2625,7 +2625,8 @@ bool CNamecoinHooks::Lockin(int nHeight, uint256 hash)
                 (nHeight ==  30240 && hash != uint256("0xe1c8c862ff342358384d4c22fa6ea5f669f3e1cdcf34111f8017371c3c0be1da")) ||
                 (nHeight ==  57000 && hash != uint256("0xaa3ec60168a0200799e362e2b572ee01f3c3852030d07d036e0aa884ec61f203")) ||
                 (nHeight == 112896 && hash != uint256("0x73f880e78a04dd6a31efc8abf7ca5db4e262c4ae130d559730d6ccb8808095bf")) ||
-                (nHeight == 182000 && hash != uint256("0xd47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9")))
+                (nHeight == 182000 && hash != uint256("0xd47b4a8fd282f635d66ce34ebbeb26ffd64c35b41f286646598abfd813cba6d9")) ||
+                (nHeight == 193000 && hash != uint256("0x3b85e70ba7f5433049cfbcf0ae35ed869496dbedcd1c0fafadb0284ec81d7b58")))
             return false;
     return true;
 }
