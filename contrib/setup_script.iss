@@ -1,5 +1,5 @@
 ; also in the code
-#define version "0.x.xx"
+#define version "0.3.76"
 
 #define sourceFolder "..\release"
 #define progname "Namecoin"
