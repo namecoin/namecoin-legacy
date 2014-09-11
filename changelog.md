@@ -1,4 +1,4 @@
-v0.3.76rc1
+v0.3.76
 ========
 * Set default fee per kb to 0.005NMC (phelix)
 * Several optimizations to improve handling of large/many network transactions (Domob)
