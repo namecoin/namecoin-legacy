@@ -313,7 +313,7 @@ public:
     Rewrite ()
     {
       Close ();
-      Rewrite (strFile);
+      return Rewrite (strFile);
     }
 
     /**
