@@ -211,6 +211,7 @@ extern bool fCacheTxPrev;
 
 void RandAddSeed();
 void RandAddSeedPerfmon();
+void SetupEnvironment();
 int OutputDebugStringF(const char* pszFormat, ...);
 int my_snprintf(char* buffer, size_t limit, const char* format, ...);
 
