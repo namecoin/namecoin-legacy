@@ -124,6 +124,8 @@ static void handleRunawayException(std::exception *e)
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
 {
+    SetupEnvironment();
+
     // Command-line options take precedence:
     ParseParameters(argc, argv);
 
