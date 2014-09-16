@@ -564,15 +564,12 @@ Value name_list(const Array& params, bool fHelp)
     if (params.size () == 1)
       vchNameUniq = vchFromValue (params[0]);
 
-    Array oRes;
     std::map<vchType, int> vNamesI;
     std::map<vchType, Object> vNamesO;
 
     CRITICAL_BLOCK(cs_main)
     CRITICAL_BLOCK(pwalletMain->cs_mapWallet)
       {
-        CTxDB txdb("r");
-
         BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item,
                       pwalletMain->mapWallet)
           {
@@ -615,6 +612,7 @@ Value name_list(const Array& params, bool fHelp)
         }
     }
 
+    Array oRes;
     BOOST_FOREACH(const PAIRTYPE(vector<unsigned char>, Object)& item, vNamesO)
         oRes.push_back(item.second);
 
