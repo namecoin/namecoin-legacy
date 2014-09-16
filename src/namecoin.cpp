@@ -36,7 +36,7 @@ map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
 
 #ifdef GUI
-extern std::map<uint160, std::vector<unsigned char> > mapMyNameHashes;
+extern std::map<uint160, vchType> mapMyNameHashes;
 #endif
 
 extern uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
@@ -2161,7 +2161,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
     bool found = false;
 
     int prevOp;
-    vector<vector<unsigned char> > vvchPrevArgs;
+    vector<vchType> vvchPrevArgs;
 
     // Bug workaround
     if (fMiner || !fBlock || pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
@@ -2238,7 +2238,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         return true;
     }
 
-    vector<vector<unsigned char> > vvchArgs;
+    vector<vchType> vvchArgs;
     int op;
     int nOut;
 
@@ -2251,6 +2251,14 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
     int64 nNetFee;
 
     bool fBugWorkaround = false;
+
+    /* Enforce locked name coin amount if we are beyond the fork point.  */
+    if (tx.vout[nOut].nValue < MIN_AMOUNT)
+      {
+        if (pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS)
+          return error ("ConnectInputsHook: not enough locked amount");
+        printf ("WARNING: not enough locked amount, ignoring for now");
+      }
 
     // HACK: The following two checks are redundant after hard-fork at block 150000, because it is performed
     // in CheckTransaction. However, before that, we do not know height during CheckTransaction
@@ -2288,10 +2296,10 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
 
             {
                 // Check hash
-                const vector<unsigned char> &vchHash = vvchPrevArgs[0];
-                const vector<unsigned char> &vchName = vvchArgs[0];
-                const vector<unsigned char> &vchRand = vvchArgs[1];
-                vector<unsigned char> vchToHash(vchRand);
+                const vchType& vchHash = vvchPrevArgs[0];
+                const vchType& vchName = vvchArgs[0];
+                const vchType& vchRand = vvchArgs[1];
+                vchType vchToHash(vchRand);
                 vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
                 uint160 hash = Hash160(vchToHash);
                 if (uint160(vchHash) != hash)
