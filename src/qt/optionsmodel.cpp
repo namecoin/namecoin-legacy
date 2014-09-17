@@ -26,6 +26,7 @@ bool static ApplyProxySettings()
     if (!settings.value("fUseProxy", false).toBool()) {
         addrProxy = CService();
         nSocksVersion = 0;
+        SetProxy(NET_IPV4, addrProxy, nSocksVersion);
         return false;
     }
     if (nSocksVersion && !addrProxy.IsValid())
@@ -51,7 +52,7 @@ void OptionsModel::Init()
     bDisplayAddresses = settings.value("bDisplayAddresses", false).toBool();
     fMinimizeToTray = settings.value("fMinimizeToTray", false).toBool();
     fMinimizeOnClose = settings.value("fMinimizeOnClose", false).toBool();
-    nTransactionFee = settings.value("nTransactionFee").toLongLong();
+    nTransactionFee = settings.value("nTransactionFee", DEFAULT_TRANSACTION_FEE).toLongLong();
     language = settings.value("language", "").toString();
 
     // These are shared with core Bitcoin; we want
@@ -70,6 +71,7 @@ void OptionsModel::Init()
         SoftSetArg("-socks", settings.value("nSocksVersion").toString().toStdString());
     if (!language.isEmpty())
         SoftSetArg("-lang", language.toStdString());
+    ApplyProxySettings();
 }
 
 void OptionsModel::Reset()

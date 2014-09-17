@@ -9,12 +9,12 @@ MINGW=$(shell uname -s|grep -i mingw32)
 DEFS += -DBOOST_THREAD_USE_LIB
 
 INCLUDEPATHS?= \
-	-I../libs/openssl-1.0.1h/include \
+	-I../libs/openssl-1.0.1i/include \
 	-I../libs/db-4.7.25.NC/build_unix \
 	-I../libs/boost_1_50_0
 
 LIBPATHS?= \
-	-L../libs/openssl-1.0.1h \
+	-L../libs/openssl-1.0.1i \
 	-L../libs/db-4.7.25.NC/build_unix \
 	-L../libs/boost_1_50_0/stage/lib
 
@@ -40,7 +40,7 @@ endif
 
 
 # todo: change -D__WXMSW__  to WINDOWS
-DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
+DEFS += -D__WXMSW__
 LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
 
 CFLAGS=${ADDITIONALCCFLAGS} -mthreads -O2 -w -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)

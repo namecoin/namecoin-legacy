@@ -51,13 +51,20 @@ map<uint256, CDataStream*> mapOrphanTransactions;
 multimap<uint256, CDataStream*> mapOrphanTransactionsByPrev;
 
 const std::string strMessageMagic = "Bitcoin Signed Message:\n";
+static const unsigned BLOCKFILE_MAX_SIZE = 0x7F000000;
+static const unsigned BLOCKFILE_CHUNK_SIZE = 16 * (1 << 20);
+
+/* Minimal confirmation depth for caching the height of prev tx outs
+   in the priority computation.  Should be large enough so that no reorgs
+   happen past it that may change the heights.  */
+static const unsigned MIN_PRIORITY_CACHE_CONF = 120;
 
 double dHashesPerSec;
 int64 nHPSTimerStart;
 
 // Settings
 int fGenerateBitcoins = false;
-int64 nTransactionFee = 0;
+int64 nTransactionFee = DEFAULT_TRANSACTION_FEE;
 int64 nMinimumInputValue = CENT / 100;
 int fLimitProcessors = false;
 int nLimitProcessors = 1;
@@ -211,6 +218,59 @@ void static EraseOrphanTx(uint256 hash)
 // CTransaction and CTxIndex
 //
 
+CTxIn::~CTxIn ()
+{
+  ClearCache ();
+}
+
+bool
+CTxIn::ClearCache () const
+{
+  bool cleared = false;
+  if (txPrev)
+    {
+      delete txPrev;
+      cleared = true;
+      txPrev = NULL;
+    }
+  assert (!txPrev);
+
+  return cleared;
+}
+
+void
+CTxIn::InvalidateCache () const
+{
+  ClearCache ();
+
+  fHasPrevInfo = false;
+  prevHeight = -1;
+}
+
+CTxIn&
+CTxIn::operator= (const CTxIn& in)
+{
+  prevout = in.prevout;
+  scriptSig = in.scriptSig;
+  nSequence = in.nSequence;
+
+  InvalidateCache ();
+
+  if (in.fHasPrevInfo)
+    {
+      fHasPrevInfo = in.fHasPrevInfo;
+      prevPos = in.prevPos;
+      nValue = in.nValue;
+      prevHeight = in.prevHeight;
+      fChecked = in.fChecked;
+    }
+
+  if (in.txPrev && fCacheTxPrev)
+    txPrev = new CTransaction (*in.txPrev);
+
+  return *this;
+}
+
 bool CTransaction::ReadFromDisk(CTxDB& txdb, COutPoint prevout, CTxIndex& txindexRet)
 {
     SetNull();
@@ -361,6 +421,13 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
     if (GetSigOpCount() > nSize / 34 || nSize < 100)
         return error("AcceptToMemoryPool() : nonstandard transaction");
 
+    // Extremely large transactions with lots of inputs can cost the network
+    // almost as much to process as they cost the sender in fees, because
+    // computing signature hashes is O(ninputs*txsize). Limiting transactions
+    // to MAX_STANDARD_TX_SIZE mitigates CPU exhaustion attacks.
+    if (nSize >= MAX_STANDARD_TX_SIZE)
+        return error("AcceptToMemoryPool() : transaction too large");
+
     // Rather not work on nonstandard transactions (unless -testnet)
     if (!fTestNet && !IsStandard())
         return error("AcceptToMemoryPool() : nonstandard transaction type");
@@ -375,7 +442,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
             return false;
 
     // Check for conflicts with in-memory transactions
-    CTransaction* ptxOld = NULL;
     for (int i = 0; i < vin.size(); i++)
     {
         COutPoint outpoint = vin[i].prevout;
@@ -383,22 +449,6 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
         {
             // Disable replacement feature for now
             return false;
-
-            // Allow replacing with a newer version of the same transaction
-            if (i != 0)
-                return false;
-            ptxOld = mapNextTx[outpoint].ptx;
-            if (ptxOld->IsFinal())
-                return false;
-            if (!IsNewerThan(*ptxOld))
-                return false;
-            for (int i = 0; i < vin.size(); i++)
-            {
-                COutPoint outpoint = vin[i].prevout;
-                if (!mapNextTx.count(outpoint) || mapNextTx[outpoint].ptx != ptxOld)
-                    return false;
-            }
-            break;
         }
     }
 
@@ -448,20 +498,10 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
     // Store transaction in memory
     CRITICAL_BLOCK(cs_mapTransactions)
     {
-        if (ptxOld)
-        {
-            printf("AcceptToMemoryPool() : replacing tx %s with new version\n", ptxOld->GetHash().ToString().c_str());
-            ptxOld->RemoveFromMemoryPool();
-        }
         AddToMemoryPoolUnchecked();
     }
 
     hooks->AcceptToMemoryPool (dbset, *this);
-
-    ///// are we sure this is ok when loading transactions or restoring block txes
-    // If updated, erase old tx from wallet
-    if (ptxOld)
-        EraseFromWallets(ptxOld->GetHash());
 
     printf("AcceptToMemoryPool(): accepted %s\n", hash.ToString().substr(0,10).c_str());
     return true;
@@ -594,22 +634,44 @@ bool CWalletTx::AcceptWalletTransaction()
     return AcceptWalletTransaction (dbset);
 }
 
-int CTxIndex::GetDepthInMainChain() const
+const CBlockIndex*
+CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 {
+    if (pos.IsNull () || pos == CDiskTxPos(1, 1, 1))
+      return NULL;
+
     // Read block header
     CBlock block;
     if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
-        return 0;
+        return NULL;
+
     // Find the block in the index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
     if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
-        return 0;
-    return 1 + nBestHeight - pindex->nHeight;
+        return NULL;
+
+    return mi->second;
 }
 
+int
+CTxIndex::GetHeight (const CDiskTxPos& pos)
+{
+  const CBlockIndex* pindex = GetContainingBlock (pos);
+  if (!pindex)
+    return -1;
+
+  return pindex->nHeight;
+}
+
+int
+CTxIndex::GetDepthInMainChain (const CDiskTxPos& pos)
+{
+  const CBlockIndex* pindex = GetContainingBlock (pos);
+  if (!pindex || !pindex->IsInMainChain ())
+    return 0;
+
+  return 1 + nBestHeight - pindex->nHeight;
+}
 
 // Return transaction in tx, and if it was found inside a block, its hash is placed in hashBlock
 bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock /*, bool fAllowSlow*/)
@@ -1022,7 +1084,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
         int64 nValueIn = 0;
         for (int i = 0; i < vin.size(); i++)
         {
-            COutPoint prevout = vin[i].prevout;
+            const COutPoint prevout = vin[i].prevout;
 
             // Read txindex
             CTxIndex txindex;
@@ -1040,53 +1102,98 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
             if (!fFound && (fBlock || fMiner))
                 return fMiner ? false : error("ConnectInputs() : %s prev tx %s index entry not found", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
 
-            // Read txPrev
-            CTransaction txPrev;
-            if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
-            {
-                // Get prev tx from single transactions in memory
-                CRITICAL_BLOCK(cs_mapTransactions)
-                {
-                    if (!mapTransactions.count(prevout.hash))
-                        return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-                    txPrev = mapTransactions[prevout.hash];
-                }
-                if (!fFound)
-                  txindex.ResizeOutputs (txPrev.vout.size ());
-            }
-            else
-            {
-                // Get prev tx from disk
-                if (!txPrev.ReadFromDisk(txindex.pos))
-                    return error("ConnectInputs() : %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
-            }
+            if (!fFound)
+              {
+                assert (txindex.GetOutputCount () == 0);
+                txindex.ResizeOutputs (prevout.n + 1);
+              }
+            if (prevout.n >= txindex.GetOutputCount ())
+                return error ("ConnectInputs: %s prevout.n out of range %d %d",
+                              GetHash().ToString().substr(0,10).c_str(),
+                              prevout.n, txindex.GetOutputCount ());
 
-            if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.GetOutputCount ())
-                return error("ConnectInputs() : %s prevout.n out of range %d %d %d prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.GetOutputCount (), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+            /* Ensure that we have all information about the prevout tx.  */
+            std::auto_ptr<CTransaction> newTxPrev;
+            const CTransaction* txPrev = NULL;
+            if (!vin[i].txPrev)
+              {
+                if (!fFound || txindex.pos == CDiskTxPos(1,1,1))
+                  {
+                    // Get prev tx from single transactions in memory
+                    CRITICAL_BLOCK(cs_mapTransactions)
+                    {
+                        if (!mapTransactions.count(prevout.hash))
+                            return error("ConnectInputs() : %s mapTransactions prev not found %s", GetHash().ToString().substr(0,10).c_str(),  prevout.hash.ToString().substr(0,10).c_str());
+                        newTxPrev.reset (new CTransaction (mapTransactions[prevout.hash]));
+                    }
+                  }
+                else
+                  {
+                    // Get prev tx from disk
+                    newTxPrev.reset (new CTransaction ());
+                    if (!newTxPrev->ReadFromDisk (txindex.pos))
+                      return error ("ConnectInputs: %s ReadFromDisk prev tx %s failed", GetHash().ToString().substr(0,10).c_str(), prevout.hash.ToString().substr(0,10).c_str());
+                  }
+
+                if (fCacheTxPrev)
+                  {
+                    vin[i].txPrev = newTxPrev.release ();
+                    txPrev = vin[i].txPrev;
+                  }
+                else
+                  txPrev = newTxPrev.get ();
+
+                /* If we didn't have any cache info, add it and
+                   set signature check to false.  We update the
+                   prevPos in any case, because it changes when a
+                   transaction gets confirmed out of the mempool.  */
+                if (!vin[i].fHasPrevInfo)
+                  {
+                    vin[i].fHasPrevInfo = true;
+                    vin[i].fChecked = false;
+                  }
+                vin[i].prevPos = txindex.pos;
+              }
+            else
+              {
+                txPrev = vin[i].txPrev;
+                if (fDebug)
+                  printf ("ConnectInputs: using cached txPrev for %s/%d\n",
+                          GetHash ().ToString ().substr (0, 10).c_str (), i);
+              }
+            assert (vin[i].fHasPrevInfo);
+            assert (txPrev);
+
+            if (prevout.n >= txPrev->vout.size ())
+              return error ("ConnectInputs: %s prevout.n out of range"
+                            " %d %d prev tx %s\n%s",
+                            GetHash().ToString().substr(0,10).c_str(),
+                            prevout.n, txPrev->vout.size(),
+                            prevout.hash.ToString().substr(0,10).c_str(),
+                            txPrev->ToString().c_str());
+
+            /* We skip signature verification before the latest
+               checkpoint.  The checkpoint ensures that everything
+               is fine anyway.  */
+            if (!(fBlock && nBestHeight < hooks->LockinHeight ())
+                && !VerifySignature (*txPrev, *this, i))
+              return error ("ConnectInputs: %s VerifySignature failed",
+                            GetHash ().ToString ().substr (0, 10).c_str ());
 
             // If prev is coinbase, check that it's matured
-            if (txPrev.IsCoinBase())
+            if (txPrev->IsCoinBase ())
                 for (CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < COINBASE_MATURITY; pindex = pindex->pprev)
                     if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
                         return error("ConnectInputs() : tried to spend coinbase at depth %d", pindexBlock->nHeight - pindex->nHeight);
-
-            // Skip ECDSA signature verification when connecting blocks (fBlock=true)
-            // before the last blockchain checkpoint. This is safe because block merkle hashes are
-             // still computed and checked, and any change will be caught at the next checkpoint.
-            if (!(fBlock && (nBestHeight < hooks->LockinHeight())))
-            {
-                // Verify signature
-                if (!VerifySignature(txPrev, *this, i))
-                    return error("ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str());
-            }
 
             // Check for conflicts
             if (txindex.IsSpent (prevout.n))
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already spent", GetHash().ToString().substr(0,10).c_str());
 
             // Check for negative or overflow input values
-            nValueIn += txPrev.vout[prevout.n].nValue;
-            if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
+            vin[i].nValue = txPrev->vout[prevout.n].nValue;
+            nValueIn += vin[i].nValue;
+            if (!MoneyRange(vin[i].nValue) || !MoneyRange(nValueIn))
                 return error("ConnectInputs() : txin values out of range");
 
             // Mark outpoints as spent
@@ -1103,7 +1210,7 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 mapTestPool[prevout.hash] = txindex;
             }
 
-            vTxPrev.push_back(txPrev);
+            vTxPrev.push_back(*txPrev);
             vTxindex.push_back(txindex);
         }
 
@@ -1153,7 +1260,7 @@ bool CTransaction::ClientConnectInputs()
             COutPoint prevout = vin[i].prevout;
             if (!mapTransactions.count(prevout.hash))
                 return false;
-            CTransaction& txPrev = mapTransactions[prevout.hash];
+            const CTransaction& txPrev = mapTransactions[prevout.hash];
 
             if (prevout.n >= txPrev.vout.size())
                 return false;
@@ -1477,6 +1584,42 @@ int GetOurChainID()
     return hooks->GetOurChainID();
 }
 
+bool CBlock::WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
+{
+    DatabaseSet dbset("r+");
+
+    unsigned nSize;
+    unsigned nTotalSize = ::GetSerializeSize (*this, SER_DISK);
+    nTotalSize += sizeof (pchMessageStart) + sizeof (nSize);
+
+    // Open history file to append
+    CAutoFile fileout = AppendBlockFile (dbset, nFileRet, nTotalSize);
+    if (!fileout)
+        return error("CBlock::WriteToDisk() : AppendBlockFile failed");
+    const unsigned startPos = ftell (fileout);
+
+    // Write index header
+    nSize = fileout.GetSerializeSize(*this);
+    fileout << FLATDATA(pchMessageStart) << nSize;
+
+    // Write block
+    nBlockPosRet = ftell(fileout);
+    if (nBlockPosRet == -1)
+        return error("CBlock::WriteToDisk() : ftell failed");
+    fileout << *this;
+
+    // Check that the total size estimate was correct.
+    const unsigned writtenSize = ftell (fileout) - startPos;
+    if (writtenSize != nTotalSize)
+      return error ("CBlock::WriteToDisk: nTotalSize was wrong: %d / %d",
+                    nTotalSize, writtenSize);
+
+    // Flush stdio buffers and commit to disk before returning
+    FlushBlockFile(fileout);
+
+    return true;
+}
+
 bool CBlock::CheckProofOfWork(int nHeight) const
 {
     if (nHeight >= GetAuxPowStartBlock())
@@ -1591,7 +1734,7 @@ bool CBlock::AcceptBlock()
 
     // Check that all transactions are finalized
     BOOST_FOREACH(const CTransaction& tx, vtx)
-        if (!tx.IsFinal(nHeight, GetBlockTime()))
+        if (!tx.IsFinalTx(nHeight, GetBlockTime()))
             return error("AcceptBlock() : contains a non-final transaction");
 
     // Check that the block chain matches the known block chain up to a checkpoint
@@ -1599,8 +1742,6 @@ bool CBlock::AcceptBlock()
         return error("AcceptBlock() : rejected by checkpoint lockin at %d", nHeight);
 
     // Write block to history file
-    if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK)))
-        return error("AcceptBlock() : out of disk space");
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
     if (!WriteToDisk(nFile, nBlockPos))
@@ -1722,7 +1863,8 @@ bool static ScanMessageStart(Stream& s)
     }
 }
 
-bool CheckDiskSpace(uint64 nAdditionalBytes)
+bool
+CheckDiskSpace (uint64 nAdditionalBytes)
 {
     uint64 nFreeBytesAvailable = filesystem::space(GetDataDir()).available;
 
@@ -1765,24 +1907,100 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 
 static unsigned int nCurrentBlockFile = 1;
 
-FILE* AppendBlockFile(unsigned int& nFileRet)
+/* Append to a splitting block history file.  The given size is the number of
+   bytes that will be written.  This is used to check for disk space as well
+   as extend the file in preallocated chunks to combat fragmentation.  */
+FILE*
+AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet, unsigned size)
 {
+    CTxDB& txdb = dbset.tx ();
+
+    if (!CheckDiskSpace (size))
+      {
+        printf ("ERROR: AppendBlockFile: out of disk space");
+        return NULL;
+      }
+    if (fDebug)
+      printf ("AppendBlockFile: adding %u bytes\n", size);
+
+    FILE* file = NULL;
     nFileRet = 0;
     loop
     {
-        FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+        /* We want to open the file in "r+" mode, so that we can write
+           not only at the end (so that overwriting reserved bytes is possible).
+           Make sure the file exists first.  */
+        file = OpenBlockFile (nCurrentBlockFile, 0, "ab");
+        fclose (file);
+        file = OpenBlockFile (nCurrentBlockFile, 0, "rb+");
         if (!file)
-            return NULL;
-        if (fseek(file, 0, SEEK_END) != 0)
-            return NULL;
-        // FAT32 filesize max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < 0x7F000000 - MAX_SIZE)
-        {
-            nFileRet = nCurrentBlockFile;
-            return file;
-        }
+          goto error;
+
+        /* reserved should be an int, since otherwise -reserved below
+           fails and the fseek has a wrong effect.  */
+        int reserved = txdb.ReadBlockFileReserved (nCurrentBlockFile);
+        if (size <= reserved)
+          {
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
+        if (fseek (file, 0, SEEK_END) != 0)
+          goto error;
+        const unsigned fileSize = ftell (file);
+        assert (fileSize >= reserved);
+        const unsigned addedChunk = std::max (BLOCKFILE_CHUNK_SIZE,
+                                              size - reserved);
+
+        if (fileSize + addedChunk <= BLOCKFILE_MAX_SIZE)
+          {
+            std::vector<char> buf(addedChunk, '\0');
+            const unsigned written = fwrite (&buf[0], 1, addedChunk, file);
+            if (written != addedChunk)
+              {
+                printf ("ERROR: AppendBlockFile: write to extend"
+                        " by %u bytes failed, only %u written\n",
+                        addedChunk, written);
+                goto error;
+              }
+            printf ("Block file extended by %u bytes.\n", written);
+
+            reserved += addedChunk;
+            if (fseek (file, -reserved, SEEK_END) != 0)
+              goto error;
+            reserved -= size;
+            if (!txdb.WriteBlockFileReserved (nCurrentBlockFile, reserved))
+              goto error;
+            break;
+          }
+
         fclose(file);
         nCurrentBlockFile++;
+    }
+
+    nFileRet = nCurrentBlockFile;
+    return file;
+
+error:
+    if (file)
+      fclose (file);
+    return NULL;
+}
+
+void FlushBlockFile(FILE *f)
+{
+    fflush(f);
+    if (!IsInitialBlockDownload() || (nBestHeight + 1) % 500 == 0)
+    {
+#ifdef __WXMSW__
+        _commit(_fileno(f));
+#else
+        fsync(fileno(f));
+#endif
     }
 }
 
@@ -3107,38 +3325,61 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
         for (map<uint256, CTransaction>::iterator mi = mapTransactions.begin(); mi != mapTransactions.end(); ++mi)
         {
             CTransaction& tx = (*mi).second;
-            if (tx.IsCoinBase() || !tx.IsFinal())
+            if (tx.IsCoinBase() || !tx.IsFinalTx())
                 continue;
 
             COrphan* porphan = NULL;
             double dPriority = 0;
             BOOST_FOREACH(const CTxIn& txin, tx.vin)
             {
-                // Read prev transaction
-                CTransaction txPrev;
-                CTxIndex txindex;
-                if (!txPrev.ReadFromDisk (dbset.tx (), txin.prevout, txindex))
-                {
-                    // Has to wait for dependencies
+                /* We should always have cached txprev info on the
+                   input, since this should have been added when accepting
+                   it to the mempool.  Be not too strict about it, though.  */
+                if (!txin.fHasPrevInfo)
+                  {
+                    printf ("WARNING: CreateNewBlock: ignoring tx without prev info\n");
+                    goto skipTransaction;
+                  }
+
+                bool dependency = false;
+                int nHeight;
+                if (txin.prevHeight != -1)
+                  {
+                    nHeight = txin.prevHeight;
+                    if (fDebug)
+                      printf ("  also using cached height %d\n", nHeight);
+                  }
+                else
+                  {
+                    nHeight = CTxIndex::GetHeight (txin.prevPos);
+                    if (nHeight == -1)
+                      dependency = true;
+
+                    if (nHeight + MIN_PRIORITY_CACHE_CONF < nBestHeight)
+                      txin.prevHeight = nHeight;
+                  }
+
+                if (dependency)
+                  {
+                    // Have to wait for dependency
                     if (!porphan)
-                    {
+                      {
                         // Use list for automatic deletion
-                        vOrphan.push_back(COrphan(&tx));
-                        porphan = &vOrphan.back();
-                    }
-                    mapDependers[txin.prevout.hash].push_back(porphan);
-                    porphan->setDependsOn.insert(txin.prevout.hash);
+                        vOrphan.push_back (COrphan(&tx));
+                        porphan = &vOrphan.back ();
+                      }
+                    mapDependers[txin.prevout.hash].push_back (porphan);
+                    porphan->setDependsOn.insert (txin.prevout.hash);
                     continue;
-                }
-                int64 nValueIn = txPrev.vout[txin.prevout.n].nValue;
+                  }
 
-                // Read block header
-                int nConf = txindex.GetDepthInMainChain();
+                const int nConf = 1 + nBestHeight - nHeight;
+                assert (nConf > 0);
 
-                dPriority += (double)nValueIn * nConf;
+                dPriority += static_cast<double> (txin.nValue) * nConf;
 
                 if (fDebug && GetBoolArg("-printpriority"))
-                    printf("priority     nValueIn=%-12I64d nConf=%-5d dPriority=%-20.1f\n", nValueIn, nConf, dPriority);
+                    printf("priority     nValueIn=%-12I64d nConf=%-5d dPriority=%-20.1f\n", txin.nValue, nConf, dPriority);
             }
 
             // Priority is sum(valuein * age) / txsize
@@ -3156,6 +3397,8 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
                     porphan->print();
                 printf("\n");
             }
+
+skipTransaction:;
         }
 
         // Collect transactions into block
@@ -3180,6 +3423,16 @@ CBlock* CreateNewBlock(CReserveKey& reservekey)
             // Transaction fee required depends on block size
             bool fAllowFree = (nBlockSize + nTxSize < 4000 || CTransaction::AllowFree(dPriority));
             int64 nMinFee = tx.GetMinFee(nBlockSize, fAllowFree, true);
+
+            // Bail early on low fee transactions to make CPU exhaustion more difficult
+            int64 nValueIn = tx.GetValueIn();
+            if (nValueIn < 0)  // should never happen
+            {
+                printf ("WARNING: CreateNewBlock: GetValueIn failed - skipping tx\n");
+                continue;
+            }
+            if (nValueIn - tx.GetValueOut() < nMinFee)
+                continue;
 
             // Connecting shouldn't fail due to dependency on other memory pool transactions
             // because we're already processing them in order of dependency

@@ -67,60 +67,40 @@ public:
     {
         cachedNameTable.clear();
 
-        std::map< std::vector<unsigned char>, NameTableEntry > vNamesO;
+        std::map<vchType, NameTableEntry> vNamesO;
 
         CRITICAL_BLOCK(cs_main)
         CRITICAL_BLOCK(wallet->cs_mapWallet)
         {
-            CTxIndex txindex;
-            uint256 hash;
             CTxDB txdb("r");
-            CTransaction tx;
-
-            std::vector<unsigned char> vchName;
-            std::vector<unsigned char> vchValue;
-            int nHeight;
 
             BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, wallet->mapWallet)
             {
-                hash = item.second.GetHash();
-                bool fConfirmed;
-                bool fTransferred = false;
-                // TODO: Maybe CMerkleTx::GetDepthInMainChain() would be faster?
-                if (!txdb.ReadDiskTx(hash, tx, txindex))
-                {
-                    tx = item.second;
-                    fConfirmed = false;
-                }
-                else
-                    fConfirmed = true;
+                const CWalletTx& tx = item.second;
 
-                if (tx.nVersion != NAMECOIN_TX_VERSION)
-                    continue;
+                vchType vchName, vchValue;
+                int nOut;
+                if (!tx.GetNameUpdate (nOut, vchName, vchValue))
+                  continue;
 
-                // name
-                if (!GetNameOfTx(tx, vchName))
-                    continue;
-
-                // value
-                if (!GetValueOfNameTx(tx, vchValue))
-                    continue;
-
-                if (!hooks->IsMine(wallet->mapWallet[tx.GetHash()]))
-                    fTransferred = true;
-                    
-                // height
+                int nHeight = tx.GetHeightInMainChain ();
+                const bool fConfirmed = (nHeight != -1);
                 if (fConfirmed)
-                {
-                    nHeight = GetTxPosHeight(txindex.pos);
-                    if (nHeight + GetDisplayExpirationDepth(nHeight) - pindexBest->nHeight <= 0)
-                        continue;  // Expired
-                }
+                  {
+                    assert (nHeight >= 0);
+                    const int expiresIn = nHeight + GetDisplayExpirationDepth (nHeight) - pindexBest->nHeight;
+                    if (expiresIn <= 0)
+                      continue;
+                  }
                 else
-                    nHeight = NameTableEntry::NAME_UNCONFIRMED;
+                  nHeight = NameTableEntry::NAME_UNCONFIRMED;
 
+                bool fTransferred = false;
+                if (!hooks->IsMine (tx))
+                  fTransferred = true;
+                    
                 // get last active name only
-                std::map< std::vector<unsigned char>, NameTableEntry >::iterator mi = vNamesO.find(vchName);
+                std::map<vchType, NameTableEntry>::iterator mi = vNamesO.find(vchName);
                 if (mi != vNamesO.end() && !NameTableEntry::CompareHeight(mi->second.nHeight, nHeight))
                     continue;
 

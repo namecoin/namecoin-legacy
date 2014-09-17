@@ -39,16 +39,26 @@ class CHooks;
 
 class CAuxPow;
 
+/** The maximum allowed size for a serialized block, in bytes (network rule) */
 static const unsigned int MAX_BLOCK_SIZE = 1000000;
+/** The maximum size for a serialized block that we mine, in bytes */
 static const unsigned int MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE/2;
+/** The maximum size for transactions we're willing to relay/mine */
+static const unsigned int MAX_STANDARD_TX_SIZE = 20000;
+/** The maximum allowed number of signature check operations in a block (network rule) */
 static const int MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE/50;
+
 static const int64 COIN = 100000000;
 static const int64 CENT = 1000000;
 static const int64 MIN_TX_FEE = 500000;
-static const int64 MIN_RELAY_TX_FEE = 10000;
+static const int64 MIN_RELAY_TX_FEE = MIN_TX_FEE/5;
 static const int64 MAX_MONEY = 21000000 * COIN;
 inline bool MoneyRange(int64 nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 static const int COINBASE_MATURITY = 100;
+
+// -paytxfee default
+static const int64 DEFAULT_TRANSACTION_FEE = MIN_TX_FEE;
+
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else
@@ -106,9 +116,11 @@ void UnregisterWallet(CWallet* pwalletIn);
 /** Push an updated transaction to all registered wallets */
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false);
 bool ProcessBlock(CNode* pfrom, CBlock* pblock);
-bool CheckDiskSpace(uint64 nAdditionalBytes=0);
+bool CheckDiskSpace (uint64 nAdditionalBytes = 0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
-FILE* AppendBlockFile(unsigned int& nFileRet);
+FILE* AppendBlockFile (DatabaseSet& dbset, unsigned int& nFileRet,
+                       unsigned size);
+void FlushBlockFile(FILE *f);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
 CBlockIndex* FindBlockByHeight(int nHeight);
@@ -301,36 +313,62 @@ public:
     CScript scriptSig;
     unsigned int nSequence;
 
-    CTxIn()
+    /* In memory only:  Cache information about prevout and signature
+       verifications, so that we can avoid extra CPU load and disk accesses.
+       We may also remember the previous tx's height (if it is deep enough
+       in the chain so that we assume no reorgs happen).  It is -1 if we
+       don't cache it.  */
+    mutable const CTransaction* txPrev;
+    mutable bool fHasPrevInfo;
+    mutable CDiskTxPos prevPos;
+    mutable int64 nValue;
+    mutable int prevHeight;
+    mutable bool fChecked;
+
+    inline CTxIn ()
+      : nSequence(UINT_MAX), txPrev(NULL), fHasPrevInfo(false)
+    {}
+
+    inline CTxIn (const CTxIn& in)
+      : txPrev(NULL), fHasPrevInfo(false)
     {
-        nSequence = UINT_MAX;
+      operator= (in);
     }
 
-    explicit CTxIn(COutPoint prevoutIn, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = prevoutIn;
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
-    }
+    explicit inline CTxIn (COutPoint prevoutIn, CScript scriptSigIn = CScript(),
+                           unsigned int nSequenceIn = UINT_MAX)
+      : prevout(prevoutIn), scriptSig(scriptSigIn), nSequence(nSequenceIn),
+        txPrev(NULL), fHasPrevInfo(false)
+    {}
 
-    CTxIn(uint256 hashPrevTx, unsigned int nOut, CScript scriptSigIn=CScript(), unsigned int nSequenceIn=UINT_MAX)
-    {
-        prevout = COutPoint(hashPrevTx, nOut);
-        scriptSig = scriptSigIn;
-        nSequence = nSequenceIn;
-    }
+    inline CTxIn (uint256 hashPrevTx, unsigned int nOut,
+                  CScript scriptSigIn = CScript(),
+                  unsigned int nSequenceIn = UINT_MAX)
+      : prevout(hashPrevTx, nOut), scriptSig(scriptSigIn),
+        nSequence(nSequenceIn), txPrev(NULL), fHasPrevInfo(false)
+    {}
+
+    ~CTxIn ();
 
     IMPLEMENT_SERIALIZE
     (
         READWRITE(prevout);
         READWRITE(scriptSig);
         READWRITE(nSequence);
+
+        if (fRead)
+          InvalidateCache ();
     )
+
+    bool ClearCache () const;
+    void InvalidateCache () const;
 
     bool IsFinal() const
     {
         return (nSequence == UINT_MAX);
     }
+
+    CTxIn& operator= (const CTxIn& in);
 
     friend bool operator==(const CTxIn& a, const CTxIn& b)
     {
@@ -483,7 +521,7 @@ public:
         return SerializeHash(*this);
     }
 
-    bool IsFinal(int nBlockHeight=0, int64 nBlockTime=0) const
+    bool IsFinalTx(int nBlockHeight=0, int64 nBlockTime=0) const
     {
         // Time based nLockTime implemented in 0.1.6
         if (nLockTime == 0)
@@ -546,6 +584,9 @@ public:
 
     bool IsStandard() const
     {
+        if (!IsFinalTx())
+            return false;
+
         BOOST_FOREACH(const CTxIn& txin, vin)
             if (!txin.scriptSig.IsPushOnly())
                 return error("nonstandard txin: %s", txin.scriptSig.ToString().c_str());
@@ -553,6 +594,20 @@ public:
             if (!::IsStandard(txout.scriptPubKey))
                 return error("nonstandard txout: %s", txout.scriptPubKey.ToString().c_str());
         return true;
+    }
+
+    int64 GetValueIn() const
+    {
+        int64 nValueIn = 0;
+        BOOST_FOREACH(const CTxIn& txin, vin)
+        {
+            if (!txin.fHasPrevInfo)  // must run ConnectInputs first
+                return -1;
+            nValueIn += txin.nValue;
+            if (!MoneyRange(txin.nValue) || !MoneyRange(nValueIn))
+                throw std::runtime_error("CTransaction::GetValueIn() : value out of range");
+        }
+        return nValueIn;
     }
 
     int64 GetValueOut() const
@@ -679,7 +734,7 @@ public:
     bool ReadFromDisk(CTxDB& txdb, COutPoint prevout);
     bool ReadFromDisk(COutPoint prevout);
     bool DisconnectInputs (DatabaseSet& dbset, CBlockIndex* pindex);
-    
+
     /** Fetch from memory and/or disk. inputsRet keys are transaction hashes.
 
      @param[in] txdb	Transaction database
@@ -759,6 +814,17 @@ public:
     int GetDepthInMainChain() const { int nHeight; return GetDepthInMainChain(nHeight); }
     bool IsInMainChain() const { return GetDepthInMainChain() > 0; }
     int GetBlocksToMaturity() const;
+
+    inline int
+    GetHeightInMainChain() const
+    {
+      int nHeight;
+      if (GetDepthInMainChain (nHeight) == 0)
+        return -1;
+
+      return nHeight;
+    }
+
     bool AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs = true);
     bool AcceptToMemoryPool();
 };
@@ -810,7 +876,7 @@ public:
 
         if (nVersion < 37500)
           {
-            assert (fRead); 
+            assert (fRead);
             std::vector<CDiskTxPos> vSpent;
             READWRITE (vSpent);
 
@@ -871,7 +937,15 @@ public:
     {
         return !(a == b);
     }
-    int GetDepthInMainChain() const;
+
+    static const CBlockIndex* GetContainingBlock (const CDiskTxPos& pos);
+    static int GetHeight (const CDiskTxPos& pos);
+    static int GetDepthInMainChain (const CDiskTxPos& pos);
+
+    inline int GetDepthInMainChain () const
+    {
+      return GetDepthInMainChain (pos);
+    }
 };
 
 
@@ -1038,36 +1112,7 @@ public:
     }
 
 
-    bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
-    {
-        // Open history file to append
-        CAutoFile fileout = AppendBlockFile(nFileRet);
-        if (!fileout)
-            return error("CBlock::WriteToDisk() : AppendBlockFile failed");
-
-        // Write index header
-        unsigned int nSize = fileout.GetSerializeSize(*this);
-        fileout << FLATDATA(pchMessageStart) << nSize;
-
-        // Write block
-        nBlockPosRet = ftell(fileout);
-        if (nBlockPosRet == -1)
-            return error("CBlock::WriteToDisk() : ftell failed");
-        fileout << *this;
-
-        // Flush stdio buffers and commit to disk before returning
-        fflush(fileout);
-        if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0)
-        {
-#ifdef __WXMSW__
-            _commit(_fileno(fileout));
-#else
-            fsync(fileno(fileout));
-#endif
-        }
-
-        return true;
-    }
+    bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet);
 
     bool CheckProofOfWork(int nHeight) const;
 

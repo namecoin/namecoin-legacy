@@ -1,6 +1,20 @@
+v0.3.76rc1
+========
+* Set default fee per kb to 0.005NMC (phelix)
+* Several optimizations to improve handling of large/many network transactions (Domob)
+* Only accept finished transactions (phelix)
+* Relay transaction size limited to 20kb (consensus/phelix)
+* Increased network relay fee MIN_RELAY_TX_FEE to 100000 (RyanC/Indolering/phelix)
+* More restrictive filtering of transactions
+* Update to OpenSSL1.0.1i (phelix)
+* Better drive performance on disk based systems through less fragmentation (Domob)
+* "Renew" GUI Button (Domob)
+* contrib/easywinbuilder: Qt5/MinGW4.8.2/cleanup (phelix)
+* Qt5 compatibility (Canercandan/phelix)
 * New command line / .conf file option: -walletpath=customwalletfilename.dat (digital-dreamer)
 * "Pay To" in the Qt can be used to send coins also to a name, like "sendtoname" (Domob)
 * New RPC block info: height, confirmations, chainwork, nextblockhash. Change: No previousblockhash for block 0 (RyanC)
+* The RPC interface now returns an error while initialising, instead of not accepting connections at all (Domob)
 
 v0.3.75
 =======

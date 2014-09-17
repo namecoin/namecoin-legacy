@@ -47,6 +47,8 @@ using namespace boost;
 using namespace boost::asio;
 using namespace json_spirit;
 
+const char* rpcWarmupStatus = "uninitialised";
+
 void ThreadRPCServer2(void* parg);
 Value sendtoaddress(const Array& params, bool fHelp);
 
@@ -624,6 +626,7 @@ Value getinfo(const Array& params, bool fHelp)
     obj.push_back(Pair("mininput",      ValueFromAmount(nMinimumInputValue)));
     if (pwalletMain->IsCrypted())
         obj.push_back(Pair("unlocked_until", (boost::int64_t)nWalletUnlockTime / 1000));
+    obj.push_back(Pair("txprevcache",   fCacheTxPrev));
     obj.push_back(Pair("errors",        GetWarnings("statusbar")));
     return obj;
 }
@@ -930,7 +933,7 @@ Value getreceivedbyaddress(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
@@ -989,7 +992,7 @@ Value getreceivedbyaccount(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
@@ -1012,7 +1015,7 @@ int64 GetAccountBalance(CWalletDB& walletdb, const string& strAccount, int nMinD
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (!wtx.IsFinal())
+            if (!wtx.IsFinalTx())
                 continue;
 
             int64 nGenerated, nReceived, nSent, nFee;
@@ -1060,7 +1063,7 @@ Value getbalance(const Array& params, bool fHelp)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (!wtx.IsFinal())
+            if (!wtx.IsFinalTx())
                 continue;
 
             int64 allGeneratedImmature, allGeneratedMature, allFee;
@@ -1279,7 +1282,7 @@ Value ListReceived(const Array& params, bool fByAccounts)
         for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin(); it != pwalletMain->mapWallet.end(); ++it)
         {
             const CWalletTx& wtx = (*it).second;
-            if (wtx.IsCoinBase() || !wtx.IsFinal())
+            if (wtx.IsCoinBase() || !wtx.IsFinalTx())
                 continue;
 
             int nDepth = wtx.GetDepthInMainChain();
@@ -3318,6 +3321,37 @@ Value getrawmempool(const Array& params, bool fHelp)
     return a;
 }
 
+static json_spirit::Value
+settxprevcache (const Array& params, bool fHelp)
+{
+  if (fHelp || params.size () != 1)
+    throw std::runtime_error (
+      "settxprevcache <txprevcache>\n"
+      "<txprevcache> is true or false to turn caching of previous transactions\n"
+      "in the mempool on or off.  If it is switched off, the cache is cleared.\n\n"
+      "Returned is the number of cached entries.");
+
+  fCacheTxPrev = params[0].get_bool ();
+
+  unsigned cleared = 0;
+  unsigned total = 0;
+  CRITICAL_BLOCK(cs_mapTransactions)
+    for (std::map<uint256, CTransaction>::const_iterator mi = mapTransactions.begin ();
+         mi != mapTransactions.end (); ++mi)
+      for (std::vector<CTxIn>::const_iterator j = mi->second.vin.begin ();
+           j != mi->second.vin.end (); ++j)
+        {
+          if (!fCacheTxPrev && j->ClearCache ())
+            ++cleared;
+          if (j->txPrev)
+            ++total;
+        }
+  printf ("settxprevcache: Cleared %u cached txprev objects, %u remaining.\n",
+          cleared, total);
+
+  return static_cast<int> (total);
+}
+
 /* Block until a new block is found and return only then.  */
 static Value
 waitforblock (const Array& params, bool fHelp)
@@ -3428,6 +3462,7 @@ pair<string, rpcfn_type> pCallTable[] =
     make_pair("signrawtransaction",    &signrawtransaction),
     make_pair("sendrawtransaction",    &sendrawtransaction),
     make_pair("getrawmempool",         &getrawmempool),
+    make_pair("settxprevcache",        &settxprevcache),
     make_pair("waitforblock",          &waitforblock),
 };
 map<string, rpcfn_type> mapCallTable(pCallTable, pCallTable + sizeof(pCallTable)/sizeof(pCallTable[0]));
@@ -3974,8 +4009,8 @@ void ThreadRPCServer2(void* parg)
         }
 
         // Clean up async threads.
-        printf("Trying to clean up %d async RPC call threads...\n",
-               asyncThreads.size());
+        if (fDebug)
+            printf("Trying to clean up %d async RPC call threads...\n", asyncThreads.size());
         for (ThreadList::iterator i = asyncThreads.begin();
              i != asyncThreads.end(); )
         {
@@ -4056,6 +4091,10 @@ void ThreadRPCServer2(void* parg)
 
             // Parse id now so errors from here on will have the id
             id = find_value(request, "id");
+
+            // Bail early if not yet initialised.
+            if (rpcWarmupStatus)
+              throw JSONRPCError (RPC_IN_WARMUP, rpcWarmupStatus);
 
             // Parse method
             Value valMethod = find_value(request, "method");
@@ -4272,6 +4311,7 @@ void RPCConvertValues(const std::string &strMethod, json_spirit::Array &params)
     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<boost::int64_t>(params[1]);
+    if (strMethod == "settxprevcache"         && n > 0) ConvertTo<bool>(params[0]);
 }
 
 int CommandLineRPC(int argc, char *argv[])

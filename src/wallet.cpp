@@ -379,7 +379,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
         if (pwallet->IsMine(txout) || hooks->IsMine(*this, txout, true))
             listReceived.push_back(make_pair(address, txout.nValue));
     }
-    
+
     // Carried over coin may be used to pay fee, if it was reserved during OP_NAME_NEW
     if (nCarriedOverCoin > 0)
     {
@@ -396,7 +396,7 @@ void CWalletTx::GetAmounts(int64& nGeneratedImmature, int64& nGeneratedMature, l
     }
 }
 
-void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived, 
+void CWalletTx::GetAccountAmounts(const string& strAccount, int64& nGenerated, int64& nReceived,
                                   int64& nSent, int64& nFee) const
 {
     nGenerated = nReceived = nSent = nFee = 0;
@@ -566,9 +566,11 @@ void CWallet::ReacceptWalletTransactions()
             }
             else
             {
-                // Reaccept any txes of ours that aren't already in a block
+                /* Reaccept any txes of ours that aren't already in a block.
+                   We have to check the inputs to make sure that the
+                   prev tx cache is filled properly.  */
                 if (!wtx.IsCoinBase())
-                  wtx.AcceptWalletTransaction (dbset, false);
+                  wtx.AcceptWalletTransaction (dbset);
             }
         }
         if (hasMissingTx)
@@ -651,6 +653,51 @@ void CWallet::ResendWalletTransactions()
 
 
 
+bool
+CWalletTx::GetNameUpdate (int& nOut, vchType& nm, vchType& val) const
+{
+  if (nVersion != NAMECOIN_TX_VERSION)
+    return false;
+
+  if (!nameTxDecoded)
+    {
+      nameTxDecoded = true;
+
+      std::vector<vchType> vvch;
+      int op;
+      if (DecodeNameTx (*this, op, nNameOut, vvch, -1))
+        switch (op)
+          {
+          case OP_NAME_FIRSTUPDATE:
+            vchName = vvch[0];
+            vchValue = vvch[2];
+            nameTxDecodeSuccess = true;
+            break;
+
+          case OP_NAME_UPDATE:
+            vchName = vvch[0];
+            vchValue = vvch[1];
+            nameTxDecodeSuccess = true;
+            break;
+
+          case OP_NAME_NEW:
+          default:
+            nameTxDecodeSuccess = false;
+            break;
+          }
+      else
+        nameTxDecodeSuccess = false;
+    }
+
+  if (!nameTxDecodeSuccess)
+    return false;
+
+  nOut = nNameOut;
+  nm = vchName;
+  val = vchValue;
+  return true;
+}
+
 
 
 
@@ -670,7 +717,7 @@ int64 CWallet::GetBalance() const
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsFinalTx() || !pcoin->IsConfirmed())
                 continue;
             nTotal += pcoin->GetAvailableCredit();
         }
@@ -727,7 +774,7 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed) const
         {
             const CWalletTx* pcoin = &(*it).second;
 
-            if (!pcoin->IsFinal())
+            if (!pcoin->IsFinalTx())
                 continue;
 
             if (fOnlyConfirmed && !pcoin->IsConfirmed())
@@ -768,7 +815,7 @@ bool CWallet::SelectCoinsMinConf(int64 nTargetValue, int nConfMine, int nConfThe
 
        BOOST_FOREACH(const CWalletTx* pcoin, vCoins)
        {
-            if (!pcoin->IsFinal() || !pcoin->IsConfirmed())
+            if (!pcoin->IsFinalTx() || !pcoin->IsConfirmed())
                 continue;
 
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
@@ -988,7 +1035,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64> >& vecSend, CW
 
                 // Limit size
                 unsigned int nBytes = ::GetSerializeSize(*(CTransaction*)&wtxNew, SER_NETWORK);
-                if (nBytes >= MAX_BLOCK_SIZE_GEN/5)
+                if (nBytes >= MAX_STANDARD_TX_SIZE)
                     return false;
                 dPriority /= nBytes;
 

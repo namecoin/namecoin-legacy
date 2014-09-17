@@ -29,6 +29,7 @@ string strMiscWarning;
 bool fTestNet = false;
 bool fNoListen = false;
 bool fLogTimestamps = false;
+bool fCacheTxPrev = false;
 
 
 
