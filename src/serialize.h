@@ -926,7 +926,7 @@ public:
     void clear()                                     { vch.clear(); nReadPos = 0; }
     iterator insert(iterator it, const char& x=char()) { return vch.insert(it, x); }
     void insert(iterator it, size_type n, const char& x) { vch.insert(it, n, x); }
-#ifdef __clang__
+#ifdef __APPLE__
     void insert(iterator it, const_iterator first, const_iterator last)
     {
         if (it == vch.begin() + nReadPos && last - first <= nReadPos)
