@@ -1,6 +1,6 @@
 CXX=g++
 
-DEFS=-D_MT -DNOPCH -DFOURWAYSSE2 -DUSE_SSL -DMAC_OSX=1 -DCRYPTOPP_DISABLE_ASM=1
+DEFS=-D_MT -DNOPCH -DFOURWAYSSE2 -DUSE_SSL -DMAC_OSX=1 -DCRYPTOPP_DISABLE_ASM=1 -DUSE_UPNP=1
 
 # Detect MinGW
 MINGW=$(shell uname -s|grep -i mingw32)
@@ -12,66 +12,35 @@ DEFS += -DBOOST_THREAD_USE_LIB
 INCLUDEPATHS= \
 	-I/usr/local/opt/openssl/include \
 	-I/usr/local/opt/boost/include \
-	-I/usr/local/opt/miniupnpc/include/miniupnpc
+	-I/usr/local/opt/miniupnpc/include/miniupnpc \
+    -I/usr/local/opt/berkeley-db4/include
 
 LIBPATHS= \
 	-L/usr/local/opt/openssl/lib \
 	-L/usr/local/opt/boost/lib \
-	-L/usr/local/opt/miniupnpc/lib -L/usr/local/lib
+    -L/usr/local/opt/miniupnpc/lib \
+	-L/usr/local/opt/miniupnpc/lib \
+    -L/usr/local/opt/berkeley-db4/lib \
+    -L/usr/local/lib
 
 LIBBOOST_SUFFIX=-mt
 
-# LIBS= \
-# -Wl,-static \ #  on os x only one of -static or -dynamic can be specified
 LIBS= \
    -lboost_system$(LIBBOOST_SUFFIX) \
    -lboost_filesystem$(LIBBOOST_SUFFIX) \
    -lboost_program_options$(LIBBOOST_SUFFIX) \
    -lboost_thread$(LIBBOOST_SUFFIX) \
    -lboost_chrono$(LIBBOOST_SUFFIX) \
-   -ldb_cxx \
-   -lssl -lcrypto
+   -ldb_cxx -lminiupnpc -lssl -lcrypto \
+   -Wl,-dynamic \
+   -lz \
+   -ldl \
+   -lpthread
 
-# namecoin: USE_UPNP:=1
-# 	ifdef USE_UPNP
-# 		LIBS += -l miniupnpc
-# 		DEFS += -DUSE_UPNP=$(USE_UPNP)
-# 	endif
-# 	ifneq "$(MINGW)" ""
-# 		# MinGW-specific
-# 		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
-# 		LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-# 		LIBBOOST_SUFFIX=-mgw46-mt-1_50
-# 	else
-# 		# Linux-specific
-# 		LIBS+= \
-# 			-Wl,-dynamic \
-# 			-l gthread-2.0 \
-# 			-l z \
-# 			-l dl \
-# 			-l pthread
-# 	endif
-
-namecoind: USE_UPNP:=0
-	ifdef USE_UPNP
-		LIBS += -l miniupnpc
-		DEFS += -DUSE_UPNP=$(USE_UPNP)
-	endif
-	ifneq "$(MINGW)" ""
-		# MinGW-specific
-		DEFS += -D__NO_SYSTEM_INCLUDES -D__WXMSW__
-		LIBS += -l mingwthrd -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-	else
-		# Linux-specific
-		LIBS+= \
-			-Wl,-dynamic \
-			-lgthread-2.0 \
-			-lz \
-			-ldl \
-			-lpthread
-	endif
+#   -lgthread-2.0  # doesn't seem necessary?
 
 CXXFLAGS=-O2 -Wno-invalid-offsetof -Wformat $(DEFS) $(INCLUDEPATHS)
+
 HEADERS=headers.h strlcpy.h serialize.h uint256.h util.h key.h bignum.h base58.h \
     script.h allocators.h db.h walletdb.h crypter.h net.h irc.h keystore.h main.h wallet.h bitcoinrpc.h uibase.h ui.h noui.h init.h auxpow.h
 
