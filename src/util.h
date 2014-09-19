@@ -109,14 +109,12 @@ T* alignup(T* p)
     return u.ptr;
 }
 
-#define MSG_NOSIGNAL        0
 
 #ifdef __WXMSW__
 #include <windows.h>
 #include <winsock2.h>
 #include <mswsock.h>
 
-#define MSG_DONTWAIT        0
 #ifndef UINT64_MAX
 #define UINT64_MAX          _UI64_MAX
 #define INT64_MAX           _I64_MAX
@@ -146,6 +144,15 @@ typedef u_int SOCKET;
 #define _strlwr(psz)        to_lower(psz)
 #define MAX_PATH            1024
 #define Beep(n1,n2)         (0)
+#endif
+
+#if defined(__WXMSW__) || defined(__APPLE__)
+#   ifndef MSG_NOSIGNAL
+#       define MSG_NOSIGNAL        0
+#   endif
+#   ifndef MSG_DONTWAIT
+#       define MSG_DONTWAIT        0
+#   endif
 #endif
 
 inline void MilliSleep(int64 n)
