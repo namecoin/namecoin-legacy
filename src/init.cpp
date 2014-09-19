@@ -99,6 +99,8 @@ void HandleSIGTERM(int)
 #ifndef GUI
 int main(int argc, char* argv[])
 {
+    SetupEnvironment();
+
     bool fRet = false;
     fRet = AppInit(argc, argv);
 
