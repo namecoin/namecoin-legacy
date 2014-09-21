@@ -1117,7 +1117,7 @@ bool CreateThread(void(*pfn)(void*), void* parg)
 
 void SetupEnvironment()
 {
-    +#ifndef WIN32
+    #ifndef WIN32
     try
     {
 	#if BOOST_FILESYSTEM_VERSION == 3
