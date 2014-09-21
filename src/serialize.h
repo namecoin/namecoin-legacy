@@ -554,7 +554,7 @@ GetBitvectorWordCount (unsigned n)
 template<typename A>
   unsigned int
   GetSerializeSize (const std::vector<bool, A>& v,
-                    int nType, int nVersion = VERSION)
+                    int nType, int nVersion)
 {
   return GetSizeOfCompactSize (v.size ()) + GetBitvectorWordCount (v.size ());
 }
@@ -562,7 +562,7 @@ template<typename A>
 template<typename Stream, typename A>
   void
   Serialize (Stream& os, const std::vector<bool, A>& v,
-             int nType, int nVersion = VERSION)
+             int nType, int nVersion)
 {
   WriteCompactSize (os, v.size ());
 
@@ -582,7 +582,7 @@ template<typename Stream, typename A>
 template<typename Stream, typename A>
   void
   Unserialize (Stream& is, std::vector<bool, A>& v,
-               int nType, int nVersion = VERSION)
+               int nType, int nVersion)
 {
   const unsigned size = ReadCompactSize (is);
   std::vector<unsigned char> words(GetBitvectorWordCount (size));
@@ -926,7 +926,7 @@ public:
     void clear()                                     { vch.clear(); nReadPos = 0; }
     iterator insert(iterator it, const char& x=char()) { return vch.insert(it, x); }
     void insert(iterator it, size_type n, const char& x) { vch.insert(it, n, x); }
-
+#ifdef __APPLE__
     void insert(iterator it, const_iterator first, const_iterator last)
     {
         if (it == vch.begin() + nReadPos && last - first <= nReadPos)
@@ -938,7 +938,7 @@ public:
         else
             vch.insert(it, first, last);
     }
-
+#else
     void insert(iterator it, std::vector<char>::const_iterator first, std::vector<char>::const_iterator last)
     {
         if (it == vch.begin() + nReadPos && last - first <= nReadPos)
@@ -950,7 +950,7 @@ public:
         else
             vch.insert(it, first, last);
     }
-
+#endif
 #if !defined(_MSC_VER) || _MSC_VER >= 1300
     void insert(iterator it, const char* first, const char* last)
     {
