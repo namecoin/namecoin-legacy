@@ -2252,12 +2252,14 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
 
     bool fBugWorkaround = false;
 
-    /* Enforce locked name coin amount if we are beyond the fork point.  */
+    /* Enforce locked name coin amount if we are beyond the fork point.  Also
+       miners (generating new blocks) and checks for inclusion into the mempool
+       enforce the fee, even before the fork point.  */
     if (tx.vout[nOut].nValue < MIN_AMOUNT)
       {
-        if (pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS)
+        if (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS)
           return error ("ConnectInputsHook: not enough locked amount");
-        printf ("WARNING: not enough locked amount, ignoring for now");
+        printf ("WARNING: not enough locked amount, ignoring for now\n");
       }
 
     // HACK: The following two checks are redundant after hard-fork at block 150000, because it is performed
