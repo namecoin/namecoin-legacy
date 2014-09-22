@@ -1191,9 +1191,11 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
 
             /* Check for unspendable outputs.  This is redundant for some
                of the checks done in IsUnspendable, but it also takes care
-               of blocking dust spam.  */
+               of blocking dust spam.  If not validating blocks (i. e., miner
+               or mempool), we are strict and block dust even before
+               the hardfork point.  */
             if (IsUnspendable (txPrev->vout[prevout.n], prevHeight,
-                               pindexBlock->nHeight))
+                               pindexBlock->nHeight, !fBlock))
               return error ("ConnectInputs: previous txo is unspendable");
 
             // If prev is coinbase, check that it's matured

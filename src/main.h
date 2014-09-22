@@ -145,8 +145,11 @@ bool GetTransaction(const uint256 &hash, CTransaction &txOut, uint256 &hashBlock
 /* Check if a transaction is unspendable.  Either because it is provably
    prunable, or because it is explicitly blocked due to some rule.  nHeight
    is the height at which (or later) it will be spent, and nPrevHeight
-   is the one where it is included in the block chain.  */
-bool IsUnspendable (const CTxOut& txo, int nPrevHeight, int nHeight);
+   is the one where it is included in the block chain.  The strict parameter
+   can be turned on for mempool validation (as opposed to blocks) to
+   reject transactions from the mempool even before a hardfork.  */
+bool IsUnspendable (const CTxOut& txo, int nPrevHeight,
+                    int nHeight, bool strict);
 
 
 

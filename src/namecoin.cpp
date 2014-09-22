@@ -1937,7 +1937,7 @@ int64 GetNameNetFee(const CTransaction& tx)
 }
 
 bool
-IsUnspendable (const CTxOut& txo, int nPrevHeight, int nHeight)
+IsUnspendable (const CTxOut& txo, int nPrevHeight, int nHeight, bool strict)
 {
   assert (nPrevHeight <= nHeight);
 
@@ -1951,7 +1951,7 @@ IsUnspendable (const CTxOut& txo, int nPrevHeight, int nHeight)
      set.  We block all 1-Swartz outputs created between blocks 39k and 41k.
      Blocking takes effect at the softfork height.  */
   if (txo.nValue == 1 && nPrevHeight >= 39000 && nPrevHeight <= 41000
-      && nHeight >= FORK_HEIGHT_DUSTSPAM)
+      && (strict || nHeight >= FORK_HEIGHT_DUSTSPAM))
     return true;
 
   /* A name_update or name_firstupdate is unspendable if expired.  */
