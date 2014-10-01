@@ -31,5 +31,5 @@ Please read DESIGN-namecoind.md for details.
 BUILDING
 ======================
 
-Building is supported on Linux, Windows and Mac. For building on windows you can use the scripts in ./contrib/easywinbuilder. Find build instructions on http://dot-bit.org.
+Building is supported on Linux, Windows and Mac. For building on windows you can use the scripts in ./contrib/easywinbuilder. Find build instructions on https://wiki.namecoin.info/index.php?title=Build_Namecoin_From_Source.
 
