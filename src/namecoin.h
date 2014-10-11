@@ -27,6 +27,7 @@ class uint256;
 
 extern std::map<vchType, uint256> mapMyNames;
 extern std::map<vchType, std::set<uint256> > mapNamePending;
+extern std::set<vchType> setNewHashes;
 
 std::string stringFromVch(const std::vector<unsigned char> &vch);
 std::vector<unsigned char> vchFromString(const std::string &str);

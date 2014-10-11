@@ -32,8 +32,9 @@ static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
    after this height.  */
 static const int FORK_HEIGHT_TXVERSION = 300000;
 
-map<vector<unsigned char>, uint256> mapMyNames;
-map<vector<unsigned char>, set<uint256> > mapNamePending;
+std::map<vchType, uint256> mapMyNames;
+std::map<vchType, set<uint256> > mapNamePending;
+std::set<vchType> setNewHashes;
 
 #ifdef GUI
 extern std::map<uint160, vchType> mapMyNameHashes;
@@ -78,7 +79,7 @@ public:
     virtual bool Lockin(int nHeight, uint256 hash);
     virtual int LockinHeight();
     virtual string IrcPrefix();
-    virtual void AcceptToMemoryPool(DatabaseSet& dbset, const CTransaction& tx);
+    virtual bool AcceptToMemoryPool(DatabaseSet& dbset, const CTransaction& tx);
     virtual void RemoveFromMemoryPool(const CTransaction& tx);
 
     virtual void MessageStart(char* pchMessageStart)
@@ -1189,18 +1190,18 @@ Value name_new(const Array& params, bool fHelp)
                 "name_new <name>"
                 + HelpRequiringPassphrase());
 
-    vector<unsigned char> vchName = vchFromValue(params[0]);
+    const vchType vchName = vchFromValue(params[0]);
 
     CWalletTx wtx;
     wtx.nVersion = NAMECOIN_TX_VERSION;
 
-    uint64 rand = GetRand((uint64)-1);
-    vector<unsigned char> vchRand = CBigNum(rand).getvch();
-    vector<unsigned char> vchToHash(vchRand);
+    const uint64 rand = GetRand((uint64)-1);
+    const vchType vchRand = CBigNum(rand).getvch();
+    vchType vchToHash(vchRand);
     vchToHash.insert(vchToHash.end(), vchName.begin(), vchName.end());
-    uint160 hash =  Hash160(vchToHash);
+    const uint160 hash =  Hash160(vchToHash);
 
-    vector<unsigned char> vchPubKey = pwalletMain->GetKeyFromKeyPool();
+    const vchType vchPubKey = pwalletMain->GetKeyFromKeyPool();
     CScript scriptPubKeyOrig;
     scriptPubKeyOrig.SetBitcoinAddress(vchPubKey);
     CScript scriptPubKey;
@@ -2032,19 +2033,17 @@ bool CNamecoinHooks::IsMine(const CTransaction& tx, const CTxOut& txout, bool ig
     return false;
 }
 
-void
+bool
 CNamecoinHooks::AcceptToMemoryPool (DatabaseSet& dbset, const CTransaction& tx)
 {
     if (tx.nVersion != NAMECOIN_TX_VERSION)
-        return;
+        return true;
 
     if (tx.vout.size() < 1)
-    {
-        error("AcceptToMemoryPool() : no output in name tx %s\n", tx.ToString().c_str());
-        return;
-    }
+      return error ("AcceptToMemoryPool: no output in name tx %s\n",
+                    tx.GetHash ().ToString ().c_str ());
 
-    vector<vector<unsigned char> > vvch;
+    std::vector<vchType> vvch;
 
     int op;
     int nOut;
@@ -2052,16 +2051,22 @@ CNamecoinHooks::AcceptToMemoryPool (DatabaseSet& dbset, const CTransaction& tx)
     bool good = DecodeNameTx(tx, op, nOut, vvch, BUG_WORKAROUND_BLOCK);
 
     if (!good)
-    {
-        error("AcceptToMemoryPool() : no output out script in name tx %s", tx.ToString().c_str());
-        return;
-    }
+      return error ("AcceptToMemoryPool: no output out script in name tx %s",
+                    tx.GetHash ().ToString ().c_str ());
 
-    if (op != OP_NAME_NEW)
-    {
-        CRITICAL_BLOCK(cs_main)
-            mapNamePending[vvch[0]].insert(tx.GetHash());
-    }
+    if (op == OP_NAME_NEW)
+      {
+        const vchType& hash = vvch[0];
+        if (setNewHashes.count (hash) > 0)
+          return error ("AcceptToMemoryPool: duplicate name_new hash in tx %s",
+                        tx.GetHash ().ToString ().c_str ());
+        setNewHashes.insert (hash);
+      }
+    else
+      CRITICAL_BLOCK (cs_main)
+        mapNamePending[vvch[0]].insert (tx.GetHash ());
+
+    return true;
 }
 
 void CNamecoinHooks::RemoveFromMemoryPool(const CTransaction& tx)
@@ -2161,7 +2166,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
     bool found = false;
 
     int prevOp;
-    vector<vchType> vvchPrevArgs;
+    std::vector<vchType> vvchPrevArgs;
 
     // Bug workaround
     if (fMiner || !fBlock || pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
@@ -2169,9 +2174,8 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         // Strict check - bug disallowed
         for (int i = 0; i < tx.vin.size(); i++)
         {
-            CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
-
-            vector<vector<unsigned char> > vvchPrevArgsRead;
+            const CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
+            std::vector<vchType> vvchPrevArgsRead;
 
             if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgsRead))
             {
@@ -2191,7 +2195,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         bool fBug = false;
         for (int i = 0; i < tx.vin.size(); i++)
         {
-            CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
+            const CTxOut& out = vTxPrev[i].vout[tx.vin[i].prevout.n];
 
             int nOldSize = vvchPrevArgs.size();
             if (DecodeNameScript(out.scriptPubKey, prevOp, vvchPrevArgs))
@@ -2238,7 +2242,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         return true;
     }
 
-    vector<vchType> vvchArgs;
+    std::vector<vchType> vvchArgs;
     int op;
     int nOut;
 
@@ -2492,7 +2496,7 @@ bool CNamecoinHooks::CheckTransaction(const CTransaction& tx)
     if (tx.nVersion != NAMECOIN_TX_VERSION)
         return true;
 
-    vector<vector<unsigned char> > vvch;
+    std::vector<vchType> vvch;
     int op;
     int nOut;
 
