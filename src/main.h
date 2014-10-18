@@ -1237,25 +1237,18 @@ public:
         nNonce         = block.nNonce;
     }
 
-    /* GetBlockHeader is never actually used in the code, thus disable
-       it since it can't reliably be tested.  It can be re-enabled
-       when necessary later.  */
-#if 0
     CBlock GetBlockHeader() const
     {
         CBlock block;
+        if (!block.ReadFromDisk (nFile, nBlockPos, false))
+          throw std::runtime_error ("CBlock::ReadFromDisk failed while"
+                                    " retrieving auxpow");
 
-        /* If this block has auxpow but it is not yet loaded, do this
-           now and keep it in memory.  */
-        if (hasAuxpow && !auxpow)
-          {
-            printf ("GetBlockHeader(): reading auxpow from disk");
-            if (!block.ReadFromDisk (nFile, nBlockPos, false))
-              throw std::runtime_error ("CBlock::ReadFromDisk failed while"
-                                        " retrieving auxpow");
-            auxpow = block.auxpow;
-            return block;
-          }
+        return block;
+
+/*
+Always load the block from disk, since it may contain
+an auxpow which is not part of the memory-data we have.
 
         block.nVersion       = nVersion;
         if (pprev)
@@ -1268,8 +1261,8 @@ public:
         assert ((hasAuxpow && block.auxpow) || (!hasAuxpow && !block.auxpow));
 
         return block;
+*/
     }
-#endif
 
     uint256 GetBlockHash() const
     {
