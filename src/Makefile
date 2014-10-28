@@ -110,7 +110,7 @@ obj/test/%.o: test/%.cpp $(HEADERS)
 obj/nogui/namecoin.o: namecoin.h
 
 namecoind: $(OBJS:obj/%=obj/nogui/%) obj/nogui/namecoin.o
-	$(CXX) $(CXXFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
+	$(CXX) $(CXXFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS) -lrt
 
 clean:
 	-rm -f namecoin namecoind
