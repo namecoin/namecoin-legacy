@@ -642,7 +642,7 @@ CTxIndex::GetContainingBlock (const CDiskTxPos& pos)
 
     // Read block header
     CBlock block;
-    if (!block.ReadFromDisk(pos.nFile, pos.nBlockPos, false))
+    if (!block.ReadFromDisk (pos.nFile, pos.nBlockPos, false))
         return NULL;
 
     // Find the block in the index
@@ -1164,6 +1164,15 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
             assert (vin[i].fHasPrevInfo);
             assert (txPrev);
 
+            /* Calculate the previous output's height.  Note that the value
+               here should be ensured to be accurate, since IsUnspendable
+               below depends on it for block validation!  Thus we do not
+               use the cache introduced for priority calculation.  */
+            int prevHeight = txindex.GetHeight ();
+            if (prevHeight == -1)
+              prevHeight = pindexBlock->nHeight;
+            assert (prevHeight >= 0);
+
             if (prevout.n >= txPrev->vout.size ())
               return error ("ConnectInputs: %s prevout.n out of range"
                             " %d %d prev tx %s\n%s",
@@ -1179,6 +1188,15 @@ CTransaction::ConnectInputs (DatabaseSet& dbset,
                 && !VerifySignature (*txPrev, *this, i))
               return error ("ConnectInputs: %s VerifySignature failed",
                             GetHash ().ToString ().substr (0, 10).c_str ());
+
+            /* Check for unspendable outputs.  This is redundant for some
+               of the checks done in IsUnspendable, but it also takes care
+               of blocking dust spam.  If not validating blocks (i. e., miner
+               or mempool), we are strict and block dust even before
+               the hardfork point.  */
+            if (IsUnspendable (txPrev->vout[prevout.n], prevHeight,
+                               pindexBlock->nHeight, !fBlock))
+              return error ("ConnectInputs: previous txo is unspendable");
 
             // If prev is coinbase, check that it's matured
             if (txPrev->IsCoinBase ())
