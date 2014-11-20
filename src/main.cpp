@@ -2654,11 +2654,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
     else if (strCommand == "getheaders")
     {
-        /* 'getheaders' is never sent by the client code and thus also
-           not well tested.  Disable it for this reason until it is actually
-           used by some clients in production.  */
-        printf ("warning: ignored 'getheaders' message\n");
-#if 0
         CBlockLocator locator;
         uint256 hashStop;
         vRecv >> locator >> hashStop;
@@ -2691,7 +2686,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         }
 
         pfrom->PushMessage("headers", vHeaders);
-#endif
     }
 
 
