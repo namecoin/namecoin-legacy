@@ -6,6 +6,7 @@
 #include "net.h"
 #include "init.h"
 #include "auxpow.h"
+#include "namecoin.h"
 #include "cryptopp/sha.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -1668,6 +1669,44 @@ bool CBlock::CheckProofOfWork(int nHeight) const
     return true;
 }
 
+/* Temporary check that blocks are compatible with BDB's 10,000 lock limit.
+   This is based on Bitcoin's commit 8c222dca4f961ad13ec64d690134a40d09b20813.
+   Each "object" touched in the DB may cause two locks (one read and one
+   write lock).  Objects are transaction IDs and names.  Thus, count the
+   total number of transaction IDs (tx themselves plus all distinct inputs).
+   In addition, each Namecoin transaction could touch at most one name,
+   so add them as well.  */
+static bool
+CheckDbLockLimit(const CBlock& block, const CTransaction* extraTx = NULL)
+{
+    std::vector<CTransaction> vtx = block.vtx;
+    if (extraTx)
+        vtx.push_back(*extraTx);
+
+    set<uint256> setTxIds;
+    unsigned nNames = 0;
+    BOOST_FOREACH(const CTransaction& tx, vtx)
+    {
+        setTxIds.insert(tx.GetHash());
+        if (tx.nVersion == NAMECOIN_TX_VERSION)
+            ++nNames;
+
+        BOOST_FOREACH(const CTxIn& txIn, tx.vin)
+            setTxIds.insert(txIn.prevout.hash);
+    }
+
+    const unsigned nTotalIds = setTxIds.size() + nNames;
+
+    if (nTotalIds > 4500)
+        return error("%s : %u locks estimated, that is too much for BDB",
+                     __func__, nTotalIds);
+
+    if (fDebug)
+        printf ("%s : need %u locks\n", __func__, nTotalIds);
+    
+    return true;
+}
+
 
 bool CBlock::CheckBlock(int nHeight) const
 {
@@ -1677,6 +1716,10 @@ bool CBlock::CheckBlock(int nHeight) const
     // Size limits
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK) > MAX_BLOCK_SIZE)
         return error("CheckBlock() : size limits failed");
+
+    // Enforce DB lock limit.
+    if (nHeight >= FORK_HEIGHT_STRICTCHECKS && !CheckDbLockLimit(*this))
+        return error("%s : DB lock limit exceeded", __func__);
 
     if (!CheckProofOfWork(nHeight))
         return error("CheckBlock() : proof of work failed");
@@ -3420,6 +3463,8 @@ skipTransaction:;
                 continue;
             int nTxSigOps = tx.GetSigOpCount();
             if (nBlockSigOps + nTxSigOps >= MAX_BLOCK_SIGOPS)
+                continue;
+            if (!CheckDbLockLimit(*pblock, &tx))
                 continue;
 
             // Transaction fee required depends on block size
