@@ -158,6 +158,9 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
         // Notify UI
         //vWalletUpdated.push_back(hash);
 
+        // notify an external script when a wallet transaction comes in or is updated
+        std::string strCmd = GetArg("-walletnotify", "");
+
         // since AddToWallet is called directly for self-originating transactions, check for consumption of own coins
         WalletUpdateSpent(wtx);
     }

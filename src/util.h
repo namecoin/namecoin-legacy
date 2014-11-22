@@ -479,6 +479,8 @@ void skipspaces(T& it)
         ++it;
 }
 
+void runCommand(std::string strCommand);
+
 inline bool IsSwitchChar(char c)
 {
 #ifdef __WXMSW__
