@@ -1633,6 +1633,14 @@ bool CBlock::CheckProofOfWork(int nHeight) const
 
         if (auxpow.get() != NULL)
         {
+            /* Disallow auxpow parent blocks that have an auxpow themselves.  */
+            if (nHeight >= FORK_HEIGHT_STRICTCHECKS
+                && (auxpow->parentBlock.nVersion & BLOCK_VERSION_AUXPOW))
+              return error("%s : auxpow parent block has auxpow version",
+                           __func__);
+            assert(nHeight < FORK_HEIGHT_STRICTCHECKS
+                    || !auxpow->parentBlock.auxpow);
+
             if (!auxpow->Check(GetHash(), GetChainID()))
                 return error("CheckProofOfWork() : AUX POW is not valid");
             // Check proof of work matches claimed amount
@@ -3539,6 +3547,11 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
 
     if (auxpow != NULL)
     {
+        /* Disallow auxpow parent blocks that have an auxpow themselves.  */
+        if (auxpow->parentBlock.nVersion & BLOCK_VERSION_AUXPOW)
+            return error("%s : auxpow parent block has auxpow version",
+                         __func__);
+
         if (!auxpow->Check(hash, pblock->GetChainID()))
             return error("AUX POW is not valid");
 
