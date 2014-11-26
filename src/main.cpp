@@ -432,6 +432,19 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
     if (!fTestNet && !IsStandard())
         return error("AcceptToMemoryPool() : nonstandard transaction type");
 
+    /* Don't accept transactions that create "dust spam".  This is similar
+       to "Gavin's rule" for Bitcoin.  The rule is not too strict.  It is,
+       in particular, less strict than Bitcoin's rule -- this is for future
+       compatibility with transactions created by the rebased client.  Bitcoin
+       has more than 148*3/1000 * RELAY_FEE, which is larger than the used
+       value of RELAY_FEE / 10.
+
+       Note that the default (old) client doesn't even create outputs
+       less than CENT.  */
+    BOOST_FOREACH (const CTxOut& out, vout)
+      if (out.nValue < MIN_RELAY_TX_FEE / 10)
+        return error ("%s : disallowed dust output", __func__);
+
     // Do we already have it?
     uint256 hash = GetHash();
     CRITICAL_BLOCK(cs_mapTransactions)
