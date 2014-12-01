@@ -15,7 +15,9 @@ tar --atime-preserve -xzvf $BERKELEYDB.tar.gz > /dev/null
 echo  boost...
 tar --atime-preserve -xzvf $BOOST.tar.gz > /dev/null
 echo  miniupnpc...
-tar --atime-preserve -xzvf $MINIUPNPC.tar.gz > /dev/null
+mkdir $MINIUPNPC
+tar -C $MINIUPNPC --atime-preserve -xzvf $MINIUPNPC.tar.gz > /dev/null
+mv $MINIUPNPC/$MINIUPNPC $MINIUPNPC/miniupnpc
 
 echo
 
