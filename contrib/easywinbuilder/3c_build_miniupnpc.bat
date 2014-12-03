@@ -2,8 +2,8 @@
 @bash patch_files.sh
 @cd %ROOTPATH%\%EWBLIBS%\
 @echo miniupnp...
-@cd %MINIUPNPC%
+@cd %MINIUPNPC%\miniupnpc
 @rem mingw32-make is different from normal msys make
 mingw32-make -f Makefile.mingw ADDITIONALCCFLAGS="%ADDITIONALCCFLAGS%"
-@cd ..\..\%EWBPATH%
+@cd ..\..\..\%EWBPATH%
 @if not "%RUNALL%"=="1" pause
