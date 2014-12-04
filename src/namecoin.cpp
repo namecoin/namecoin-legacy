@@ -28,6 +28,10 @@ template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 static const int BUG_WORKAROUND_BLOCK_START = 139750;   // Bug was not exploited before block 139872, so skip checking earlier blocks
 static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
 
+/* Disallow transactions without NAMECOIN_TX_VERSION but with name outputs
+   after this height.  */
+static const int FORK_HEIGHT_TXVERSION = 300000;
+
 map<vector<unsigned char>, uint256> mapMyNames;
 map<vector<unsigned char>, set<uint256> > mapNamePending;
 
@@ -2206,6 +2210,27 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
 
     if (tx.nVersion != NAMECOIN_TX_VERSION)
     {
+        /* See if there are any name outputs.  If they are, disallow
+           for mempool or after the corresponding soft fork point.  Note
+           that we can't just use 'DecodeNameTx', since that would also
+           report "false" if we have *multiple* name outputs.  This should
+           also be detected, though.  */
+        bool foundOuts = false;
+        for (int i = 0; i < tx.vout.size(); i++)
+        {
+            const CTxOut& out = tx.vout[i];
+
+            std::vector<vchType> vvchRead;
+            int opRead;
+
+            if (DecodeNameScript(out.scriptPubKey, opRead, vvchRead))
+                foundOuts = true;
+        }
+
+        if (foundOuts
+            && (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_TXVERSION))
+            return error("ConnectInputHook: non-Namecoin tx has name outputs");
+
         // Make sure name-op outputs are not spent by a regular transaction, or the name
         // would be lost
         if (found)
