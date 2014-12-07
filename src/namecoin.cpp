@@ -28,10 +28,6 @@ template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 static const int BUG_WORKAROUND_BLOCK_START = 139750;   // Bug was not exploited before block 139872, so skip checking earlier blocks
 static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
 
-/* Disallow transactions without NAMECOIN_TX_VERSION but with name outputs
-   after this height.  */
-static const int FORK_HEIGHT_TXVERSION = 300000;
-
 std::map<vchType, uint256> mapMyNames;
 std::map<vchType, set<uint256> > mapNamePending;
 std::set<vchType> setNewHashes;
@@ -2232,7 +2228,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
         }
 
         if (foundOuts
-            && (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_TXVERSION))
+            && (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS))
             return error("ConnectInputHook: non-Namecoin tx has name outputs");
 
         // Make sure name-op outputs are not spent by a regular transaction, or the name
