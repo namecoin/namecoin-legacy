@@ -634,6 +634,8 @@ public:
         return dPriority > COIN * 144 / 250;
     }
 
+    /* Get minimum fee to enforce (fForRelay = true) or to attach to tx created
+       (fForRelay = false).  */
     int64 GetMinFee(unsigned int nBlockSize=1, bool fAllowFree=true, bool fForRelay=false) const
     {
         // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
@@ -659,10 +661,15 @@ public:
             }
         }
 
-        // To limit dust spam, require MIN_TX_FEE/MIN_RELAY_TX_FEE for any output less than 0.01
-        BOOST_FOREACH(const CTxOut& txout, vout)
+        /* The old rule was to require a "base fee" for any output less than
+           0.01 NMC.  This rule is no longer enforced (instead, we disallow
+           spam outputs right away in AcceptToMemoryPool similarly to
+           what Bitcoin does).  When creating the tx, still attach the
+           fee because we want the tx to be relayed by old clients as well.  */
+        if (!fForRelay)
+          BOOST_FOREACH(const CTxOut& txout, vout)
             if (txout.nValue < CENT)
-                nMinFee += nBaseFee;
+              nMinFee += nBaseFee;
 
         // Raise the price as the block approaches full
         if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
