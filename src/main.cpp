@@ -1649,12 +1649,11 @@ bool CBlock::CheckProofOfWork(int nHeight) const
         if (auxpow.get() != NULL)
         {
             /* Disallow auxpow parent blocks that have an auxpow themselves.  */
-            if (nHeight >= FORK_HEIGHT_STRICTCHECKS
+            if (doStrictChecks (nHeight)
                 && (auxpow->parentBlock.nVersion & BLOCK_VERSION_AUXPOW))
               return error("%s : auxpow parent block has auxpow version",
                            __func__);
-            assert(nHeight < FORK_HEIGHT_STRICTCHECKS
-                    || !auxpow->parentBlock.auxpow);
+            assert(!doStrictChecks (nHeight) || !auxpow->parentBlock.auxpow);
 
             if (!auxpow->Check(GetHash(), GetChainID()))
                 return error("CheckProofOfWork() : AUX POW is not valid");
@@ -1732,7 +1731,7 @@ bool CBlock::CheckBlock(int nHeight) const
         return error("CheckBlock() : size limits failed");
 
     // Enforce DB lock limit.
-    if (nHeight >= FORK_HEIGHT_STRICTCHECKS && !CheckDbLockLimit(*this))
+    if (doStrictChecks (nHeight) && !CheckDbLockLimit(*this))
         return error("%s : DB lock limit exceeded", __func__);
 
     if (!CheckProofOfWork(nHeight))

@@ -127,6 +127,19 @@ postLibcoinFork(unsigned nHeight)
   return nHeight >= BUG_WORKAROUND_BLOCK;
 }
 
+/**
+ * Check whether the given height is post the "strict checks" hardfork
+ * done in preparation for switching to the rebased client.
+ */
+bool
+doStrictChecks(unsigned nHeight)
+{
+  if (fTestNet)
+    return nHeight >= 108000;
+
+  return nHeight >= 212500;
+}
+
 int64 getAmount(Value value)
 {
     ConvertTo<double>(value);
@@ -2240,8 +2253,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
                 foundOuts = true;
         }
 
-        if (foundOuts
-            && (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS))
+        if (foundOuts && (!fBlock || doStrictChecks (pindexBlock->nHeight)))
             return error("ConnectInputHook: non-Namecoin tx has name outputs");
 
         // Make sure name-op outputs are not spent by a regular transaction, or the name
@@ -2270,7 +2282,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
        enforce the fee, even before the fork point.  */
     if (tx.vout[nOut].nValue < MIN_AMOUNT)
       {
-        if (!fBlock || pindexBlock->nHeight >= FORK_HEIGHT_STRICTCHECKS)
+        if (!fBlock || doStrictChecks (pindexBlock->nHeight))
           return error ("ConnectInputsHook: not enough locked amount");
         printf ("WARNING: not enough locked amount, ignoring for now\n");
       }
