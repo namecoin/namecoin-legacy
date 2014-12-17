@@ -509,13 +509,14 @@ CTransaction::AcceptToMemoryPool (DatabaseSet& dbset, bool fCheckInputs,
         }
     }
 
+    if (!hooks->AcceptToMemoryPool (dbset, *this))
+      return error ("AcceptToMemoryPool: hook failed");
+
     // Store transaction in memory
     CRITICAL_BLOCK(cs_mapTransactions)
     {
         AddToMemoryPoolUnchecked();
     }
-
-    hooks->AcceptToMemoryPool (dbset, *this);
 
     printf("AcceptToMemoryPool(): accepted %s\n", hash.ToString().substr(0,10).c_str());
     return true;
