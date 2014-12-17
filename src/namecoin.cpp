@@ -25,7 +25,6 @@ extern int64 AmountFromValue(const Value& value);
 extern Object JSONRPCError(int code, const string& message);
 template<typename T> void ConvertTo(Value& value, bool fAllowNull=false);
 
-static const int BUG_WORKAROUND_BLOCK_START = 139750;   // Bug was not exploited before block 139872, so skip checking earlier blocks
 static const int BUG_WORKAROUND_BLOCK = 150000;         // Point of hard fork
 
 std::map<vchType, uint256> mapMyNames;
@@ -114,6 +113,19 @@ public:
         return "04fc4366270096c7e40adb8c3fcfbff12335f3079e5e7905bce6b1539614ae057ee1e61a25abdae4a7a2368505db3541cd81636af3f7c7afe8591ebc85b2a1acdd";
     }
 };
+
+/**
+ * Check whether the given height is post-libcoin-hardfork.  I. e.,
+ * strict checks for name_update and tx decoding should be applied.
+ */
+static bool
+postLibcoinFork(unsigned nHeight)
+{
+  if (fTestNet)
+    return nHeight >= 108000;
+
+  return nHeight >= BUG_WORKAROUND_BLOCK;
+}
 
 int64 getAmount(Value value)
 {
@@ -1734,7 +1746,7 @@ bool CNameDB::ReconstructNameIndex()
 
                 // Bug workaround
                 CDiskTxPos prevTxPos;
-                if (nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK)
+                if (!postLibcoinFork (nHeight))
                     if (!NameBugWorkaround(tx, txdb, &prevTxPos))
                     {
                         printf("NameBugWorkaround rejected tx %s at height %d (name %s)\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str());
@@ -1748,7 +1760,8 @@ bool CNameDB::ReconstructNameIndex()
                         return error("Rescanfornames() : failed to read from name DB");
                 }
 
-                if (op == OP_NAME_UPDATE && nHeight >= BUG_WORKAROUND_BLOCK_START && nHeight < BUG_WORKAROUND_BLOCK && !CheckNameTxPos(vtxPos, prevTxPos))
+                if (op == OP_NAME_UPDATE && !postLibcoinFork (nHeight)
+                    && !CheckNameTxPos(vtxPos, prevTxPos))
                 {
                     printf("NameBugWorkaround rejected tx %s at height %d (name %s), because previous tx was also rejected\n", tx.GetHash().ToString().c_str(), nHeight, stringFromVch(vchName).c_str());
                     continue;
@@ -1864,7 +1877,7 @@ bool DecodeNameTx(const CTransaction& tx, int& op, int& nOut, vector<vector<unsi
     }
 
     // Bug workaround
-    if (nHeight >= BUG_WORKAROUND_BLOCK)
+    if (postLibcoinFork (nHeight))
     {
         // Strict check - bug disallowed
         for (int i = 0; i < tx.vout.size(); i++)
@@ -2165,7 +2178,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
     std::vector<vchType> vvchPrevArgs;
 
     // Bug workaround
-    if (fMiner || !fBlock || pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+    if (fMiner || !fBlock || postLibcoinFork (pindexBlock->nHeight))
     {
         // Strict check - bug disallowed
         for (int i = 0; i < tx.vin.size(); i++)
@@ -2306,7 +2319,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
                 uint160 hash = Hash160(vchToHash);
                 if (uint160(vchHash) != hash)
                 {
-                    if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                    if (postLibcoinFork (pindexBlock->nHeight))
                         return error("ConnectInputsHook() : name_firstupdate hash mismatch");
                     else
                     {
@@ -2360,7 +2373,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
             // Check name
             if (vvchPrevArgs[0] != vvchArgs[0])
             {
-                if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                if (postLibcoinFork (pindexBlock->nHeight))
                     return error("ConnectInputsHook() : name_update name mismatch");
                 else
                 {
@@ -2412,7 +2425,7 @@ CNamecoinHooks::ConnectInputs (DatabaseSet& dbset,
                 {
                     printf("ConnectInputsHook() : Name bug workaround: tx %s rejected, since previous tx (%s) is not in the name DB\n", tx.GetHash().ToString().c_str(), vTxPrev[nInput].GetHash().ToString().c_str());
                     // Valid tx on top of buggy tx: reject only after hard-fork
-                    if (pindexBlock->nHeight >= BUG_WORKAROUND_BLOCK)
+                    if (postLibcoinFork (pindexBlock->nHeight))
                         return false;
                     else
                         fBugWorkaround = true;
