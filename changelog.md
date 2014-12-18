@@ -3,7 +3,7 @@ v0.3.80
 * Various stricter checks, some small modifications and cleanup to harmonize
 behavior in preparation for the rebase of Namecoin on the latest Bitcoin version.
 Changes will take full effect by block height 212500. This is a softfork, miners
-must update! (domob)
+must update, regular users should update! (domob)
 * fix locale bugs (itoffshore)
 
 v0.3.76rc1
