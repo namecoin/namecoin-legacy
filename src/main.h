@@ -59,11 +59,6 @@ static const int COINBASE_MATURITY = 100;
 // -paytxfee default
 static const int64 DEFAULT_TRANSACTION_FEE = MIN_TX_FEE;
 
-/* Height of the softfork disallowing certain "buggy" constructions.  This is
-   in preparation of the switch to the rebased client at some point later
-   in the future.  */
-static const int FORK_HEIGHT_STRICTCHECKS = 300000;
-
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else

@@ -29,6 +29,8 @@ extern std::map<vchType, uint256> mapMyNames;
 extern std::map<vchType, std::set<uint256> > mapNamePending;
 extern std::set<vchType> setNewHashes;
 
+bool doStrictChecks(unsigned nHeight);
+
 std::string stringFromVch(const std::vector<unsigned char> &vch);
 std::vector<unsigned char> vchFromString(const std::string &str);
 int GetTxPosHeight(const CNameIndex& txPos);
