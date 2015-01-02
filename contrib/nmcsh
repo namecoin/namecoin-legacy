@@ -1,0 +1,77 @@
+#!/usr/bin/perl
+#
+# nmcsh - simple namecoind readline wrapper
+#
+# This provides history (Ctrl-p, Ctrl-n) command completion (TAB on an
+# incomplete command), argument help (TAB after a finished command),
+# and the other usual readline keys. See
+# http://tiswww.case.edu/php/chet/readline/rluserman.html for
+# details.
+#
+# Before running this, make sure namecoind is in your $PATH and the
+# dameon is running.
+#
+# Copyright (c) 2014 Mitchell Perilstein
+# Distributed under the MIT/X11 software license, see the accompanying
+# file COPYING.
+
+use strict;
+use warnings;
+use Term::ReadLine;
+
+my $NMCD   = 'namecoind';	# must be in your $PATH
+my $PROMPT = 'nmc> ';
+my $PAGER  = defined $ENV{PAGER} ? "| $ENV{PAGER}" : '';
+
+my $term = Term::ReadLine->new('namecoind wrapper');
+my $OUT = $term->OUT || \*STDOUT;
+
+# grok the help for command completion strings
+my %cmds;
+my $r = open NMC, "$NMCD help|" or die $!;
+while (<NMC>) {
+  my ($cmd, @rest) = split;
+  $cmds{$cmd} = join " ", @rest;
+}
+close NMC or die $!;
+
+# complete on partial commands or show help for finished ones
+sub my_complete {
+  my ($text, $line, $start) = @_;
+
+  return grep(/^$text/, keys %cmds)
+    if $start == 0;
+
+  my $cmd = (split(/\s+/, $line))[0];
+  if ($cmd) {
+    print "($cmd)";
+    return "$cmd $cmds{$cmd}";
+  }
+
+  return '';
+}
+
+$readline::rl_completion_function = undef;
+$readline::rl_completion_function = "main::my_complete";
+
+# main loop: prompt, exec command, show result
+while (defined ($_ = $term->readline($PROMPT)) ) {
+  if ('quit' eq $_ || 'exit' eq $_ || 'q' eq $_) {
+    print $OUT "bye\n";
+    exit;
+  }
+
+  next unless $_;
+
+  # you could set up a bidirectional child but exec each time is fast
+  # enough and much simpler
+  my $res = `$NMCD $_ $PAGER`;
+  if ($@) {
+    warn $@;
+  }
+  else {
+    print $OUT "[$res]" unless $@;
+  }
+
+  $term->addhistory($_) if /\S/;
+}
