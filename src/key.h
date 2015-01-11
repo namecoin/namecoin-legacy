@@ -163,10 +163,24 @@ public:
 
     bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
     {
-        // -1 = error, 0 = bad sig, 1 = good
-        if (ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), &vchSig[0], vchSig.size(), pkey) != 1)
+        if (vchSig.empty())
             return false;
-        return true;
+
+        // adapted from https://github.com/bitcoin/bitcoin/commit/488ed32f2ada1d1dd108fc245d025c4d5f252783
+        // New versions of OpenSSL will reject non-canonical DER signatures. de/re-serialize first.
+        unsigned char *norm_der = NULL;
+        ECDSA_SIG *norm_sig = ECDSA_SIG_new();
+        const unsigned char* sigptr = &vchSig[0];
+        d2i_ECDSA_SIG(&norm_sig, &sigptr, vchSig.size());
+        int derlen = i2d_ECDSA_SIG(norm_sig, &norm_der);
+        ECDSA_SIG_free(norm_sig);
+        if (derlen <= 0)
+            return false;
+
+        // -1 = error, 0 = bad sig, 1 = good
+        bool ret = ECDSA_verify(0, (unsigned char*)&hash, sizeof(hash), norm_der, derlen, pkey) == 1;
+        OPENSSL_free(norm_der);
+        return ret;
     }
 
     static bool Sign(const CPrivKey& vchPrivKey, uint256 hash, std::vector<unsigned char>& vchSig)
@@ -184,7 +198,7 @@ public:
             return false;
         return key.Verify(hash, vchSig);
     }
-    
+
     void SetCompressedPubKey(bool fCompressed = true);
 
     // create a compact signature (65 bytes), which allows reconstructing the used public key
@@ -192,7 +206,7 @@ public:
     // The header byte: 0x1B = first key with even y, 0x1C = first key with odd y,
     //                  0x1D = second key with even y, 0x1E = second key with odd y
     bool SignCompact(uint256 hash, std::vector<unsigned char>& vchSig);
-    
+
     // reconstruct public key from a compact signature
     // This is only slightly more CPU intensive than just verifying it.
     // If this function succeeds, the recovered public key is guaranteed to be valid
@@ -200,7 +214,7 @@ public:
     bool SetCompactSignature(uint256 hash, const std::vector<unsigned char>& vchSig);
 
     // Verify a compact signature
-    bool VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig); 
+    bool VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig);
 };
 
 #endif
