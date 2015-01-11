@@ -163,6 +163,9 @@ public:
 
     bool Verify(uint256 hash, const std::vector<unsigned char>& vchSig)
     {
+        if (vchSig.empty())
+            return false;
+
         // adapted from https://github.com/bitcoin/bitcoin/commit/488ed32f2ada1d1dd108fc245d025c4d5f252783
         // New versions of OpenSSL will reject non-canonical DER signatures. de/re-serialize first.
         unsigned char *norm_der = NULL;
