@@ -347,7 +347,7 @@ Value BlockToValue(const CBlock &block, const CBlockIndex* blockindex)
 
     Array mrkl;
     for (int i = 0; i < block.vMerkleTree.size(); i++)
-    	mrkl.push_back(block.vMerkleTree[i].ToString().c_str());
+        mrkl.push_back(block.vMerkleTree[i].ToString().c_str());
 
     obj.push_back(Pair("mrkl_tree", mrkl));
 
@@ -372,14 +372,13 @@ Value getblockbycount(const Array& params, bool fHelp)
     CBlockIndex* pindex;
     bool found = false;
 
-    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin();
-         mi != mapBlockIndex.end(); ++mi)
+    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
     {
-    	pindex = (*mi).second;
-	if ((pindex->nHeight == height) && (pindex->IsInMainChain())) {
-		found = true;
-		break;
-	}
+        pindex = (*mi).second;
+        if ((pindex->nHeight == height) && (pindex->IsInMainChain())) {
+            found = true;
+            break;
+        }
     }
 
     if (!found)
@@ -2379,7 +2378,7 @@ Value getauxblock(const Array& params, bool fHelp)
         uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
 
         Object result;
-        result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
+        result.push_back(Pair("target", HexStr(BEGIN(hashTarget), END(hashTarget))));
         result.push_back(Pair("hash", pblock->GetHash().GetHex()));
         result.push_back(Pair("chainid", pblock->GetChainID()));
         return result;
@@ -2494,7 +2493,7 @@ Value importprivkey(const Array& params, bool fHelp)
     return Value::null;
 }
 
-// Based on Codeshark's pull reqeust: https://github.com/bitcoin/bitcoin/pull/2121/files
+// Based on Codeshark's pull request: https://github.com/bitcoin/bitcoin/pull/2121/files
 Value importaddress(const Array& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 3)
@@ -2927,7 +2926,7 @@ Value listunspent(const Array& params, bool fHelp)
                 throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, string("Invalid Namecoin address: ")+input.get_str());
             if (setAddress.count(address))
                 throw JSONRPCError(RPC_INVALID_PARAMETER, string("Invalid parameter, duplicated address: ")+input.get_str());
-           setAddress.insert(address);
+            setAddress.insert(address);
         }
     }
 

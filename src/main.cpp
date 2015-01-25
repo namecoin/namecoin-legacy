@@ -10,6 +10,7 @@
 #include "cryptopp/sha.h"
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/format.hpp>
 
 using namespace std;
 using namespace boost;
@@ -1531,6 +1532,23 @@ CBlock::SetBestChain (DatabaseSet& dbset, CBlockIndex* pindexNew)
     /* When everything is done, notify threads waiting for a change in the
        currently best chain.  */
     cv_newBlock.notify_all ();
+
+    std::string strCmd = GetArg("-blocknotify", "");
+
+    if (!IsInitialBlockDownload() && !strCmd.empty())
+    {
+        boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
+        unsigned int nBits = pindexBest->nBits;
+        auto_ptr<CBlock> pblock(new CBlock());
+        if (pblock.get())
+        {
+            pblock->nTime = max(pindexBest->GetMedianTimePast()+1, GetAdjustedTime());
+            nBits = GetNextWorkRequired(pindexBest, pblock.get());
+        }
+        boost::replace_all(strCmd, "%height", str(boost::format("%d") % (nBestHeight + 1)));
+        boost::replace_all(strCmd, "%bits", str(boost::format("%08x") % nBits));
+        boost::thread t(runCommand, strCmd); // thread runs free
+    }
 
     return true;
 }
