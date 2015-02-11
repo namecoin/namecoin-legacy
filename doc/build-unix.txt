@@ -15,10 +15,9 @@ To Build
 
 cd src/
 
-make -f makefile.unix            # Bitcoin with wxWidgets GUI
-  or
-make -f makefile.unix bitcoind   # Headless bitcoin
 
+make           # Namecoin with Qt GUI
+make namecoind # Headless namecoin
 
 Dependencies
 ------------
