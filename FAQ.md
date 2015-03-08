@@ -34,7 +34,7 @@ Usage
 
 **Q: How do I run Namecoin?**
 
-**A:** Currently you have to download and compile the software yourself.  You then run the namecoind executable.  Configuration is in ~/.namecoin/bitcoin.conf .
+**A:** Currently you have to download and compile the software yourself.  You then run the namecoind executable.  Configuration is in ~/.namecoin/namecoin.conf .
 
 **Q: Can I run Namecoin and Bitcoin on the same machine?**
 
