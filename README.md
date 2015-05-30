@@ -1,9 +1,9 @@
 Upgrade Notice
 ==============
 
-Miners and users of namecoind should switch to [Namecore](github.com/namecoin/namecore), a reimplementation of the Namecoin proptocol that maintains parity with Bitcoin.
+Miners and users of namecoind should switch to [Namecoin Core](github.com/namecoin/namecore), a reimplementation of the Namecoin protocol that maintains parity with Bitcoin.
 
-Note that Namecore does NOT support the GUI client and Namecoin-QT users should continue to use this repository until we have finished porting Armory.
+Note that Namecore does NOT support the GUI client and Namecoin-Qt users should continue to use this repository until we have finished the new GUI client.
 
 Namecoin
 ===================
