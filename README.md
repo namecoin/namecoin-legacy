@@ -1,3 +1,10 @@
+Upgrade Notice
+==============
+
+Miners and users of namecoind should switch to [Namecoin Core](github.com/namecoin/namecore), a reimplementation of the Namecoin protocol that maintains parity with Bitcoin.
+
+Note that Namecoin Core does NOT support the GUI client and Namecoin-Qt users should continue to use this repository until we have finished the new GUI client.
+
 Namecoin
 ===================
 
