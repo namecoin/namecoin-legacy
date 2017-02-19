@@ -2955,6 +2955,8 @@ Value listunspent(const Array& params, bool fHelp)
         entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
         entry.push_back(Pair("vout", out.i));
         entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
+        vector<unsigned char> vchData = ParseHex(HexStr(pk.begin(), pk.end()));
+        entry.push_back(Pair("address", PubKeyToAddress(vchData)));
         /*if (pk.IsPayToScriptHash())
         {
             string address;

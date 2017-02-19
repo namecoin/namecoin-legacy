@@ -7,9 +7,14 @@
 #include "net.h"
 #include "init.h"
 #include "strlcpy.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/interprocess/sync/file_lock.hpp>
+#include <boost/thread.hpp>
 
 using namespace std;
 using namespace boost;
@@ -625,6 +630,8 @@ std::string HelpMessage()
         "  -min             \t\t  " + _("Start minimized\n") +
         "  -datadir=<dir>   \t\t  " + _("Specify data directory\n") +
         "  -dbcache=<n>     \t\t  " + _("Set database cache size in megabytes (default: 25)") + "\n" +
+        "  -walletnotify=<n>     \t\t  " + _("Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)") + "\n" +
+        "  -blocknotify=<n>     \t\t  " + _("Execute command when the best block changes (%s in cmd is replaced by block hash)") + "\n" +
         "  -timeout=<n>     \t  "   + _("Specify connection timeout (in milliseconds)\n") +
         "  -proxy=<ip:port> \t  "   + _("Connect through socks4 proxy\n") +
         "  -dns             \t  "   + _("Allow DNS lookups for addnode and connect\n") +
@@ -668,4 +675,12 @@ std::string HelpMessage()
     strUsage += std::string() +
         "  -?               \t\t  " + _("This help message\n");
     return strUsage;
+}
+
+
+static void BlockNotifyCallback(const uint256& hashNewTip)
+{
+    std::string strCmd = GetArg("-blocknotify", "");
+    boost::replace_all(strCmd, "%s", hashNewTip.GetHex());
+    boost::thread t(runCommand, strCmd); // thread runs free
 }
