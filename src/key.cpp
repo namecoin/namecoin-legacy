@@ -6,9 +6,172 @@
 
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
+#include <openssl/err.h>
 
 #include "headers.h"
 #include "key.h"
+
+typedef struct {
+  int	field_type,	/* either NID_X9_62_prime_field or
+			 * NID_X9_62_characteristic_two_field */
+    seed_len,
+    param_len;
+  unsigned int cofactor;	/* promoted to BN_ULONG */
+} EC_CURVE_DATA;
+
+static const struct { EC_CURVE_DATA h; unsigned char data[0+32*6]; }
+  _EC_SECG_PRIME_256K1 = {
+    { NID_X9_62_prime_field,0,32,1 },
+    {							/* no seed */
+      0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,	/* p */
+      0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
+      0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFE,0xFF,0xFF,
+      0xFC,0x2F,
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,	/* a */
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+      0x00,0x00,
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,	/* b */
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+      0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+      0x00,0x07,
+      0x79,0xBE,0x66,0x7E,0xF9,0xDC,0xBB,0xAC,0x55,0xA0,	/* x */
+      0x62,0x95,0xCE,0x87,0x0B,0x07,0x02,0x9B,0xFC,0xDB,
+      0x2D,0xCE,0x28,0xD9,0x59,0xF2,0x81,0x5B,0x16,0xF8,
+      0x17,0x98,
+      0x48,0x3a,0xda,0x77,0x26,0xa3,0xc4,0x65,0x5d,0xa4,	/* y */
+      0xfb,0xfc,0x0e,0x11,0x08,0xa8,0xfd,0x17,0xb4,0x48,
+      0xa6,0x85,0x54,0x19,0x9c,0x47,0xd0,0x8f,0xfb,0x10,
+      0xd4,0xb8,
+      0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,	/* order */
+      0xFF,0xFF,0xFF,0xFF,0xFF,0xFE,0xBA,0xAE,0xDC,0xE6,
+      0xAF,0x48,0xA0,0x3B,0xBF,0xD2,0x5E,0x8C,0xD0,0x36,
+      0x41,0x41 }
+  };
+
+static EC_GROUP *ec_group_new_from_data(const EC_CURVE_DATA *data)
+{
+  EC_GROUP *group=NULL;
+  EC_POINT *P=NULL;
+  BN_CTX	 *ctx=NULL;
+  BIGNUM	 *p=NULL, *a=NULL, *b=NULL, *x=NULL, *y=NULL, *order=NULL;
+  int	 ok=0;
+  int	 seed_len,param_len;
+  const unsigned char *params;
+
+  if ((ctx = BN_CTX_new()) == NULL)
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_MALLOC_FAILURE);
+      goto err;
+    }
+
+  seed_len  = data->seed_len;
+  param_len = data->param_len;
+  params	  = (const unsigned char *)(data+1);	/* skip header */
+  params	 += seed_len;				/* skip seed   */
+
+  if (!(p = BN_bin2bn(params+0*param_len, param_len, NULL))
+      || !(a = BN_bin2bn(params+1*param_len, param_len, NULL))
+      || !(b = BN_bin2bn(params+2*param_len, param_len, NULL)))
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_BN_LIB);
+      goto err;
+    }
+
+  if ((group = EC_GROUP_new_curve_GFp(p, a, b, ctx)) == NULL)
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
+      goto err;
+    }
+
+  if ((P = EC_POINT_new(group)) == NULL)
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
+      goto err;
+    }
+
+  if (!(x = BN_bin2bn(params+3*param_len, param_len, NULL))
+      || !(y = BN_bin2bn(params+4*param_len, param_len, NULL)))
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_BN_LIB);
+      goto err;
+    }
+  if (!EC_POINT_set_affine_coordinates_GFp(group, P, x, y, ctx))
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
+      goto err;
+    }
+  if (!(order = BN_bin2bn(params+5*param_len, param_len, NULL))
+      || !BN_set_word(x, (BN_ULONG)data->cofactor))
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_BN_LIB);
+      goto err;
+    }
+  if (!EC_GROUP_set_generator(group, P, order, x))
+    {
+      ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
+      goto err;
+    }
+  if (seed_len)
+    {
+      if (!EC_GROUP_set_seed(group, params-seed_len, seed_len))
+	{
+	  ECerr(EC_F_EC_GROUP_NEW_FROM_DATA, ERR_R_EC_LIB);
+	  goto err;
+	}
+    }
+  ok=1;
+ err:
+  if (!ok)
+    {
+      EC_GROUP_free(group);
+      group = NULL;
+    }
+  if (P)
+    EC_POINT_free(P);
+  if (ctx)
+    BN_CTX_free(ctx);
+  if (p)
+    BN_free(p);
+  if (a)
+    BN_free(a);
+  if (b)
+    BN_free(b);
+  if (order)
+    BN_free(order);
+  if (x)
+    BN_free(x);
+  if (y)
+    BN_free(y);
+  return group;
+}
+
+
+
+EC_KEY *EC_KEY_new_by_curve_name_NID_secp256k1(void)
+{
+  static EC_GROUP *group = NULL;
+  EC_KEY *ret = NULL;
+
+  if (group == NULL) {
+#ifdef HAVE_NID_secp256k1
+    group = EC_GROUP_new_by_curve_name(NID_secp256k1);
+#else
+    group = ec_group_new_from_data(&_EC_SECG_PRIME_256K1.h);
+#endif
+    if (group == NULL)
+      return NULL;
+  }
+
+  ret = EC_KEY_new();
+  if (ret == NULL)
+    return NULL;
+
+  EC_KEY_set_group(ret, group);
+
+  return ret;
+}
+
 
 // Generate a private key from just the secret parameter
 int EC_KEY_regenerate_key(EC_KEY *eckey, BIGNUM *priv_key)
@@ -186,7 +349,7 @@ bool CKey::SetCompactSignature(uint256 hash, const std::vector<unsigned char>& v
     BN_bin2bn(&vchSig[33],32,sig->s);
 
     EC_KEY_free(pkey);
-    pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+    pkey = EC_KEY_new_by_curve_name_NID_secp256k1();
     if (nV >= 31)
     {
         SetCompressedPubKey();
@@ -215,7 +378,7 @@ bool CKey::VerifyCompact(uint256 hash, const std::vector<unsigned char>& vchSig)
 bool CKey::SetSecret(const CSecret& vchSecret, bool fCompressed)
 {
     EC_KEY_free(pkey);
-    pkey = EC_KEY_new_by_curve_name(NID_secp256k1);
+    pkey = EC_KEY_new_by_curve_name_NID_secp256k1();
     if (pkey == NULL)
         throw key_error("CKey::SetSecret() : EC_KEY_new_by_curve_name failed");
     if (vchSecret.size() != 32)
